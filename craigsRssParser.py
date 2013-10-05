@@ -19,12 +19,15 @@ def findKeywordsInList(keywordList, rssItemList):
 				matchList.append(keyword);	
 	return matchList;
 	
+def makeCraigsListUrl(cityString, sectionString):
+	return "http://" + cityString + ".en.craigslist.ca/" + sectionString + "/index.rss";
+
 def main():	
-	keyword = ['Yamaha'];
-	parser = GetParsedFeed("http://vancouver.en.craigslist.ca/ela/index.rss");
+	keyword = ['Lg'];
+	parser = GetParsedFeed(makeCraigsListUrl("vancouver", "ela"));
 	entryList = GetEntriesList(parser);
 	for each in entryList:
-		print '{0}'.format(each['title']);
+		print u'{0}'.format(each['title']);
 
 	findKeywordsInList(keyword, entryList);
 	
