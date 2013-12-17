@@ -16,6 +16,7 @@
         height: 75px;
       }
     </style>
+    <script src="jquery-2.0.3.min.js"></script>
 
     <!--
       - JavaScript and HTML must be in separate files: see our Content Security
@@ -26,10 +27,10 @@
     <script src="popup.js"></script>
   </head>
   <body>
-  <form name "login" action="http://localhost:3000/api/v1/tokens.json" method="post">
+  <form id="login-form">
     E-Mail : <input type="text" name="email"> <br>
     Password : <input type="password" name="password">
-    <input type="Submit" value="Login">
+    <input type="Submit" value="Login" id="login-button">
   </form>
   </body>
 </html>

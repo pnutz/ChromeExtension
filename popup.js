@@ -76,8 +76,46 @@ var kittenGenerator = {
         "_s.jpg";
   }
 };
+var request;
+var loginServer = "http://localhost:3000/api/v1/tokens.json?";
 
 // Run our kitten generation script as soon as the document's DOM is ready.
 document.addEventListener('DOMContentLoaded', function () {
-  kittenGenerator.requestKittens();
+  if (localStorage["authToken"]) 
+  {
+    alert("WE GOT A TOKEN\n"); 
+  }
+  else
+  {
+  }
+
+  $("#login-button").click(function(event){
+    if (request)
+    {
+      request.abort();
+    }
+
+    var $form = $("#login-form");
+    var $inputs = $form.find("input");
+    var loginData = $form.serialize();
+    alert(loginData);
+    //disable forms temporarily
+    $inputs.prop("disabled", true);
+
+    //Send ajax request
+    request = $.ajax({
+      url: loginServer,
+      type: 'POST',
+      data : loginData,
+      dataType: 'json'
+    }).done(function(data){
+      alert("success!");
+      localStorage["authToken"] = data["token"];
+    }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+      console.error(
+        "The following error occured: " + textStatus,
+        errorThrown);
+    });
+  });
 });

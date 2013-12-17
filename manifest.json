@@ -10,6 +10,6 @@
     "default_popup": "popup.html"
   },
   "permissions": [
-    "https://secure.flickr.com/"
+    "http://localhost:3000/api/v1/tokens.json"
   ]
 }
