@@ -77,16 +77,36 @@ var kittenGenerator = {
   }
 };
 var request;
-var loginServer = "http://localhost:3000/api/v1/tokens.json?";
+var host = "http://localhost:3000";
+var loginServer = host + "/api/v1/tokens.json?";
 
 // Run our kitten generation script as soon as the document's DOM is ready.
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () 
+{
+  $("#reload-page").click(function()
+  {
+    localStorage.removeItem("authToken");
+    location.reload(true);
+  });
+
+  $("#view-folders").click(function()
+  {
+    var signin = host + 
+                 "?email=" + localStorage["userEmail"] + 
+                 "&token=" + localStorage["authToken"];
+    chrome.tabs.create({url: signin});
+
+  });
+
+  $("#login-form").hide();
+  $("#view-folders").hide();
   if (localStorage["authToken"]) 
   {
-    alert("WE GOT A TOKEN\n"); 
+    $("#view-folders").show();
   }
   else
   {
+    $("#login-form").show();
   }
 
   $("#login-button").click(function(event){
@@ -95,22 +115,26 @@ document.addEventListener('DOMContentLoaded', function () {
       request.abort();
     }
 
+    //Form the url parameters
     var $form = $("#login-form");
     var $inputs = $form.find("input");
-    var loginData = $form.serialize();
-    alert(loginData);
+    var tokenAuth = $form.serialize();
+    
+
     //disable forms temporarily
     $inputs.prop("disabled", true);
 
-    //Send ajax request
+    //Request token from server
     request = $.ajax({
       url: loginServer,
       type: 'POST',
-      data : loginData,
+      data : tokenAuth,
       dataType: 'json'
     }).done(function(data){
-      alert("success!");
       localStorage["authToken"] = data["token"];
+      location.reload(true);
+      //store email in localStorage
+      localStorage["userEmail"] = $("#user-email").val();
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
