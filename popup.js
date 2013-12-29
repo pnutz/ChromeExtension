@@ -2,111 +2,72 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/**
- * Global variable containing the query we'd like to pass to Flickr. In this
- * case, kittens!
- *
- * @type {string}
- */
-var QUERY = 'kittens';
-
-var kittenGenerator = {
-  /**
-   * Flickr URL that will give us lots and lots of whatever we're looking for.
-   *
-   * See http://www.flickr.com/services/api/flickr.photos.search.html for
-   * details about the construction of this URL.
-   *
-   * @type {string}
-   * @private
-   */
-  searchOnFlickr_: 'https://secure.flickr.com/services/rest/?' +
-      'method=flickr.photos.search&' +
-      'api_key=90485e931f687a9b9c2a66bf58a3861a&' +
-      'text=' + encodeURIComponent(QUERY) + '&' +
-      'safe_search=1&' +
-      'content_type=1&' +
-      'sort=interestingness-desc&' +
-      'per_page=20',
-
-  /**
-   * Sends an XHR GET request to grab photos of lots and lots of kittens. The
-   * XHR's 'onload' event is hooks up to the 'showPhotos_' method.
-   *
-   * @public
-   */
-  requestKittens: function() {
-    var req = new XMLHttpRequest();
-    req.open("GET", this.searchOnFlickr_, true);
-    req.onload = this.showPhotos_.bind(this);
-    req.send(null);
-  },
-
-  /**
-   * Handle the 'onload' event of our kitten XHR request, generated in
-   * 'requestKittens', by generating 'img' elements, and stuffing them into
-   * the document for display.
-   *
-   * @param {ProgressEvent} e The XHR ProgressEvent.
-   * @private
-   */
-  showPhotos_: function (e) {
-    var kittens = e.target.responseXML.querySelectorAll('photo');
-    for (var i = 0; i < kittens.length; i++) {
-      var img = document.createElement('img');
-      img.src = this.constructKittenURL_(kittens[i]);
-      img.setAttribute('alt', kittens[i].getAttribute('title'));
-      document.body.appendChild(img);
-    }
-  },
-
-  /**
-   * Given a photo, construct a URL using the method outlined at
-   * http://www.flickr.com/services/api/misc.urlKittenl
-   *
-   * @param {DOMElement} A kitten.
-   * @return {string} The kitten's URL.
-   * @private
-   */
-  constructKittenURL_: function (photo) {
-    return "http://farm" + photo.getAttribute("farm") +
-        ".static.flickr.com/" + photo.getAttribute("server") +
-        "/" + photo.getAttribute("id") +
-        "_" + photo.getAttribute("secret") +
-        "_s.jpg";
-  }
-};
 var request;
 var host = "http://localhost:3000";
-var loginServer = host + "/api/v1/tokens.json?";
+var controllers = {"tokens" : "/api/v1/tokens",
+                   "folders" : "/folders"};
+var loginServer = host + controllers["tokens"] + ".json";
+
+function appendCred(url)
+{
+  return url + 
+        "?email=" + localStorage["userEmail"] + 
+        "&token=" + localStorage["authToken"];
+}
+
+function getFolders()
+{
+    var foldersUrl = host + controllers["folders"] + ".json";
+    var request = $.ajax({
+      url: appendCred(foldersUrl),
+      type: 'GET',
+      dataType: 'json'
+    }).done(function(data){
+      setupOptions("receipt-form-folders", data);
+    }).fail(function (jqXHR, textStatus, errorThrown){
+      alert("failed");
+    // log the error to the console
+     // console.error(
+      //  "The following error occured: " + textStatus,
+       // errorThrown);
+    });
+}
+
+function setupOptions(listId, options)
+{
+  var select = document.getElementById(listId);
+  $.each(options, function(){
+    select.options[select.options.length] = new Option(this.name, this.id);
+  });
+}
 
 // Run our kitten generation script as soon as the document's DOM is ready.
 document.addEventListener('DOMContentLoaded', function () 
 {
+  // setup reload link click action
   $("#reload-page").click(function()
   {
     localStorage.removeItem("authToken");
     location.reload(true);
   });
 
+  // Setup Folder link click action
   $("#view-folders").click(function()
   {
-    var signin = host + 
-                 "?email=" + localStorage["userEmail"] + 
-                 "&token=" + localStorage["authToken"];
-    chrome.tabs.create({url: signin});
-
+    chrome.tabs.create({url: appendCred(host)});
   });
 
-  $("#login-form").hide();
-  $("#view-folders").hide();
+  //Initially hide all elements until authentication
+  $("#login-div").hide();
+  $("#main-div").hide();
+  $("#receipt-div").hide();
   if (localStorage["authToken"]) 
   {
-    $("#view-folders").show();
+    $("#main-div").show();
   }
   else
   {
-    $("#login-form").show();
+    $("#login-div").show();
   }
 
   $("#login-button").click(function(event){
@@ -141,5 +102,18 @@ document.addEventListener('DOMContentLoaded', function ()
         "The following error occured: " + textStatus,
         errorThrown);
     });
+  });
+
+  // show receipt submission form
+  $('#receipt-form-show').click(function(event){
+    $("#receipt-div").show();
+    $("#main-div").hide();
+    getFolders();
+  });
+
+  // Cancel Receipt submission
+  $('#receipt-submit-cancel').click(function(event){
+    $("#receipt-div").hide();
+    $("#main-div").show();
   });
 });

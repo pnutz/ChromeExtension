@@ -16,7 +16,9 @@
         height: 75px;
       }
     </style>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
     <script src="jquery-2.0.3.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
 
     <!--
       - JavaScript and HTML must be in separate files: see our Content Security
@@ -27,14 +29,36 @@
     <script src="popup.js"></script>
   </head>
   <body>
-  <form id="login-form">
-    E-Mail : <input id="user-email" type="text" name="email"> <br>
-    Password : <input id="user-password" type="password" name="password">
-    <input type="Submit" value="Login" id="login-button">
-  </form>
+  <div id="login-div">
+    <form id="login-form">
+      E-Mail : <input id="user-email" type="text" name="email"> <br>
+      Password : <input id="user-password" type="password" name="password">
+      <input type="Submit" value="Login" id="login-button">
+    </form>
+  </div>
 
-  <a id="view-folders" href="#">View Folders</a>
-  <a id="reload-page" href="#">reload</a>
-  </body>
+  <div id="main-div">
+    <a id="view-folders" href="#">View Folders</a>
+    <a id="receipt-form-show" href="#">Add Receipt</a>
+    <a id="reload-page" href="#">Reload</a>
+  </div>
+
+  <div id="receipt-div">
+    <form id="receipt-form">
+      Folder : <select id="receipt-form-folders" type="text" name="folder"></select> <br>
+      Title : <input id="receipt-form-title" type="text" name="title"> <br>
+      Total : <input id="receipt-form-total" type="text" name="total"> <br>
+      Vendor : <input id="receipt-form-vendor" type="text" name="vendor"> <br>
+      Transaction No. : <input id="receipt-form-transaction" type="text" name="transaction"> <br>
+      Currency : <input id="receipt-form-transaction" type="text" name="transaction"> <br>
+      Note : 
+      <textarea rows="4" cols="50" name="receipt-form-note" form="receipt-form">ANUS</textarea>
+    </form>
+    <a id="receipt-submit" href="#">Submit Receipt</a>
+    <a id="receipt-submit-cancel" href="#">Cancel</a>
+  </div>
+
+
+    </body>
 </html>
 
