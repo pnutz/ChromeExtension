@@ -5,6 +5,7 @@
 var request;
 var host = "http://localhost:3000";
 var controllers = {"tokens" : "/api/v1/tokens",
+                   "currencies" : "/currencies",
                    "folders" : "/folders"};
 var loginServer = host + controllers["tokens"] + ".json";
 
@@ -15,29 +16,36 @@ function appendCred(url)
         "&token=" + localStorage["authToken"];
 }
 
-function getFolders()
+function getFolders(data)
 {
-    var foldersUrl = host + controllers["folders"] + ".json";
-    var request = $.ajax({
-      url: appendCred(foldersUrl),
-      type: 'GET',
-      dataType: 'json'
-    }).done(function(data){
-      setupOptions("receipt-form-folders", data);
-    }).fail(function (jqXHR, textStatus, errorThrown){
-      alert("failed");
-    // log the error to the console
-     // console.error(
-      //  "The following error occured: " + textStatus,
-       // errorThrown);
+    var select = document.getElementById("receipt-form-folders");
+    $.each(data, function(){
+      select.options[select.options.length] = new Option(this.name, this.id);
     });
 }
 
-function setupOptions(listId, options)
+function getCurrencies(data)
 {
-  var select = document.getElementById(listId);
-  $.each(options, function(){
-    select.options[select.options.length] = new Option(this.name, this.id);
+    var select = document.getElementById("receipt-form-currencies");
+    $.each(data, function(){
+      select.options[select.options.length] = new Option(this.code + "-" + this.description, this.id);
+    });
+}
+
+function getJsonData(jsonUrl, doneCallback)
+{
+  var request = $.ajax({
+    url: appendCred(jsonUrl),
+    type: 'GET',
+    dataType: 'json'
+  }).done(function(data){
+    doneCallback(data);
+  }).fail(function (jqXHR, textStatus, errorThrown){
+    alert("Failed to retrieve json data");
+  // log the error to the console
+   // console.error(
+    //  "The following error occured: " + textStatus,
+     // errorThrown);
   });
 }
 
@@ -108,7 +116,10 @@ document.addEventListener('DOMContentLoaded', function ()
   $('#receipt-form-show').click(function(event){
     $("#receipt-div").show();
     $("#main-div").hide();
-    getFolders();
+    var foldersUrl = host + controllers["folders"] + ".json";
+    getJsonData(foldersUrl, getFolders);
+    var currenciesUrl = host + controllers["currencies"] + ".json";
+    getJsonData(currenciesUrl, getCurrencies);
   });
 
   // Cancel Receipt submission
