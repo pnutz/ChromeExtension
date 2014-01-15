@@ -27,6 +27,7 @@
       - [1]: http://developer.chrome.com/extensions/contentSecurityPolicy.html
      -->
     <script src="popup.js"></script>
+    <script src="helper.js"></script>
   </head>
   <body>
   <div id="login-div">
@@ -44,15 +45,23 @@
   </div>
 
   <div id="receipt-div">
-    <form id="receipt-form">
-      Folder : <select id="receipt-form-folders" type="text" name="folder"></select> <br>
-      Title : <input id="receipt-form-title" type="text" name="title"> <br>
-      Total : <input id="receipt-form-total" type="text" name="total"> <br>
-      Vendor : <input id="receipt-form-vendor" type="text" name="vendor"> <br>
-      Transaction No. : <input id="receipt-form-transaction" type="text" name="transaction"> <br>
-      Currency : <select id="receipt-form-currencies" type="text" name="currencies"></select> <br>
-      Note : 
-      <textarea rows="4" cols="50" name="receipt-form-note" form="receipt-form">ANUS</textarea>
+    <form id="receipt-form" role="form-group">
+      <label for="receipt-form-folders">Folder</label>
+      <select id="receipt-form-folders" type="text" name="folder_id" class="form-control"></select> <br>
+      <label for="receipt-form-title">Title</label>
+      <input id="receipt-form-title" type="text" name="title" placeholder="Receipt Title" class="form-control"> <br>
+      <label for="receipt-form-purchase-types">Purchase Type</label>
+      <select id="receipt-form-purchase-types" type="text" name="purchase_type_id" class="form-control"></select> <br>
+      <label for="receipt-form-vendor">Vendor</label>
+      <input id="receipt-form-vendor" type="text" name="vendor_name" placeholder="Vendor Name" class="form-control"> <br>
+      <label for="receipt-form-transaction">Transaction Number<label>
+      <input id="receipt-form-transaction" type="text" name="transaction_number" placeholder="Transaction Number" class="form-control"> <br>
+      <label for="receipt-form-currencies">Currency<label>
+      <select id="receipt-form-currencies" type="text" name="currency_id" class="form-control"></select> <br>
+      <label for="receipt-form-total">Total</label>
+      <input id="receipt-form-total" type="text" name="total" placeholder="Total Cost" class="form-control"> <br>
+      <label for="receipt-form-note">Note<label>
+      <textarea rows="4" cols="50" name="note" form="receipt-form" class="form-control">ANUS</textarea>
     </form>
     <a id="receipt-submit" href="#">Submit Receipt</a>
     <a id="receipt-submit-cancel" href="#">Cancel</a>

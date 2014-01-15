@@ -6,8 +6,12 @@ var request;
 var host = "http://localhost:3000";
 var controllers = {"tokens" : "/api/v1/tokens",
                    "currencies" : "/currencies",
+                   "receipts" : "/receipts",
+                   "purchase_types" : "/purchase_types",
                    "folders" : "/folders"};
 var loginServer = host + controllers["tokens"] + ".json";
+var foldersUrl = host + controllers["folders"] + ".json";
+var receiptsUrl = host + controllers["receipts"] + ".json";
 
 function appendCred(url)
 {
@@ -31,6 +35,15 @@ function getCurrencies(data)
       select.options[select.options.length] = new Option(this.code + "-" + this.description, this.id);
     });
 }
+
+function getPurchaseTypes(data)
+{
+    var select = document.getElementById("receipt-form-purchase-types");
+    $.each(data, function(){
+      select.options[select.options.length] = new Option(this.name, this.id);
+    });
+}
+
 
 function getJsonData(jsonUrl, doneCallback)
 {
@@ -86,7 +99,6 @@ document.addEventListener('DOMContentLoaded', function ()
 
     //Form the url parameters
     var $form = $("#login-form");
-    var $inputs = $form.find("input");
     var tokenAuth = $form.serialize();
     
 
@@ -116,10 +128,32 @@ document.addEventListener('DOMContentLoaded', function ()
   $('#receipt-form-show').click(function(event){
     $("#receipt-div").show();
     $("#main-div").hide();
-    var foldersUrl = host + controllers["folders"] + ".json";
     getJsonData(foldersUrl, getFolders);
     var currenciesUrl = host + controllers["currencies"] + ".json";
     getJsonData(currenciesUrl, getCurrencies);
+    var purchaseTypesUrl = host + controllers["purchase_types"] + ".json";
+    getJsonData(purchaseTypesUrl, getPurchaseTypes);
+  });
+
+  $('#receipt-submit').click(function(event){
+      var formData = formToJSONKeyMap("#receipt-form");
+      var receiptData = {"receipt" : formData};
+      //receiptData["total"] = 0;
+      //receiptData["transaction_number"] = 0;
+      var receiptRequest = $.ajax({
+        url: receiptsUrl,
+        type: 'POST',
+        data : receiptData,
+        dataType: 'json'
+      }).done(function(data){
+        alert("submitted");
+        
+      }).fail(function (jqXHR, textStatus, errorThrown){
+        // log the error to the console
+        console.error(
+          "The following error occured: " + textStatus,
+          errorThrown);
+      });
   });
 
   // Cancel Receipt submission
