@@ -4,7 +4,7 @@
     <title>Getting Started Extension's Popup</title>
     <style>
       body {
-        min-width: 357px;
+        min-width: 450px;
         overflow-x: hidden;
       }
 
@@ -39,19 +39,21 @@
   </div>
 
   <div id="main-div">
-    <a id="view-folders" href="#">View Folders</a>
-    <a id="receipt-form-show" href="#">Add Receipt</a>
-    <a id="reload-page" href="#">Reload</a>
+    <h4 id="main-div-user-email"> </h4>
+    <button type="button" class="btn" id="view-folders">View Folders</button>
+    <button type="button" class="btn" id="receipt-form-show">Add Receipt</button>
+    <button type="button" class="btn" id="reload-page">Reload</button>
   </div>
 
   <div id="receipt-div">
+    <H3>Add Receipt</H3>
     <form id="receipt-form" role="form-group">
       <label for="receipt-form-folders">Folder</label>
-      <select id="receipt-form-folders" type="text" name="folder_id" class="form-control"></select> <br>
+      <select id="receipt-form-folders" type="text" name="folder_id" class="form-control"></select> 
+      <label for="receipt-form-purchase-types">Purchase Type</label>
+      <select id="receipt-form-purchase-types" type="text" name="purchase_type_id" class="form-control span2"></select> 
       <label for="receipt-form-title">Title</label>
       <input id="receipt-form-title" type="text" name="title" placeholder="Receipt Title" class="form-control"> <br>
-      <label for="receipt-form-purchase-types">Purchase Type</label>
-      <select id="receipt-form-purchase-types" type="text" name="purchase_type_id" class="form-control"></select> <br>
       <label for="receipt-form-vendor">Vendor</label>
       <input id="receipt-form-vendor" type="text" name="vendor_name" placeholder="Vendor Name" class="form-control"> <br>
       <label for="receipt-form-transaction">Transaction Number<label>
@@ -61,10 +63,12 @@
       <label for="receipt-form-total">Total</label>
       <input id="receipt-form-total" type="text" name="total" placeholder="Total Cost" class="form-control"> <br>
       <label for="receipt-form-note">Note<label>
-      <textarea rows="4" cols="50" name="note" form="receipt-form" class="form-control">ANUS</textarea>
+      <textarea rows="4" cols="50" id="receipt-form-note" name="note" form="receipt-form" class="form-control">Receipt note</textarea>
     </form>
-    <a id="receipt-submit" href="#">Submit Receipt</a>
-    <a id="receipt-submit-cancel" href="#">Cancel</a>
+    <div class="form-actions">
+    <button type="button" class="btn btn-primary" id="receipt-submit">Submit Receipt</button>
+    <button type="button" class="btn" id="receipt-submit-cancel">Cancel</button>
+    </div>
   </div>
 
 

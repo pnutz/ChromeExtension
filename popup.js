@@ -44,7 +44,6 @@ function getPurchaseTypes(data)
     });
 }
 
-
 function getJsonData(jsonUrl, doneCallback)
 {
   var request = $.ajax({
@@ -85,6 +84,7 @@ document.addEventListener('DOMContentLoaded', function ()
   if (localStorage["authToken"]) 
   {
     $("#main-div").show();
+    $("#main-div-user-email").text("Logged in as : " + localStorage["userEmail"]);
   }
   else
   {
@@ -99,6 +99,8 @@ document.addEventListener('DOMContentLoaded', function ()
 
     //Form the url parameters
     var $form = $("#login-form");
+    //Get form inputs to disable
+    var $inputs = $form.find("input");
     var tokenAuth = $form.serialize();
     
 
