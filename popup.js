@@ -14,6 +14,12 @@ var foldersUrl = host + controllers["folders"] + ".json";
 var receiptsUrl = host + controllers["receipts"] + ".json";
 var receiptItemCount = 1;
 
+$(function() {
+	$("#receipt-form-date").datepicker();
+	var today = new Date();
+	$("#receipt-form-date").val("" + today.getMonth()+1 + "/" + today.getDate() + "/" + today.getFullYear());
+});
+
 function appendCred(url)
 {
   return url + 
