@@ -4,7 +4,7 @@
     <title>Getting Started Extension's Popup</title>
     <style>
       body {
-        min-width: 450px;
+        min-width: 800px;
         overflow-x: hidden;
       }
 
@@ -45,13 +45,21 @@
     <button type="button" class="btn" id="reload-page">Reload</button>
   </div>
 
-  <div id="receipt-div">
+  <div id="receipt-div" class="container">
     <H3>Add Receipt</H3>
-    <form id="receipt-form" role="form-group">
-      <label for="receipt-form-folders">Folder</label>
-      <select id="receipt-form-folders" type="text" name="folder_id" class="form-control"></select> 
-      <label for="receipt-form-purchase-types">Purchase Type</label>
-      <select id="receipt-form-purchase-types" type="text" name="purchase_type_id" class="form-control span2"></select> 
+    <form id="receipt-form" role="form">
+      <div class="row">
+        <div class="form-group">
+          <label for="receipt-form-folders" class="col-sm-2 control-label">Folder</label>
+          <div class="col-sm-4">
+            <select id="receipt-form-folders" type="text" name="folder_id" class="form-control"></select> 
+          </div>
+          <label for="receipt-form-purchase-types" class="col-sm-2 control-label">Purchase Type</label>
+          <div class="col-sm-4">
+          <select id="receipt-form-purchase-types" type="text" name="purchase_type_id" class="form-control"></select> 
+          </div>
+        </div>
+      </div>
       <label for="receipt-form-title">Title</label>
       <input id="receipt-form-title" type="text" name="title" placeholder="Receipt Title" class="form-control"> <br>
       <label for="receipt-form-vendor">Vendor</label>
@@ -61,7 +69,15 @@
       <label for="receipt-form-currencies">Currency<label>
       <select id="receipt-form-currencies" type="text" name="currency_id" class="form-control"></select> <br>
       <label for="receipt-form-total">Total</label>
-      <input id="receipt-form-total" type="text" name="total" placeholder="Total Cost" class="form-control"> <br>
+      <div class="input-group">
+        <span class="input-group-addon">$</span>
+        <input id="receipt-form-total" type="text" name="total" placeholder="Total Cost" class="form-control"> <br>
+        <span class="input-group-btn">
+          <button id="receipt-form-item-add" class="btn btn-default" type="button">Add Item</button>
+        </span>
+      </div>
+      <ul id="receipt-form-item-list" class="list-group">
+      </ul>
       <label for="receipt-form-note">Note<label>
       <textarea rows="4" cols="50" id="receipt-form-note" name="note" form="receipt-form" class="form-control">Receipt note</textarea>
     </form>

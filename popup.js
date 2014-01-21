@@ -12,6 +12,7 @@ var controllers = {"tokens" : "/api/v1/tokens",
 var loginServer = host + controllers["tokens"] + ".json";
 var foldersUrl = host + controllers["folders"] + ".json";
 var receiptsUrl = host + controllers["receipts"] + ".json";
+var receiptItemCount = 1;
 
 function appendCred(url)
 {
@@ -42,6 +43,17 @@ function getPurchaseTypes(data)
     $.each(data, function(){
       select.options[select.options.length] = new Option(this.name, this.id);
     });
+}
+
+function addReceiptItem()
+{
+  var listItemId = "receipt-form-list-item-" + receiptItemCount;
+  $("<li></li>", {"class": "list-group-item", "id": listItemId}).appendTo("#receipt-form-item-list");
+  var receiptItemId = "receipt-item-" + receiptItemCount;
+  $("<label/>", {"for": receiptItemId + "name", text : "Item " + receiptItemCount + " Name"}).appendTo("#" + listItemId);
+  $("<input/>", {"class" : "form-control", "id": receiptItemId + "name", "type" : "text"}).appendTo("#" + listItemId);
+  $("<input/>", {"class" : "form-control", "id": receiptItemId + "cost", "type" : "text"}).appendTo("#" + listItemId);
+  receiptItemCount++;
 }
 
 function getJsonData(jsonUrl, doneCallback)
@@ -136,6 +148,11 @@ document.addEventListener('DOMContentLoaded', function ()
     var purchaseTypesUrl = host + controllers["purchase_types"] + ".json";
     getJsonData(purchaseTypesUrl, getPurchaseTypes);
   });
+
+  $("#receipt-form-item-add").click(function(event){
+    addReceiptItem();
+  });
+
 
   $('#receipt-submit').click(function(event){
       var formData = formToJSONKeyMap("#receipt-form");
