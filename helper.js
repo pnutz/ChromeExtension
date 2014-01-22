@@ -2,7 +2,7 @@
 function formToJSONKeyMap(formId)
 {
   var o = {};
-  var a = $(formId).serializeArray();
+  var a = formId.serializeArray();
   $.each(a, function() 
   {
     console.log(this.name);
