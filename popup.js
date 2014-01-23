@@ -57,10 +57,42 @@ function addReceiptItem()
   var listItemId = "receipt-form-list-item-" + receiptItemCount;
   $("<li></li>", {"class": "list-group-item", "id": listItemId}).appendTo("#receipt-form-item-list");
   var receiptItemId = "receipt-item-" + receiptItemCount;
-  $("<label/>", {"for": receiptItemId + "name", text : "Item " + receiptItemCount + " Name"}).appendTo("#" + listItemId);
-  $("<input/>", {"class" : "form-control", "id": receiptItemId + "name", "type" : "text"}).appendTo("#" + listItemId);
-  $("<input/>", {"class" : "form-control", "id": receiptItemId + "cost", "type" : "text"}).appendTo("#" + listItemId);
+  $("<label/>", {"for": receiptItemId + "-name", text : "Item " + receiptItemCount + " Name"}).appendTo("#" + listItemId);
+  //itemtype aka item name
+  $("<input/>", {"class" : "form-control", 
+                 "id": receiptItemId + "-name", 
+                 "name": "itemtype",
+                 "type" : "text"}).appendTo("#" + listItemId);
+  //cost of item
+  $("<label/>", {"for": receiptItemId + "-cost", text : "Cost"}).appendTo("#" + listItemId);
+  $("<input/>", {"class" : "form-control",
+                 "id": receiptItemId + "-cost", 
+                 "name": "cost", 
+                 "type" : "text"}).appendTo("#" + listItemId);
+  $("<label/>", {"for": receiptItemId + "-quantity", text : "Quantity"}).appendTo("#" + listItemId);
+  $("<input/>", {"class" : "form-control",
+                 "id": receiptItemId + "-quantity", 
+                 "name": "quantity", 
+                 "type" : "text"}).appendTo("#" + listItemId);
+  $("<label/>", {"for": receiptItemId + "-is-credit", text : "Is Credit?"}).appendTo("#" + listItemId);
+  $("<input/>", {"id": receiptItemId + "-is-credit", 
+                 "name": "is_credit", 
+                 "type" : "checkbox"}).appendTo("#" + listItemId);
+
   receiptItemCount++;
+}
+
+function getReceiptItemsJSON()
+{
+  var receiptItems = {};
+  $("#receipt-form-item-list>li").each(function(index){
+    receiptItems[index] = {};
+    receiptItems[index]["itemtype"] = $(this).find("input[name='itemtype']").val();
+    receiptItems[index]["cost"] = $(this).find("input[name='cost']").val();
+    receiptItems[index]["quantity"] = $(this).find("input[name='quantity']").val();
+    receiptItems[index]["is_credit"] = $(this).find("input[name='is_credit']").is(":checked") ? 1 : 0;
+  });
+  return receiptItems;
 }
 
 function getJsonData(jsonUrl, doneCallback)
@@ -179,10 +211,12 @@ document.addEventListener('DOMContentLoaded', function ()
     addReceiptItem();
   });
 
-
   $('#receipt-submit').click(function(event){
-      var formData = formToJSONKeyMap("#receipt-form");
+      //Serialize everything except receipt items
+      var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > input)"));
       var receiptData = {"receipt" : formData};
+      receiptData["receipt"]["receipt_items_attributes"] = getReceiptItemsJSON();
+
       //receiptData["total"] = 0;
       //receiptData["transaction_number"] = 0;
       var receiptRequest = $.ajax({
