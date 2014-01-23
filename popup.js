@@ -30,6 +30,7 @@ function appendCred(url)
 function getFolders(data)
 {
     var select = document.getElementById("receipt-form-folders");
+		select.options[0] = new Option("", 0);
     $.each(data, function(){
       select.options[select.options.length] = new Option(this.name, this.id);
     });
@@ -39,7 +40,7 @@ function getCurrencies(data)
 {
     var select = document.getElementById("receipt-form-currencies");
     $.each(data, function(){
-      select.options[select.options.length] = new Option(this.code + "-" + this.description, this.id);
+      select.options[select.options.length] = new Option(this.code + " - " + this.description, this.id);
     });
 }
 
@@ -74,7 +75,7 @@ function getJsonData(jsonUrl, doneCallback)
     alert("Failed to retrieve json data");
   // log the error to the console
    // console.error(
-    //  "The following error occured: " + textStatus,
+    //  "The following error occurred: " + textStatus,
      // errorThrown);
   });
 }
@@ -82,7 +83,13 @@ function getJsonData(jsonUrl, doneCallback)
 // Run our kitten generation script as soon as the document's DOM is ready.
 document.addEventListener('DOMContentLoaded', function () 
 {
-  // setup reload link click action
+	// Setup registration link click action
+	$("#registration").click(function()
+	{
+		chrome.tabs.create({url:appendCred(host)});
+	});
+	
+  // Setup reload link click action
   $("#reload-page").click(function()
   {
     localStorage.removeItem("authToken");
@@ -94,7 +101,20 @@ document.addEventListener('DOMContentLoaded', function ()
   {
     chrome.tabs.create({url: appendCred(host)});
   });
-
+	
+	// Setup page data dump link click action
+	$("#pull-page").click(function()
+	{
+		chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
+			chrome.tabs.sendMessage(tab[0].id, {greeting: "getText"}, function(response) {
+				document.getElementById("data-dump").innerHTML = response.farewell;
+				if (response.farewell == "getText") {
+					alert(response.data);
+				}
+			});
+		});
+	});
+	
   //Initially hide all elements until authentication
   $("#login-div").hide();
   $("#main-div").hide();
@@ -102,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function ()
   if (localStorage["authToken"]) 
   {
     $("#main-div").show();
-    $("#main-div-user-email").text("Logged in as : " + localStorage["userEmail"]);
+    $("#main-div-user-email").text("Logged in as: " + localStorage["userEmail"]);
   }
   else
   {
@@ -139,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function ()
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
-        "The following error occured: " + textStatus,
+        "The following error occurred: " + textStatus,
         errorThrown);
     });
   });
@@ -172,11 +192,13 @@ document.addEventListener('DOMContentLoaded', function ()
         dataType: 'json'
       }).done(function(data){
         alert("submitted");
-        
+        $("#receipt-div").hide();
+				$("#main-div").show();
+				
       }).fail(function (jqXHR, textStatus, errorThrown){
         // log the error to the console
         console.error(
-          "The following error occured: " + textStatus,
+          "The following error occurred: " + textStatus,
           errorThrown);
       });
   });
