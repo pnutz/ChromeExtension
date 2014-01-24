@@ -1,10 +1,95 @@
+/* MutationObserver configuration data: Listen for "childList"
+ * mutations in the specified element and its descendants */
+var config = {
+    childList: true,
+    subtree: true
+};
+var regex = /<a.*?>[^<]*<\/a>/;
+
+/* Traverse 'rootNode' and its descendants and modify '<a>' tags */
+function modifyLinks(rootNode) {
+    var nodes = [rootNode];
+    while (nodes.length > 0) {
+        var node = nodes.shift();
+        if (node.tagName == "A") {
+            /* Modify the '<a>' element */
+            node.innerHTML = "~~" + node.innerHTML + "~~";
+        } else {
+            /* If the current node has children, queue them for further
+             * processing, ignoring any '<script>' tags. */
+            [].slice.call(node.children).forEach(function(childNode) {
+                if (childNode.tagName != "SCRIPT") {
+                    nodes.push(childNode);
+                }
+            });
+        }
+    }
+}
+
+/* Observer1: Looks for 'div.notificationdiv' */
+var observer1 = new MutationObserver(function(mutations) {
+    /* For each MutationRecord in 'mutations'... */
+    mutations.some(function(mutation) {
+        /* ...if nodes have been added... */
+        if (mutation.addedNodes && (mutation.addedNodes.length > 0)) {
+            /* ...look for 'div#notificationdiv' */
+            var node = mutation.target.querySelector("div#notificationdiv");
+            if (node) {
+                /* 'div#notificationdiv' found; stop observer 1 and start observer 2 */
+                observer1.disconnect();
+                observer2.observe(node, config);
+
+                if (regex.test(node.innerHTML)) {
+                    /* Modify any '<a>' elements already in the current node */
+                    modifyLinks(node);
+                }
+                return true;
+            }
+        }
+    });
+});
+
+/* Observer2: Listens for '<a>' elements insertion */
+var observer2 = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.addedNodes) {
+            [].slice.call(mutation.addedNodes).forEach(function(node) {
+                /* If 'node' or any of its descendants are '<a>'... */
+                if (regex.test(node.outerHTML)) {
+                    /* ...do something with them */
+                    modifyLinks(node);
+                }
+            });
+        }
+    });
+});
+
+/* Start observing 'body' for 'div#notificationdiv' */
+observer1.observe(document.body, config);
+
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
-		//sendResponse({ farewell: "getText" });
-		if (request.greeting == "getText") {
+		if (request.greeting == "getHTML") {
 				sendResponse({
 						data: document.body.outerHTML,
-						farewell: "getText"
+						farewell: "sendHTML"
 				});
+		}
+		// this is how lastpass does it, by adding a div and iframe element to the current page
+		else if (request.greeting == "showNotification") {
+			// only create element if it doesn't exist
+			if (observer1)
+			{
+				// append iframe notification within div to body		
+				var div = document.createElement("div");
+				div.setAttribute("id", "notificationdiv");
+				div.setAttribute("style", "top: 0px; left: 0px; height: 1px; width: 1905px; position: fixed; background-color: black; z-index: 1000000099; visibility: visible;");
+				var iframe = document.createElement("iframe");
+				iframe.src = chrome.extension.getURL("notificationbar.html");
+				iframe.setAttribute("scrolling", "no");
+				iframe.setAttribute("style", "height: 27px; width: 1905px; border: 0px;");
+				div.appendChild(iframe);
+				document.body.appendChild(div);
+			}
 		}
 	});

@@ -8,10 +8,12 @@ var controllers = {"tokens" : "/api/v1/tokens",
                    "currencies" : "/currencies",
                    "receipts" : "/receipts",
                    "purchase_types" : "/purchase_types",
-                   "folders" : "/folders"};
+                   "folders" : "/folders",
+									 "registration" : "/users/sign_up"};
 var loginServer = host + controllers["tokens"] + ".json";
 var foldersUrl = host + controllers["folders"] + ".json";
 var receiptsUrl = host + controllers["receipts"] + ".json";
+var registrationUrl = host + controllers["registration"];
 var receiptItemCount = 1;
 
 $(function() {
@@ -118,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function ()
 	// Setup registration link click action
 	$("#registration").click(function()
 	{
-		chrome.tabs.create({url:appendCred(host)});
+		chrome.tabs.create({url: registrationUrl});
 	});
 	
   // Setup reload link click action
@@ -134,14 +136,43 @@ document.addEventListener('DOMContentLoaded', function ()
     chrome.tabs.create({url: appendCred(host)});
   });
 	
-	// Setup page data dump link click action
+	// HTML getter tool, saves HTML in datadump.txt
 	$("#pull-page").click(function()
 	{
 		chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
-			chrome.tabs.sendMessage(tab[0].id, {greeting: "getText"}, function(response) {
-				document.getElementById("data-dump").innerHTML = response.farewell;
-				if (response.farewell == "getText") {
-					alert(response.data);
+			chrome.tabs.sendMessage(tab[0].id, {greeting: "getHTML"}, function(response) {
+				if (response.farewell == "sendHTML") {
+					// html getter tool
+					var textfile = "datadump.txt";
+					var blob = new Blob([response.data], {type:'text/plain'});
+					var dl = document.getElementById("downloadLink");
+					dl.download = textfile;
+					
+					if (window.webkitURL != null)
+					{
+						// Chrome allows the link to be clicked
+						// without actually adding it to the DOM.
+						dl.href = window.webkitURL.createObjectURL(blob);
+					}
+					dl.click();
+				}
+			});
+		});
+	});
+	
+	// Notification test-tool, displays current notification
+	$("#show-notification").click(function()
+	{
+		chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
+			chrome.tabs.sendMessage(tab[0].id, {greeting: "showNotification"}, function(response) {
+				if (response.farewell == "showNotification") {
+					/*chrome.notifications.create("", {
+						type: 'basic',
+						iconUrl: 'icon.png',
+						title: response.farewell,
+						message: response.data
+					}, function(notificationId) {
+					});*/
 				}
 			});
 		});
@@ -198,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function ()
 
   // show receipt submission form
   $('#receipt-form-show').click(function(event){
-    $("#receipt-div").show();
+		$("#receipt-div").show();
     $("#main-div").hide();
     getJsonData(foldersUrl, getFolders);
     var currenciesUrl = host + controllers["currencies"] + ".json";
@@ -214,11 +245,17 @@ document.addEventListener('DOMContentLoaded', function ()
   $('#receipt-submit').click(function(event){
       //Serialize everything except receipt items
       var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > input)"));
-      var receiptData = {"receipt" : formData};
+			
+			if (formData["folder_id"] == 0)
+			{
+				delete formData["folder_id"];
+			}
+			
+      var receiptData = {"receipt" : formData};			
       receiptData["receipt"]["receipt_items_attributes"] = getReceiptItemsJSON();
-
-      //receiptData["total"] = 0;
-      //receiptData["transaction_number"] = 0;
+			
+      //receiptData["receipt"]["total"] = 0;
+      //receiptData["receipt"]["transaction_number"] = 0;
       var receiptRequest = $.ajax({
         url: receiptsUrl,
         type: 'POST',
