@@ -2,13 +2,14 @@ document.addEventListener('DOMContentLoaded', function() {
 	// notification yes
 	$("#yes").click(function()
 	{
-		$("#yes").hide();
-		$("#readytoremove").hide();
+		window.parent.postMessage("yes", '*');
 	});
 
 	// notification no
 	$("#no").click(function()
 	{
-		$("#no").hide();
+		window.parent.postMessage("no", '*');
 	});
+	
+	// window.parent.postMessage("x", '*');
 });

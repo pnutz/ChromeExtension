@@ -166,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function ()
 		chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
 			chrome.tabs.sendMessage(tab[0].id, {greeting: "showNotification"}, function(response) {
 				if (response.farewell == "showNotification") {
+					// to use this, add "notifications", to manifest.json permissions
 					/*chrome.notifications.create("", {
 						type: 'basic',
 						iconUrl: 'icon.png',
