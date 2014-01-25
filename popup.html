@@ -58,20 +58,28 @@
           </div>
           <label for="receipt-form-purchase-types" class="col-sm-2 control-label">Purchase Type</label>
           <div class="col-sm-4">
-          <select id="receipt-form-purchase-types" type="text" name="purchase_type_id" class="form-control"></select> 
+            <select id="receipt-form-purchase-types" type="text" name="purchase_type_id" class="form-control"></select> 
           </div>
         </div>
       </div>
-      <label for="receipt-form-date">Receipt Date</label>
-      <input id="receipt-form-date" type="text" name="date" placeholder="Today's Date" class="form-control"> <br>
+      <div class="row">
+        <div class="form-group">
+          <label for="receipt-form-date" class="col-sm-2 control-label">Receipt Date</label>
+          <div class="col-sm-4">
+            <input id="receipt-form-date" type="text" name="date" placeholder="Today's Date" class="form-control"> 
+          </div>
+          <label for="receipt-form-currencies" class="col-sm-2 control-label">Currency</label>
+          <div class="col-sm-4">
+            <select id="receipt-form-currencies" type="text" name="currency_id" class="form-control"></select>
+          </div>
+        </div>
+      </div>
       <label for="receipt-form-title">Title</label>
       <input id="receipt-form-title" type="text" name="title" placeholder="Receipt Title" class="form-control"> <br>
       <label for="receipt-form-vendor">Vendor</label>
       <input id="receipt-form-vendor" type="text" name="vendor_name" placeholder="Vendor Name" class="form-control"> <br>
       <label for="receipt-form-transaction">Transaction Number<label>
       <input id="receipt-form-transaction" type="text" name="transaction_number" placeholder="Transaction Number" class="form-control"> <br>
-      <label for="receipt-form-currencies">Currency<label>
-      <select id="receipt-form-currencies" type="text" name="currency_id" class="form-control"></select> <br>
       <label for="receipt-form-total">Total</label>
       <div class="input-group">
         <span class="input-group-addon">$</span>
@@ -82,8 +90,14 @@
       </div>
       <ul id="receipt-form-item-list" class="list-group">
       </ul>
-      <label for="receipt-form-note">Note<label>
-      <textarea rows="4" cols="50" id="receipt-form-note" name="note" form="receipt-form" class="form-control">Receipt note</textarea>
+      <div class="form-group">
+        <div class="row">
+          <label for="receipt-form-note" class="control-label">Note<label>
+        </div>
+        <div class="row">
+          <textarea rows="4" cols="50" id="receipt-form-note" name="note" form="receipt-form" class="form-control" placeholder="Notes"></textarea>
+        </div>
+      </div>
     </form>
     <div class="form-actions">
     <button type="button" class="btn btn-primary" id="receipt-submit">Submit Receipt</button>
