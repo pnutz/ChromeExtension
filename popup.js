@@ -8,10 +8,12 @@ var controllers = {"tokens" : "/api/v1/tokens",
                    "currencies" : "/currencies",
                    "receipts" : "/receipts",
                    "purchase_types" : "/purchase_types",
-                   "folders" : "/folders"};
+                   "folders" : "/folders",
+									 "registration" : "/users/sign_up"};
 var loginServer = host + controllers["tokens"] + ".json";
 var foldersUrl = host + controllers["folders"] + ".json";
 var receiptsUrl = host + controllers["receipts"] + ".json";
+var registrationUrl = host + controllers["registration"];
 var receiptItemCount = 1;
 
 $(function() {
@@ -30,6 +32,7 @@ function appendCred(url)
 function getFolders(data)
 {
     var select = document.getElementById("receipt-form-folders");
+		select.options[0] = new Option("", 0);
     $.each(data, function(){
       select.options[select.options.length] = new Option(this.name, this.id);
     });
@@ -39,7 +42,7 @@ function getCurrencies(data)
 {
     var select = document.getElementById("receipt-form-currencies");
     $.each(data, function(){
-      select.options[select.options.length] = new Option(this.code + "-" + this.description, this.id);
+      select.options[select.options.length] = new Option(this.code + " - " + this.description, this.id);
     });
 }
 
@@ -106,7 +109,7 @@ function getJsonData(jsonUrl, doneCallback)
     alert("Failed to retrieve json data");
   // log the error to the console
    // console.error(
-    //  "The following error occured: " + textStatus,
+    //  "The following error occurred: " + textStatus,
      // errorThrown);
   });
 }
@@ -114,7 +117,13 @@ function getJsonData(jsonUrl, doneCallback)
 // Run our kitten generation script as soon as the document's DOM is ready.
 document.addEventListener('DOMContentLoaded', function () 
 {
-  // setup reload link click action
+	// Setup registration link click action
+	$("#registration").click(function()
+	{
+		chrome.tabs.create({url: registrationUrl});
+	});
+	
+  // Setup reload link click action
   $("#reload-page").click(function()
   {
     localStorage.removeItem("authToken");
@@ -126,7 +135,50 @@ document.addEventListener('DOMContentLoaded', function ()
   {
     chrome.tabs.create({url: appendCred(host)});
   });
-
+	
+	// HTML getter tool, saves HTML in datadump.txt
+	$("#pull-page").click(function()
+	{
+		chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
+			chrome.tabs.sendMessage(tab[0].id, {greeting: "getHTML"}, function(response) {
+				if (response.farewell == "sendHTML") {
+					// html getter tool
+					var textfile = "datadump.txt";
+					var blob = new Blob([response.data], {type:'text/plain'});
+					var dl = document.getElementById("downloadLink");
+					dl.download = textfile;
+					
+					if (window.webkitURL != null)
+					{
+						// Chrome allows the link to be clicked
+						// without actually adding it to the DOM.
+						dl.href = window.webkitURL.createObjectURL(blob);
+					}
+					dl.click();
+				}
+			});
+		});
+	});
+	
+	// Notification test-tool, displays current notification
+	$("#show-notification").click(function()
+	{
+		chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
+			chrome.tabs.sendMessage(tab[0].id, {greeting: "showNotification"}, function(response) {
+				if (response.farewell == "showNotification") {
+					// to use this, add "notifications", to manifest.json permissions
+					/*chrome.notifications.create("", {
+						type: 'basic',
+						iconUrl: 'icon.png',
+						title: response.farewell,
+						message: response.data
+					}, function(notificationId) {
+					});*/
+				}
+			});
+		});
+	});
+	
   //Initially hide all elements until authentication
   $("#login-div").hide();
   $("#main-div").hide();
@@ -134,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function ()
   if (localStorage["authToken"]) 
   {
     $("#main-div").show();
-    $("#main-div-user-email").text("Logged in as : " + localStorage["userEmail"]);
+    $("#main-div-user-email").text("Logged in as: " + localStorage["userEmail"]);
   }
   else
   {
@@ -171,14 +223,14 @@ document.addEventListener('DOMContentLoaded', function ()
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
-        "The following error occured: " + textStatus,
+        "The following error occurred: " + textStatus,
         errorThrown);
     });
   });
 
   // show receipt submission form
   $('#receipt-form-show').click(function(event){
-    $("#receipt-div").show();
+		$("#receipt-div").show();
     $("#main-div").hide();
     getJsonData(foldersUrl, getFolders);
     var currenciesUrl = host + controllers["currencies"] + ".json";
@@ -194,11 +246,17 @@ document.addEventListener('DOMContentLoaded', function ()
   $('#receipt-submit').click(function(event){
       //Serialize everything except receipt items
       var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > input)"));
-      var receiptData = {"receipt" : formData};
+			
+			if (formData["folder_id"] == 0)
+			{
+				delete formData["folder_id"];
+			}
+			
+      var receiptData = {"receipt" : formData};			
       receiptData["receipt"]["receipt_items_attributes"] = getReceiptItemsJSON();
-
-      //receiptData["total"] = 0;
-      //receiptData["transaction_number"] = 0;
+			
+      //receiptData["receipt"]["total"] = 0;
+      //receiptData["receipt"]["transaction_number"] = 0;
       var receiptRequest = $.ajax({
         url: receiptsUrl,
         type: 'POST',
@@ -206,11 +264,13 @@ document.addEventListener('DOMContentLoaded', function ()
         dataType: 'json'
       }).done(function(data){
         alert("submitted");
-        
+        $("#receipt-div").hide();
+				$("#main-div").show();
+				
       }).fail(function (jqXHR, textStatus, errorThrown){
         // log the error to the console
         console.error(
-          "The following error occured: " + textStatus,
+          "The following error occurred: " + textStatus,
           errorThrown);
       });
   });

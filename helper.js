@@ -16,10 +16,10 @@ function formToJSONKeyMap(formId)
       }
       console.log(this.name + "pushing");
       o[this.name].push(this.value || '');
-    } 
+    }
     else 
     {
-      console.log(this.name + "not defined");
+      console.log(this.name + " not defined");
       o[this.name] = this.value || '';
     }
   });

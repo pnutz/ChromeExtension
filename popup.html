@@ -4,7 +4,7 @@
     <title>Chrome Extension Popup</title>
     <style>
       body {
-        min-width: 800px;
+        min-width: 300px;
         overflow-x: hidden;
       }
 
@@ -32,19 +32,24 @@
     <script src="helper.js"></script>
   </head>
   <body>
-  <div id="login-div">
+  <div id="login-div" class="col-xs-10" >
     <form id="login-form">
-      E-Mail : <input id="user-email" type="text" name="email"> <br>
-      Password : <input id="user-password" type="password" name="password">
-      <input type="Submit" value="Login" id="login-button">
+			<h3>Sign In</h3>
+      <b>Email: <input id="user-email" type="text" class="form-control" name="email">
+      Password:</b> <input id="user-password" type="password" class="form-control" name="password">
+      <br><input type="Submit" value="Login" id="login-button"><br>
+			<a href="#" id="registration">New here? Create an Account.</a>
     </form>
   </div>
 
-  <div id="main-div">
-    <h4 id="main-div-user-email"> </h4>
-    <button type="button" class="btn" id="view-folders">View Folders</button>
-    <button type="button" class="btn" id="receipt-form-show">Add Receipt</button>
-    <button type="button" class="btn" id="reload-page">Reload</button>
+  <div id="main-div" class="btn-group-vertical">
+		<h4 id="main-div-user-email"> </h4>
+		<button type="button" class="btn btn-default" id="view-folders">View Folders</button>
+		<button type="button" class="btn btn-default" id="receipt-form-show">Add Receipt</button>
+		<button type="button" class="btn btn-default" id="reload-page">Reload</button>
+		<button type="button" class="btn btn-default" id="pull-page">Get HTML</button>
+		<button type="button" class="btn btn-default" id="show-notification">Display Notification</button>
+		<a id="downloadLink"></a>
   </div>
 
   <div id="receipt-div" class="container">
@@ -104,7 +109,6 @@
     <button type="button" class="btn" id="receipt-submit-cancel">Cancel</button>
     </div>
   </div>
-
 
     </body>
 </html>

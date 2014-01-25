@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="notificationbar.js"></script>
+		<script src="../jquery-2.0.3.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
+		<style>
+			body {
+				background-color: #003333;
+				padding: 0px;
+				margin: 0px;
+				height: 100%;
+				width: 100%;
+			}
+			
+			ul
+			{
+				list-style-type: none;
+				margin: 0;
+				padding: 0;
+				display: inline;
+				overflow: hidden;
+			}
+			
+			li
+			{
+				display: inline;
+				padding-right: 10px;
+				padding-left: 10px;
+			}
+
+			li.right
+			{
+				float: right;
+			}
+		</style>
+	</head>
+	<body id="readytoremove">
+		<ul>
+			<li class="left"><font face="verdana" color="white"><b>Would you like to store this receipt in TwoReceipt?</b></font></li>
+			<li class="right"><button id="no" class="btn btn-default btn-xs">No</button></li>
+			<li class="right"><button id="yes" class="btn btn-default btn-xs">Yes</button></li>
+		</ul>
+	</body>
+</html>
