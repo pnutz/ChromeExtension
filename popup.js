@@ -93,6 +93,7 @@ function getReceiptItemsJSON()
     receiptItems[index]["cost"] = $(this).find("input[name='cost']").val();
     receiptItems[index]["quantity"] = $(this).find("input[name='quantity']").val();
     receiptItems[index]["is_credit"] = $(this).find("input[name='is_credit']").is(":checked") ? 1 : 0;
+    receiptItems[index]["_destroy"] = "false";
   });
   return receiptItems;
 }
