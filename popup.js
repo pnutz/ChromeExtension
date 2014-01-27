@@ -120,6 +120,6 @@ document.addEventListener('DOMContentLoaded', function ()
 
   // show receipt submission form
   $('#receipt-form-show').click(function(event){
-    chrome.windows.create({"url" : "addReceipt.html", "type" : "popup"});
+    chrome.windows.create({"url" : "addreceipt.html", "type" : "popup"});
   });
 });
