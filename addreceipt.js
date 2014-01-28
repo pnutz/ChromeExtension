@@ -16,7 +16,7 @@ $(function() {
 		}
 		else
 		{
-			$("#receipt-form-date").val() = "";
+			$("#receipt-form-date").val("");
 		}
 		$("#receipt-form-vendor").val(background.vendor_name);
 		$("#receipt-form-total").val(background.total);
@@ -28,7 +28,7 @@ $(function() {
 		background.currency = null;
 	});
 	
-	if ($("#receipt-form-date").val() == "")
+	if ($("#receipt-form-date").val(""))
 	{	
 		var today = new Date();
 		$("#receipt-form-date").val("" + today.getMonth()+1 + "/" + today.getDate() + "/" + today.getFullYear());
@@ -198,6 +198,34 @@ document.addEventListener('DOMContentLoaded', function ()
   });
 
   $('#receipt-submit-cancel').click(function(event){
-    alert("You cannot cancel right now muhaha!");
+    // Confirmation for receipt cancellation
+  /*  var r=confirm("Are you sure you want to cancel this receipt?");
+    if (r==true) {
+      x="You pressed OK!";
+    } else {
+      x="You pressed Cancel!";
+    }  */ 
+
+    $('body').append("<div id=\"receipt-cancel-confirm\" title=\"Delete confirmation\">"+
+                     "<p>Are you sure you want to discard the current receipt?</p>"+
+                      '<button type="button" class="btn btn-primary" id="receipt-trash">Discard Receipt</button>'+
+                      '<button type="button" class="btn" id="receipt-save">Cancel</button>'+
+                      "</div>");
+    $("#receipt-cancel-confirm").dialog({
+         closeOnEscape: false,
+         open: function(event, ui) {
+           $(".ui-dialog-titlebar-close").hide(); 
+         },
+         resizable: false
+    });
+
+    // Attach confirmation listeners
+    $('#receipt-save').click(function(e){
+      $('#receipt-cancel-confirm').dialog('close');
+      $('#receipt-cancel-confirm').remove();
+    });
+    $('#receipt-trash').click(function(e){
+      window.close();
+    });
   });
 });
