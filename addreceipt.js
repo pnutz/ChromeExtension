@@ -10,7 +10,7 @@ $(function() {
 
 	chrome.runtime.getBackgroundPage(function (background) {
 		$("#receipt-form-title").val(background.title);
-		if (background.date != null)
+		if (background.date !== null)
 		{
 			$("#receipt-form-date").val(background.date);
 		}
@@ -36,6 +36,43 @@ $(function() {
 
 });
 
+// Augmenting the validator plugin, might need a separate JavaScript files for these custom additions
+$.validator.addMethod("notEqual", function(value, element, param) {
+    return this.optional(element) || value !== param;
+}, "Please select an option.");
+// Add validation for required fields, etc.
+$(document).ready(function () {
+  $('#receipt-form').validate({
+     rules: {
+       // 'name' attribute of HTML element used to determine rules
+       // E.g. Element with name='title' uses the following rules
+       title: {
+         //minlength: 3,
+         required: true
+       },
+       vendor_name: {
+         required: true
+       },
+       folder_id: {
+         required: true,
+         notEqual: "0"
+       }
+       /*purchase_type_id: {
+         required: true
+       },
+       currency_id: {
+         required: true
+       }*/
+     },
+     highlight: function(element) {
+       $(element).closest('div').addClass('has-error');
+     },
+     unhighlight: function(element) {
+       $(element).closest('div').removeClass('has-error');
+     }
+  });
+});
+
 function getFolders(data)
 {
     var select = document.getElementById("receipt-form-folders");
@@ -50,7 +87,7 @@ function getCurrencies(data)
     var select = document.getElementById("receipt-form-currencies");
     $.each(data, function(){
       select.options[select.options.length] = new Option(this.code + " - " + this.description, this.id);
-			if (this.code == backgroundCurrency)
+			if (this.code === backgroundCurrency)
 			{
 				select.selectedIndex = select.options.length - 1;
 				backgroundCurrency = null;
@@ -67,8 +104,7 @@ function getPurchaseTypes(data)
 }
 
 //TODO:Should probably put receipt items into a class
-function addReceiptItem()
-{
+function addReceiptItem() {
   var listItemId = "receipt-form-list-item-" + receiptItemCount;
   $("<li></li>", {"class": "list-group-item", "id": listItemId}).appendTo("#receipt-form-item-list");
   var receiptItemId = "receipt-item-" + receiptItemCount;
@@ -100,7 +136,6 @@ function addReceiptItem()
   $("<input/>", {"id": receiptItemId + "-is-credit", 
                  "name": "is_credit", 
                  "type" : "checkbox"}).appendTo("#" + listItemId);
-
   receiptItemCount++;
 }
 
@@ -168,10 +203,13 @@ document.addEventListener('DOMContentLoaded', function ()
 
   //Capture changes to item list
   $('#receipt-submit').click(function(event){
+    // Make sure all fields are filled out as expected
+    var check = $('#receipt-form').valid();
+
     //Serialize everything except receipt items
     var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > input)"));
     
-    if (formData["folder_id"] == 0)
+    if (formData["folder_id"] === 0)
     {
       delete formData["folder_id"];
     }
@@ -198,14 +236,7 @@ document.addEventListener('DOMContentLoaded', function ()
   });
 
   $('#receipt-submit-cancel').click(function(event){
-    // Confirmation for receipt cancellation
-  /*  var r=confirm("Are you sure you want to cancel this receipt?");
-    if (r==true) {
-      x="You pressed OK!";
-    } else {
-      x="You pressed Cancel!";
-    }  */ 
-
+    // TODO: This is probably not the best way to create the divs and buttons for confirmation button
     $('body').append("<div id=\"receipt-cancel-confirm\" title=\"Delete confirmation\">"+
                      "<p>Are you sure you want to discard the current receipt?</p>"+
                       '<button type="button" class="btn btn-primary" id="receipt-trash">Discard Receipt</button>'+
