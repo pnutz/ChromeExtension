@@ -66,6 +66,7 @@ function getPurchaseTypes(data)
     });
 }
 
+//TODO:Should probably put receipt items into a class
 function addReceiptItem()
 {
   var listItemId = "receipt-form-list-item-" + receiptItemCount;
@@ -78,12 +79,18 @@ function addReceiptItem()
                  "name": "itemtype",
                  "type" : "text"}).appendTo("#" + listItemId);
   //cost of item
-  $("<label/>", {"for": receiptItemId + "-cost", text : "Cost"}).appendTo("#" + listItemId);
-  $("<input/>", {"class" : "form-control",
-                 "id": receiptItemId + "-cost", 
+  var costId = receiptItemId + "-cost";
+  $("<label/>", {"for": costId, text : "Cost"}).appendTo("#" + listItemId);
+  $("<input/>", {"class" : "form-control cost-input",
+                 "id": costId, 
                  "name": "cost", 
                  "type" : "text",
                  "value" : "0.00"}).appendTo("#" + listItemId);
+  //Register event handler for when the cost changes
+  $("#" + costId).change(function(event){
+    $("#receipt-form-total").val(sumReceiptItemCosts());
+  });
+
   $("<label/>", {"for": receiptItemId + "-quantity", text : "Quantity"}).appendTo("#" + listItemId);
   $("<input/>", {"class" : "form-control",
                  "id": receiptItemId + "-quantity", 
@@ -95,6 +102,17 @@ function addReceiptItem()
                  "type" : "checkbox"}).appendTo("#" + listItemId);
 
   receiptItemCount++;
+}
+
+//TODO: Modify to use int
+function sumReceiptItemCosts()
+{
+  var total = 0;
+  $("#receipt-form-item-list>li>.cost-input").each(function(index){
+    alert(parseFloat($(this).val()));
+    total += parseFloat($(this).val());
+  });
+  return total;
 }
 
 function getReceiptItemsJSON()
@@ -116,13 +134,6 @@ function convertToNumOfCents(value)
   console.log(value);
   return value;
 }
-function changeReceiptItemTotal()
-{
-  var total = 0;
-  $("#receipt-form-item-list>li").each(function(index){
-    total += convertToNumOfCents($(this).find("input[name='cost']").val());
-  });
-}
 
 function getJsonData(jsonUrl, doneCallback)
 {
@@ -140,7 +151,6 @@ function getJsonData(jsonUrl, doneCallback)
      // errorThrown);
   });
 }
-
 // Run our kitten generation script as soon as the document's DOM is ready.
 document.addEventListener('DOMContentLoaded', function () 
 {
@@ -152,40 +162,39 @@ document.addEventListener('DOMContentLoaded', function ()
 
   $("#receipt-form-item-add").click(function(event){
     addReceiptItem();
+    $("#receipt-form-total").prop("disabled", "true");
+    $("#receipt-form-total").val(sumReceiptItemCosts());
   });
 
   //Capture changes to item list
-  $("#receipt-form-item-list").change(function(event){
-  });
-
   $('#receipt-submit').click(function(event){
-      //Serialize everything except receipt items
-      var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > input)"));
-			
-			if (formData["folder_id"] == 0)
-			{
-				delete formData["folder_id"];
-			}
-			
-      var receiptData = {"receipt" : formData};			
-      receiptData["receipt"]["receipt_items_attributes"] = getReceiptItemsJSON();
-			
-      //receiptData["receipt"]["total"] = 0;
-      //receiptData["receipt"]["transaction_number"] = 0;
-      var receiptRequest = $.ajax({
-        url: receiptsUrl,
-        type: 'POST',
-        data : receiptData,
-        dataType: 'json'
-      }).done(function(data){
-        alert("submitted");
-        window.close();
-      }).fail(function (jqXHR, textStatus, errorThrown){
-        // log the error to the console
-        console.error(
-          "The following error occurred: " + textStatus,
-          errorThrown);
-      });
+    //Serialize everything except receipt items
+    var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > input)"));
+    
+    if (formData["folder_id"] == 0)
+    {
+      delete formData["folder_id"];
+    }
+    
+    var receiptData = {"receipt" : formData};			
+    receiptData["receipt"]["receipt_items_attributes"] = getReceiptItemsJSON();
+    
+    //receiptData["receipt"]["total"] = 0;
+    //receiptData["receipt"]["transaction_number"] = 0;
+    var receiptRequest = $.ajax({
+      url: receiptsUrl,
+      type: 'POST',
+      data : receiptData,
+      dataType: 'json'
+    }).done(function(data){
+      alert("submitted");
+      window.close();
+    }).fail(function (jqXHR, textStatus, errorThrown){
+      // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
   });
 
   $('#receipt-submit-cancel').click(function(event){
