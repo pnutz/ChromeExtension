@@ -16,6 +16,10 @@
 			"all_frames": true
 		}
 	],
+	"background": {
+		"scripts": ["eventPage.js"],
+		"persistent": false
+	},
 	"web_accessible_resources": [
 		"/notification/*",
 		"css/bootstrap.min.css",
@@ -23,6 +27,7 @@
 	],
   "permissions": [
     "tabs",
+		"background",
     "http://localhost:3000/api/v1/tokens.json"
   ]
 }

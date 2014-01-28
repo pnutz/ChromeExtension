@@ -3,11 +3,37 @@
 // found in the LICENSE file.
 
 var receiptItemCount = 1;
+var backgroundCurrency;
 
 $(function() {
 	$("#receipt-form-date").datepicker();
-	var today = new Date();
-	$("#receipt-form-date").val("" + today.getMonth()+1 + "/" + today.getDate() + "/" + today.getFullYear());
+
+	chrome.runtime.getBackgroundPage(function (background) {
+		$("#receipt-form-title").val(background.title);
+		if (background.date != null)
+		{
+			$("#receipt-form-date").val(background.date);
+		}
+		else
+		{
+			$("#receipt-form-date").val() = "";
+		}
+		$("#receipt-form-vendor").val(background.vendor_name);
+		$("#receipt-form-total").val(background.total);
+		backgroundCurrency = background.currency;
+		background.title = null;
+		background.date = null;
+		background.vendor_name = null;
+		background.total = null;
+		background.currency = null;
+	});
+	
+	if ($("#receipt-form-date").val() == "")
+	{	
+		var today = new Date();
+		$("#receipt-form-date").val("" + today.getMonth()+1 + "/" + today.getDate() + "/" + today.getFullYear());
+	}
+
 });
 
 function getFolders(data)
@@ -24,6 +50,11 @@ function getCurrencies(data)
     var select = document.getElementById("receipt-form-currencies");
     $.each(data, function(){
       select.options[select.options.length] = new Option(this.code + " - " + this.description, this.id);
+			if (this.code == backgroundCurrency)
+			{
+				select.selectedIndex = select.options.length - 1;
+				backgroundCurrency = null;
+			}
     });
 }
 
