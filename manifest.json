@@ -17,7 +17,7 @@
 		}
 	],
 	"background": {
-		"scripts": ["eventPage.js"],
+		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "eventPage.js"],
 		"persistent": false
 	},
 	"web_accessible_resources": [

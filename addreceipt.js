@@ -5,43 +5,13 @@
 var receiptItemCount = 1;
 var backgroundCurrency;
 
-$(function() {
-	$("#receipt-form-date").datepicker();
-
-	chrome.runtime.getBackgroundPage(function (background) {
-		$("#receipt-form-title").val(background.title);
-		if (background.date !== null)
-		{
-			$("#receipt-form-date").val(background.date);
-		}
-		else
-		{
-			$("#receipt-form-date").val("");
-		}
-		$("#receipt-form-vendor").val(background.vendor_name);
-		$("#receipt-form-total").val(background.total);
-		backgroundCurrency = background.currency;
-		background.title = null;
-		background.date = null;
-		background.vendor_name = null;
-		background.total = null;
-		background.currency = null;
-	});
-	
-	if ($("#receipt-form-date").val(""))
-	{	
-		var today = new Date();
-		$("#receipt-form-date").val("" + today.getMonth()+1 + "/" + today.getDate() + "/" + today.getFullYear());
-	}
-
-});
-
 // Augmenting the validator plugin, might need a separate JavaScript files for these custom additions
 $.validator.addMethod("notEqual", function(value, element, param) {
     return this.optional(element) || value !== param;
 }, "Please select an option.");
-// Add validation for required fields, etc.
+
 $(document).ready(function () {
+	// Add validation for required fields, etc.
   $('#receipt-form').validate({
      rules: {
        // 'name' attribute of HTML element used to determine rules
@@ -52,11 +22,12 @@ $(document).ready(function () {
        },
        vendor_name: {
          required: true
-       },
+       }/*,
+			 // changed webapp to allow for receipts with no folder, so doesn't need to be required
        folder_id: {
          required: true,
          notEqual: "0"
-       }
+       },*/
        /*purchase_type_id: {
          required: true
        },
@@ -71,6 +42,33 @@ $(document).ready(function () {
        $(element).closest('div').removeClass('has-error');
      }
   });
+	
+	// set datepicker ui element
+	$("#receipt-form-date").datepicker();
+
+	// set current date
+	if ($("#receipt-form-date").val() == "")
+	{
+		var today = new Date();
+		$("#receipt-form-date").val("" + today.getMonth()+1 + "/" + today.getDate() + "/" + today.getFullYear());
+	}
+	
+	// pull data sent from site if it has not been pulled (event occurs after setting current date)
+	chrome.runtime.getBackgroundPage(function (background) {
+		$("#receipt-form-title").val(background.title);
+		if (background.date !== null)
+		{
+			$("#receipt-form-date").val(background.date);
+		}
+		$("#receipt-form-vendor").val(background.vendor_name);
+		$("#receipt-form-total").val(background.total);
+		backgroundCurrency = background.currency;
+		background.title = null;
+		background.date = null;
+		background.vendor_name = null;
+		background.total = null;
+		background.currency = null;
+	});
 });
 
 function getFolders(data)
@@ -209,7 +207,8 @@ document.addEventListener('DOMContentLoaded', function ()
     //Serialize everything except receipt items
     var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > input)"));
     
-    if (formData["folder_id"] === 0)
+		// formData["folder_id"] is a string, so cannot 'exactly equal to' 0
+    if (formData["folder_id"] == 0)
     {
       delete formData["folder_id"];
     }

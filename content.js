@@ -44,13 +44,20 @@ chrome.runtime.onMessage.addListener(
 			var notdiv = document.getElementById("notificationdiv");
 			notdiv.parentNode.removeChild(notdiv);
 			
-			if (event.data == "no")
+			if (event.data == "yes")
 			{
-				
+				chrome.runtime.sendMessage({greeting: "genReceipt",
+				title: "test",
+				date: "01/20/2014",
+				vendor_name: "test",
+				currency: "USD",
+				total: 1},
+				function(response) {});
 			}
-			else if (event.data == "yes")
+			else if (event.data == "no")
 			{
-				chrome.runtime.sendMessage({greeting: "genReceipt", title: "test", date: "01/20/2014", vendor_name: "test", currency: "USD", total: 1},
+				chrome.runtime.sendMessage({greeting: "parseHTML",
+				data: document.body.outerHTML},
 				function(response) {});
 			}
 			else if (event.data == "x")
