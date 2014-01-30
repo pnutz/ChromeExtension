@@ -45,13 +45,6 @@ $(document).ready(function () {
 	
 	// set datepicker ui element
 	$("#receipt-form-date").datepicker();
-
-	// set current date
-	if ($("#receipt-form-date").val() == "")
-	{
-		var today = new Date();
-		$("#receipt-form-date").val("" + today.getMonth()+1 + "/" + today.getDate() + "/" + today.getFullYear());
-	}
 	
 	// pull data sent from site if it has not been pulled (event occurs after setting current date)
 	chrome.runtime.getBackgroundPage(function (background) {
@@ -60,14 +53,50 @@ $(document).ready(function () {
 		{
 			$("#receipt-form-date").val(background.date);
 		}
+		else
+		{
+			// set current date
+			var today = new Date();
+			$("#receipt-form-date").val("" + ("0" + today.getMonth() + 1).slice(-2) + "/" + ("0" + today.getDate()).slice(-2) + "/" + today.getFullYear());
+		}
 		$("#receipt-form-vendor").val(background.vendor_name);
 		$("#receipt-form-total").val(background.total);
+		$("#receipt-form-transaction").val(background.transactionNumber);
 		backgroundCurrency = background.currency;
+		if (background.receipt_items.length > 0)
+		{
+			for (var itemCount = 0; itemCount < background.receipt_items.length; itemCount++) {
+				addReceiptItem();
+				var formItemCount = itemCount + 1;
+				
+				console.log("itemCount: " + itemCount);
+				console.log("receiptItemCount: " + receiptItemCount);
+				console.log(background.receipt_items[itemCount].name);
+				console.log($("#receipt-item-" + formItemCount + "-cost").val());
+				
+				$("#receipt-item-" + formItemCount + "-name").val(background.receipt_items[itemCount].name);
+				$("#receipt-item-" + formItemCount + "-cost").val(background.receipt_items[itemCount].cost);
+				$("#receipt-item-" + formItemCount + "-quantity").val(background.receipt_items[itemCount].quantity);
+				if (background.receipt_items[itemCount].cost < 0)
+				{
+					$("#receipt-item-" + formItemCount + "-is-credit").prop('checked', true);
+				}
+			}
+			
+			$("#receipt-form-total").prop("disabled", "true");
+			$("#receipt-form-total").val(sumReceiptItemCosts());
+		}
+		
 		background.title = null;
 		background.date = null;
 		background.vendor_name = null;
 		background.total = null;
 		background.currency = null;
+		background.transactionNumber = null;
+		background.num_receipt_items = 0;
+		
+		$("#receipt-form-title").focus();
+		$("#receipt-form-title").select();
 	});
 });
 

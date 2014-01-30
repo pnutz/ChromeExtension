@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function ()
 	$("#registration").click(function()
 	{
 		chrome.tabs.create({url: registrationUrl});
+		window.close();
 	});
 	
   // Setup reload link click action
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function ()
   $("#view-folders").click(function()
   {
     chrome.tabs.create({url: appendCred(host)});
+		window.close();
   });
 	
 	// HTML getter tool, saves HTML in datadump.txt
@@ -47,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function ()
 				}
 			});
 		});
+		window.close();
 	});
 	
 	// Notification test-tool, displays current notification
@@ -66,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function ()
 				//}
 			});
 		});
+		window.close();
 	});
 	
   //Initially hide all elements until authentication
@@ -120,6 +124,7 @@ document.addEventListener('DOMContentLoaded', function ()
 
   // show receipt submission form
   $('#receipt-form-show').click(function(event){
-    chrome.windows.create({"url" : "addreceipt.html", "type" : "popup"});
+		chrome.windows.create({"url" : "addreceipt.html", "type" : "popup"});
+		window.close();
   });
 });

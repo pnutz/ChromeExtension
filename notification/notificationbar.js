@@ -11,5 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		window.parent.postMessage("no", '*');
 	});
 	
-	// window.parent.postMessage("x", '*');
+	$("#x").click(function()
+	{
+		window.parent.postMessage("x", '*');
+	});
 });
