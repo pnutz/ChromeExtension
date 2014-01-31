@@ -46,6 +46,8 @@ $(document).ready(function () {
 	// set datepicker ui element
 	$("#receipt-form-date").datepicker();
 	
+	window.onbeforeunload = function() { return "Receipt data will be discarded."; }
+	
 	// pull data sent from site if it has not been pulled (event occurs after setting current date)
 	chrome.runtime.getBackgroundPage(function (background) {
 		$("#receipt-form-title").val(background.title);
@@ -171,7 +173,7 @@ function sumReceiptItemCosts()
 {
   var total = 0;
   $("#receipt-form-item-list>li>.cost-input").each(function(index){
-    alert(parseFloat($(this).val()));
+    //alert(parseFloat($(this).val()));
     total += parseFloat($(this).val());
   });
   return total;
@@ -245,6 +247,9 @@ document.addEventListener('DOMContentLoaded', function ()
     var receiptData = {"receipt" : formData};			
     receiptData["receipt"]["receipt_items_attributes"] = getReceiptItemsJSON();
     
+		// are you sure dialog should not appear
+		window.onbeforeunload = null;
+		
     //receiptData["receipt"]["total"] = 0;
     //receiptData["receipt"]["transaction_number"] = 0;
     var receiptRequest = $.ajax({
@@ -265,7 +270,8 @@ document.addEventListener('DOMContentLoaded', function ()
 
   $('#receipt-submit-cancel').click(function(event){
     // TODO: This is probably not the best way to create the divs and buttons for confirmation button
-    $('body').append("<div id=\"receipt-cancel-confirm\" title=\"Delete confirmation\">"+
+		window.close();
+    /*$('body').append("<div id=\"receipt-cancel-confirm\" title=\"Delete confirmation\">"+
                      "<p>Are you sure you want to discard the current receipt?</p>"+
                       '<button type="button" class="btn btn-primary" id="receipt-trash">Discard Receipt</button>'+
                       '<button type="button" class="btn" id="receipt-save">Cancel</button>'+
@@ -285,6 +291,6 @@ document.addEventListener('DOMContentLoaded', function ()
     });
     $('#receipt-trash').click(function(e){
       window.close();
-    });
+    });*/
   });
 });

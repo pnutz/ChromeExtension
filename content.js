@@ -1,11 +1,27 @@
 var overflow = document.body.style.overflow;
+var amazon = false;
 
 $(document).ready(function() {
-	/*
+	
 	// display notification if new purchase on amazon
 	if (location.href.indexOf("https://www.amazon.ca/gp/buy/thankyou/handlers/display.html") != -1) {
+		amazon = true;
 		createNotification();
-	}*/
+	}
+	
+	// only run function when user prompts to start, so links keep working
+	/*$(document).click(function(event) {
+		var element = $(event.target);
+		console.log("Element Clicked: " + element.text().trim());
+		// text boxes - why would we pull textbox filled data?
+		//console.log(element.val().trim());
+		
+		if (self !== top)
+		{
+			window.parent.postMessage(element.text().trim(), '*');
+		}
+		//return false;
+	});*/
 });
 
 function createNotification() {
@@ -34,23 +50,29 @@ function createNotification() {
 	iframe.setAttribute("style", 'height: 27px; border: 0px;');
 	iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
 	div.appendChild(iframe);
-	document.body.appendChild(div);
+	document.documentElement.appendChild(div);
 	
-	document.body.style.paddingTop = "27px";
-	document.body.style.overflow = "scroll";
+	document.documentElement.style.paddingTop = "27px";
+	//document.body.style.overflow = "scroll";
 }
 
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
-		if (request.greeting == "getHTML") {
-			sendResponse({
-				data: document.body.outerHTML,
-				farewell: "sendHTML"
-			});
-		}
-		// this is how lastpass does it, by adding a div and iframe element to the current page
-		else if (request.greeting == "showNotification") {
-			createNotification();
+		// do not load for iframe
+		if (self == top)
+		{
+			if (request.greeting == "getHTML")
+			{
+				sendResponse({
+					data: document.body.outerHTML,
+					farewell: "sendHTML"
+				});
+			}
+			// this is how lastpass does it, by adding a div and iframe element to the current page
+			else if (request.greeting == "showNotification")
+			{
+				createNotification();
+			}
 		}
 	});
 	
@@ -61,42 +83,54 @@ chrome.runtime.onMessage.addListener(
 			var notdiv = document.getElementById("notificationdiv");
 			notdiv.parentNode.removeChild(notdiv);
 			
-			document.body.style.paddingTop = "0px";
-			if (overflow === "")
+			document.documentElement.style.paddingTop = "0px";
+			/*if (overflow === "")
 			{
 				document.body.style.overflow = "visible";
 			}
 			else
 			{
 				document.body.style.overflow = overflow;
-			}
+			}*/
 			
 			if (event.data == "yes")
 			{
-				// if new purchase on amazon -- THIS IS SLOW - find html url of different page
-				//if (amazon) 
-				//var orderId = "orderId=";
-				//var ordernumber = location.href.substring(location.href.indexOf(orderId) + orderId.length, location.href.indexOf("&purchaseId"));
-				/*$.ajax({ url: 'https://www.amazon.ca/gp/css/summary/print.html/ref=oh_pi_o00_?ie=UTF8&orderID=' + '702-2831481-3372262',//ordernumber,
-					success: function(data) {
-						chrome.runtime.sendMessage({ greeting: "parseHTML",
-							data: data },
-							function(response) {});
-					}
-				});*/
-				
 				chrome.runtime.sendMessage({ greeting: "parseHTML",
 							data: document.body.outerHTML,
-							text: document.body.innerText },
+							text: document.body.innerText,
+							url: location.href.toLowerCase() },
 							function(response) {});
 			}
 			else if (event.data == "no")
 			{
-			
+				// UNTESTED
+				if (amazon)
+				{
+					var orderId = "orderId=";
+					var orderNumber = location.href.substring(location.href.indexOf(orderId) + orderId.length, location.href.indexOf("&purchaseId"));
+					var url = 'https://www.amazon.ca/gp/css/summary/print.html/ref=oh_pi_o00_?ie=UTF8&orderID=' + orderNumber;
+					$.ajax({ url: url,
+						success: function(data) {
+							var parser = new DOMParser();
+							var doc = parser.parseFromString(data, "text/html");
+							// DOM
+							
+							chrome.runtime.sendMessage({ greeting: "parseHTML",
+								data: data,
+								text: doc.body.innerText,
+								url: url},
+								function(response) {});
+						}
+					});
+				}
 			}
 			else if (event.data == "x")
 			{
 				
+			}
+			else
+			{
+				console.log(event.data);
 			}
 		}
 	});
