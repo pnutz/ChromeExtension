@@ -1,10 +1,21 @@
+// form data
 var title = null;
 var date = null;
-var vendor_name = null;
+var vendor = null;
 var total = null;
-var currency = null;
-var transactionNumber = null;
+var currencies = null;
+var transaction = null;
 var receipt_items = null;
+
+// addReceipt popup sets to true when it opens
+var addReceipt = false;
+var port;
+var receiptPort;
+var pullState = "pull-off";
+// track last non chrome- url tab
+var currentTabId;
+// track receipt popup tab
+var receiptTabId;
 
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
 function stringBetween(string, substring1, substring2) {
@@ -12,12 +23,102 @@ function stringBetween(string, substring1, substring2) {
 	return string.substring(first_index + substring1.length, string.indexOf(substring2, first_index));
 }
 
-// use newdata flag to check in addreceipt to pull? what if not all data was parsed
+function receiptSetup() {
+	// setup message passing connection with current tab
+	port = chrome.tabs.connect(currentTabId, {name: "addReceipt"});
+	console.log("Connected to port: " + port.name + " for tab: " + currentTabId);
+	
+	// maintain existing pull state
+	port.postMessage({"request": pullState});
+	
+	port.onMessage.addListener(function(msg) {
+		console.log("Received msg: " + msg.data + " from port: " + port.name);
+		if (msg.response == "sendDate")
+		{
+			date = msg.data;
+			receiptPort.postMessage({"request": "date"});
+		}
+		else if (msg.response == "sendVendor")
+		{
+			vendor = msg.data;
+			receiptPort.postMessage({"request": "vendor"});
+		}
+		else if (msg.response == "sendTransaction")
+		{
+			transaction = msg.data;
+			receiptPort.postMessage({"request": "transaction"});
+		}
+	});
+	
+	port.onDisconnect.addListener(function(msg) {
+		console.log("Port disconnected from tab " + currentTabId);
+		port = null;
+	});
+}
+
+function receiptPopupSetup() {
+	// setup message passing with add receipt popup
+	receiptPort = chrome.tabs.connect(receiptTabId, {name: "pullBackground"});
+	console.log("Connected to receipt port: " + receiptPort.name + " for tab: " + receiptTabId);
+	receiptPort.onDisconnect.addListener(function(msg) {
+		console.log("Receipt port disconnected " + receiptTabId);
+		receiptPort = null;
+	});
+}
+
+// track latest active tab and store it if it isn't a chrome-extension OR addreceipt popup
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+	chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
+		//console.log("onActivated - " + tab[0].id);
+		if (tab[0].url.match(/chrome-extension:\/\//) && tab[0].url.match(/addreceipt.html/))
+		{
+			receiptTabId = activeInfo.tabId;
+			
+			// setup run in onUpdated
+		}
+		else if (!tab[0].url.match(/chrome-extension:\/\//) && !tab[0].url.match(/chrome:\/\//))
+		{
+			currentTabId = activeInfo.tabId;
+			console.log(currentTabId + activeInfo.windowId);
+			console.log(tab[0].url);
+			
+			if (port != null)
+			{
+				port.disconnect();
+				port = null;
+			}
+			
+			// popup already exists, setup connection to new tab
+			if (addReceipt == true)
+			{
+				receiptSetup();
+			}
+		}
+	});
+});
+
+// track tab load/refreshed
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
+	// tab refreshed, url only set if different from previous state
+	if (changeInfo.status == "complete" && changeInfo.url === undefined)
+	{
+		//console.log("onUpdated " + tabId);
+		if (tabId === currentTabId && addReceipt == true)
+		{
+			receiptSetup();
+		}
+		else if (tabId === receiptTabId && changeInfo.url === undefined)
+		{
+			receiptPopupSetup();
+		}
+	}
+});
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	console.log("onMessage:", request);
 	
 	// uses html sanitizer to remove dangerous tags from the page html
-	if (request.greeting != null && request.greeting == "parseHTML")
+	if (request.greeting == "parseHTML")
 	{
 		// html method
 		function urlX(url) { if(/^https?:\/\//.test(url)) { return url }}
@@ -42,6 +143,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			var orderNumberSearch = "Amazon.ca order number:";
 			var orderTotal = "Order Total:";
 			var money = "$";
+			var currencyStatus = "";
 			var shipped = "Shipment #1:";
 			var shipped_print = "Shipped on";
 			var price = "Price";
@@ -59,10 +161,20 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			console.log("Date: " + date);
 			title = "Amazon Purchase On " + date;
 			console.log("Title: " + title);
-			transactionNumber = stringBetween(text, orderNumberSearch, orderTotal).trim();
-			console.log("Order Number: " + transactionNumber);
-			currency = stringBetween(text, orderTotal, money).trim();
-			console.log("Currency: " + currency);
+			transaction = stringBetween(text, orderNumberSearch, orderTotal).trim();
+			console.log("Order Number: " + transaction);
+			currencyStatus = stringBetween(text, orderTotal, money).trim();
+			currencies = currencyStatus;
+			
+			if (currencies == "")
+			{
+				currencies = "USD";
+			}
+			else if (currencies == "CDN")
+			{
+				currencies = "CAD";
+			}
+			console.log("Currency: " + currencies);
 			if (text.indexOf(shipped) == -1)
 			{
 				total = stringBetween(text, money, shipped_print).trim();
@@ -75,17 +187,31 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			// vendor is amazon
 			if (text.indexOf(sellerProfile) == -1)
 			{
-				vendor_name = stringBetween(text, soldBy, currency).trim();
+				if (currencyStatus == "")
+				{
+					vendor = stringBetween(text, soldBy, money).trim();
+				}
+				else
+				{
+					vendor = stringBetween(text, soldBy, currencyStatus).trim();
+				}
 			}
 			// vendor is not amazon -- for amazon, vendor should be amazon, not individual stores purchased from
 			else
 			{
-				vendor_name = stringBetween(text, soldBy, sellerProfile).trim();
+				vendor = stringBetween(text, soldBy, sellerProfile).trim();
 			}
-			console.log("Vendor: " + vendor_name);
+			console.log("Vendor: " + vendor);
 			
 			// set text after first occurrence of currency - we know total (w/ currency) is displayed at the top
-			text = text.substring(text.indexOf(currency) + currency.length);
+			if (currencyStatus == "")
+			{
+				text = text.substring(text.indexOf(money) + money.length);
+			}
+			else
+			{
+				text = text.substring(text.indexOf(currencyStatus) + currencyStatus.length);
+			}
 			
 			// find number of receipt_items on page
 			var receiptItemCount = 0;
@@ -118,11 +244,23 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 				}
 				
 				// at most 2 decimal places for each price
-				costIndex = text.indexOf(currency);
-				costEnd = text.indexOf(".", costIndex) + 2;
-				cost = text.substring(costIndex + currency.length, costIndex + costEnd);
-				costEnd = cost.indexOf(".") + 3;
-				cost = cost.substring(2, costEnd);
+				if (currencyStatus == "")
+				{
+					costIndex = text.indexOf(money);
+					costEnd = text.indexOf(".", costIndex);
+					cost = text.substring(costIndex + money.length, costIndex + costEnd);
+					costEnd = cost.indexOf(".") + 3;
+					cost = cost.substring(1, costEnd);
+				}
+				else
+				{
+					costIndex = text.indexOf(currencyStatus);
+					costEnd = text.indexOf(".", costIndex) + 2;
+					cost = text.substring(costIndex + currencyStatus.length, costIndex + costEnd);
+					costEnd = cost.indexOf(".") + 3;
+					cost = cost.substring(2, costEnd);
+				}
+
 				
 				name = stringBetween(text, howMany, condition).trim();
 				
@@ -148,11 +286,22 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			text = text.substring(text.indexOf(shipping));
 			
 			// at most 2 decimal places for each price
-			costIndex = text.indexOf(currency);
-			costEnd = text.indexOf(".", costIndex) + 2;
-			cost = text.substring(costIndex + currency.length, costIndex + costEnd);
-			costEnd = cost.indexOf(".") + 3;
-			cost = cost.substring(2, costEnd);
+			if (currencyStatus == "")
+			{
+				costIndex = text.indexOf(money);
+				costEnd = text.indexOf(".", costIndex) + 2;
+				cost = text.substring(costIndex + money.length, costIndex + costEnd);
+				costEnd = cost.indexOf(".") + 3;
+				cost = cost.substring(1, costEnd);
+			}
+			else
+			{
+				costIndex = text.indexOf(currencyStatus);
+				costEnd = text.indexOf(".", costIndex) + 2;
+				cost = text.substring(costIndex + currencyStatus.length, costIndex + costEnd);
+				costEnd = cost.indexOf(".") + 3;
+				cost = cost.substring(2, costEnd);
+			}
 			
 			receipt_items.push({'name': shipping, 'cost': cost, 'quantity': quantity});
 			
@@ -160,11 +309,22 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			text = text.substring(text.indexOf(tax1));
 			
 			// at most 2 decimal places for each price
-			costIndex = text.indexOf(currency);
-			costEnd = text.indexOf(".", costIndex) + 2;
-			cost = text.substring(costIndex + currency.length, costIndex + costEnd);
-			costEnd = cost.indexOf(".") + 3;
-			cost = cost.substring(2, costEnd);
+			if (currencyStatus == "")
+			{
+				costIndex = text.indexOf(money);
+				costEnd = text.indexOf(".", costIndex) + 2;
+				cost = text.substring(costIndex + money.length, costIndex + costEnd);
+				costEnd = cost.indexOf(".") + 3;
+				cost = cost.substring(1, costEnd);
+			}
+			else
+			{
+				costIndex = text.indexOf(currencyStatus);
+				costEnd = text.indexOf(".", costIndex) + 2;
+				cost = text.substring(costIndex + currencyStatus.length, costIndex + costEnd);
+				costEnd = cost.indexOf(".") + 3;
+				cost = cost.substring(2, costEnd);
+			}
 			
 			receipt_items.push({'name': tax1, 'cost': cost, 'quantity': quantity});
 			
@@ -172,11 +332,22 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			text = text.substring(text.indexOf(tax2));
 			
 			// at most 2 decimal places for each price
-			costIndex = text.indexOf(currency);
-			costEnd = text.indexOf(".", costIndex) + 2;
-			cost = text.substring(costIndex + currency.length, costIndex + costEnd);
-			costEnd = cost.indexOf(".") + 3;
-			cost = cost.substring(2, costEnd);
+			if (currencyStatus == "")
+			{
+				costIndex = text.indexOf(money);
+				costEnd = text.indexOf(".", costIndex) + 2;
+				cost = text.substring(costIndex + money.length, costIndex + costEnd);
+				costEnd = cost.indexOf(".") + 3;
+				cost = cost.substring(1, costEnd);
+			}
+			else
+			{
+				costIndex = text.indexOf(currencyStatus);
+				costEnd = text.indexOf(".", costIndex) + 2;
+				cost = text.substring(costIndex + currencyStatus.length, costIndex + costEnd);
+				costEnd = cost.indexOf(".") + 3;
+				cost = cost.substring(2, costEnd);
+			}
 			
 			receipt_items.push({'name': tax2, 'cost': cost, 'quantity': quantity});
 								
@@ -199,5 +370,40 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			];*/
 			chrome.windows.create({"url" : "addreceipt.html", "type" : "popup"});
 		}
+	}
+	// new addReceipt popup - only connects to one at a time, ensure this!
+	else if (request.greeting == "addReceipt" && addReceipt == false)
+	{
+		addReceipt = true;
+		
+		if (currentTabId != null)
+		{
+			receiptSetup();
+		}
+	}
+	else if (request.greeting == "closeReceipt")
+	{
+		console.log("Popup closed - Disconnected from port & receiptPort");
+		addReceipt = false;
+		pullState = "pull-off";
+		
+		if (port != null)
+		{
+			port.disconnect();
+		}
+		port = null;
+		
+		if (receiptPort != null)
+		{
+			receiptPort.disconnect();
+		}
+		receiptPort = null;
+	}
+	// message from addReceipt, requesting data from current tab
+	else if (request.greeting.indexOf("pull-") != -1 && port != null)
+	{
+		// save state of what is being sent
+		pullState = request.greeting;
+		port.postMessage({"request": pullState});
 	}
 });

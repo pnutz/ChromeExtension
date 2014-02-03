@@ -2,13 +2,17 @@
 <html>
   <head>
     <title>Add Receipt</title>
+		<style>
+			.green {
+				color: #3c763d;
+			}
+		</style>
     <link href="css/bootstrap.min.css" rel="stylesheet">
 		<link href="css/jquery-ui-1.9.2.custom.min.css" rel="stylesheet">
     <script src="jquery-2.0.3.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
 		<script src="js/jquery-ui-1.10.4.min.js"></script>
 		<script src="js/jquery.validate.min.js"></script>
-	
     <!--
       - JavaScript and HTML must be in separate files: see our Content Security
       - Policy documentation[1] for details and explanation.
@@ -29,6 +33,8 @@
           <div class="col-md-4">
             <select id="receipt-form-folders" type="text" name="folder_id" class="form-control"></select> 
           </div>
+				</div>
+				<div class="form-group">
           <label for="receipt-form-purchase-types" class="col-md-2 control-label">Purchase Type</label>
           <div class="col-md-4">
             <select id="receipt-form-purchase-types" type="text" name="purchase_type_id" class="form-control"></select> 
@@ -38,9 +44,16 @@
       <div class="row">
         <div class="form-group">
           <label for="receipt-form-date" class="col-md-2 control-label">Receipt Date</label>
-          <div class="col-md-4">
+          <div class="col-md-4 input-group">
+						<span class="input-group-btn">
+							<button type="button" class="btn btn-default btn-md" id="receipt-form-date-button">
+								<span class="glyphicon glyphicon-floppy-save" id="receipt-form-date-glyphicon"></span>
+							</button>
+						</span>
             <input id="receipt-form-date" type="text" name="date" placeholder="Today's Date" class="form-control"> 
           </div>
+				</div>
+				<div class="form-group">
           <label for="receipt-form-currencies" class="col-md-2 control-label">Currency</label>
           <div class="col-md-4">
             <select id="receipt-form-currencies" type="text" name="currency_id" class="form-control"></select>
@@ -53,18 +66,32 @@
           <div class="col-sm-4">
             <input id="receipt-form-title" type="text" name="title" placeholder="Receipt Title" class="form-control"> 
           </div>
+				</div>
+				<div class="form-group">
           <label for="receipt-form-vendor" class="col-sm-2 control-label">Vendor</label>
-          <div class="col-sm-4">
-            <input id="receipt-form-vendor" type="text" name="vendor_name" placeholder="Vendor Name" class="form-control"> 
+          <div class="col-sm-4 input-group">
+						<span class="input-group-btn">
+							<button type="button" class="btn btn-default btn-md" id="receipt-form-vendor-button">
+								<span class="glyphicon glyphicon-floppy-save" id="receipt-form-vendor-glyphicon"></span>
+							</button>
+						</span>
+						<input id="receipt-form-vendor" type="text" name="vendor_name" placeholder="Vendor Name" class="form-control">
           </div>
         </div>
       </div>
       <div class="row">
         <div class="form-group">
           <label for="receipt-form-transaction" class="col-sm-2 control-label">Transaction Number</label>
-          <div class="col-sm-4">
-             <input id="receipt-form-transaction" type="text" name="transaction_number" placeholder="Transaction Number" class="form-control"> 
+          <div class="col-sm-4 input-group">
+						<span class="input-group-btn">
+							<button type="button" class="btn btn-default btn-md" id="receipt-form-transaction-button">
+								<span class="glyphicon glyphicon-floppy-save" id="receipt-form-transaction-glyphicon"></span>
+							</button>
+						</span>
+            <input id="receipt-form-transaction" type="text" name="transaction_number" placeholder="Transaction Number" class="form-control"> 
           </div>
+				</div>
+				<div class="form-group">
           <label for="receipt-form-note" class="control-label col-sm-2">Note</label>
           <div class="col-sm-4">
             <textarea rows="4" cols="50" id="receipt-form-note" name="note" form="receipt-form" class="form-control" placeholder="Notes"></textarea>

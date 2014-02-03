@@ -1,5 +1,7 @@
 var overflow = document.body.style.overflow;
 var amazon = false;
+var htmlGet = "pull-off";
+var incomingPort;
 
 $(document).ready(function() {
 	
@@ -10,18 +12,32 @@ $(document).ready(function() {
 	}
 	
 	// only run function when user prompts to start, so links keep working
-	/*$(document).click(function(event) {
-		var element = $(event.target);
-		console.log("Element Clicked: " + element.text().trim());
-		// text boxes - why would we pull textbox filled data?
-		//console.log(element.val().trim());
-		
-		if (self !== top)
+	$(document).click(function(event) {
+		if (htmlGet != "pull-off" && self !== top)
 		{
-			window.parent.postMessage(element.text().trim(), '*');
+				window.parent.postMessage(element.text().trim(), '*');
+				return false;
 		}
-		//return false;
-	});*/
+		else if (htmlGet != "pull-off")
+		{
+			var element = $(event.target);
+			console.log("Element Clicked: " + element.text().trim());
+			
+			if (htmlGet == "pull-date")
+			{
+				incomingPort.postMessage({response: "sendDate", data: element.text().trim()});
+			}
+			else if (htmlGet == "pull-vendor")
+			{
+				incomingPort.postMessage({response: "sendVendor", data: element.text().trim()});
+			}
+			else if (htmlGet == "pull-transaction")
+			{
+				incomingPort.postMessage({response: "sendTransaction", data: element.text().trim()});
+			}
+			return false;
+		}
+	});
 });
 
 function createNotification() {
@@ -56,8 +72,31 @@ function createNotification() {
 	//document.body.style.overflow = "scroll";
 }
 
+// long-lived connection from background
+chrome.runtime.onConnect.addListener(function(port) {
+	// connect if not an iframe
+	if (self == top)
+	{
+		console.log("Connected to port: " + port.name);
+		console.assert(port.name == "addReceipt");
+		incomingPort = port;
+		
+		port.onMessage.addListener(function(msg) {
+			console.log("Received msg: " + msg.request + " for port: " + port.name);
+			htmlGet = msg.request;
+		});
+		
+		port.onDisconnect.addListener(function() {
+			console.log("Disconnected port");
+			incomingPort = null;
+			htmlGet = "pull-off";
+		});
+	}
+});
+
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
+		console.log("received onMessage connection instead of port connect");
 		// do not load for iframe
 		if (self == top)
 		{
@@ -98,8 +137,7 @@ chrome.runtime.onMessage.addListener(
 				chrome.runtime.sendMessage({ greeting: "parseHTML",
 							data: document.body.outerHTML,
 							text: document.body.innerText,
-							url: location.href.toLowerCase() },
-							function(response) {});
+							url: location.href.toLowerCase() });
 			}
 			else if (event.data == "no")
 			{
@@ -130,7 +168,24 @@ chrome.runtime.onMessage.addListener(
 			}
 			else
 			{
-				console.log(event.data);
+				// message from iframe, element clicked
+				if (htmlGet != "pull-off" && self !== top)
+				{
+					console.log(event.data);
+					window.parent.postMessage(event.data, '*');
+				}
+				else if (htmlGet == "pull-date")
+				{
+					incomingPort.postMessage({response: "sendDate", data: event.data});
+				}
+				else if (htmlGet == "pull-vendor")
+				{
+					incomingPort.postMessage({response: "sendVendor", data: event.data});
+				}
+				else if (htmlGet == "pull-transaction")
+				{
+					incomingPort.postMessage({response: "sendTransaction", data: event.data});
+				}
 			}
 		}
 	});

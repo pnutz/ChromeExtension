@@ -3,104 +3,15 @@
 // found in the LICENSE file.
 
 var receiptItemCount = 1;
-var backgroundCurrency;
+var backgroundCurrencies;
+var background;
+var buttonElements = ['date', 'vendor', 'transaction'];
+var backgroundPort;
 
 // Augmenting the validator plugin, might need a separate JavaScript files for these custom additions
 $.validator.addMethod("notEqual", function(value, element, param) {
     return this.optional(element) || value !== param;
 }, "Please select an option.");
-
-$(document).ready(function () {
-	// Add validation for required fields, etc.
-  $('#receipt-form').validate({
-     rules: {
-       // 'name' attribute of HTML element used to determine rules
-       // E.g. Element with name='title' uses the following rules
-       title: {
-         //minlength: 3,
-         required: true
-       },
-       vendor_name: {
-         required: true
-       }/*,
-			 // changed webapp to allow for receipts with no folder, so doesn't need to be required
-       folder_id: {
-         required: true,
-         notEqual: "0"
-       },*/
-       /*purchase_type_id: {
-         required: true
-       },
-       currency_id: {
-         required: true
-       }*/
-     },
-     highlight: function(element) {
-       $(element).closest('div').addClass('has-error');
-     },
-     unhighlight: function(element) {
-       $(element).closest('div').removeClass('has-error');
-     }
-  });
-	
-	// set datepicker ui element
-	$("#receipt-form-date").datepicker();
-	
-	window.onbeforeunload = function() { return "Receipt data will be discarded."; }
-	
-	// pull data sent from site if it has not been pulled (event occurs after setting current date)
-	chrome.runtime.getBackgroundPage(function (background) {
-		$("#receipt-form-title").val(background.title);
-		if (background.date !== null)
-		{
-			$("#receipt-form-date").val(background.date);
-		}
-		else
-		{
-			// set current date
-			var today = new Date();
-			$("#receipt-form-date").val("" + ("0" + today.getMonth() + 1).slice(-2) + "/" + ("0" + today.getDate()).slice(-2) + "/" + today.getFullYear());
-		}
-		$("#receipt-form-vendor").val(background.vendor_name);
-		$("#receipt-form-total").val(background.total);
-		$("#receipt-form-transaction").val(background.transactionNumber);
-		backgroundCurrency = background.currency;
-		if (background.receipt_items.length > 0)
-		{
-			for (var itemCount = 0; itemCount < background.receipt_items.length; itemCount++) {
-				addReceiptItem();
-				var formItemCount = itemCount + 1;
-				
-				console.log("itemCount: " + itemCount);
-				console.log("receiptItemCount: " + receiptItemCount);
-				console.log(background.receipt_items[itemCount].name);
-				console.log($("#receipt-item-" + formItemCount + "-cost").val());
-				
-				$("#receipt-item-" + formItemCount + "-name").val(background.receipt_items[itemCount].name);
-				$("#receipt-item-" + formItemCount + "-cost").val(background.receipt_items[itemCount].cost);
-				$("#receipt-item-" + formItemCount + "-quantity").val(background.receipt_items[itemCount].quantity);
-				if (background.receipt_items[itemCount].cost < 0)
-				{
-					$("#receipt-item-" + formItemCount + "-is-credit").prop('checked', true);
-				}
-			}
-			
-			$("#receipt-form-total").prop("disabled", "true");
-			$("#receipt-form-total").val(sumReceiptItemCosts());
-		}
-		
-		background.title = null;
-		background.date = null;
-		background.vendor_name = null;
-		background.total = null;
-		background.currency = null;
-		background.transactionNumber = null;
-		background.num_receipt_items = 0;
-		
-		$("#receipt-form-title").focus();
-		$("#receipt-form-title").select();
-	});
-});
 
 function getFolders(data)
 {
@@ -116,10 +27,10 @@ function getCurrencies(data)
     var select = document.getElementById("receipt-form-currencies");
     $.each(data, function(){
       select.options[select.options.length] = new Option(this.code + " - " + this.description, this.id);
-			if (this.code === backgroundCurrency)
+			if (backgroundCurrencies != null && backgroundCurrencies.indexOf(this.code) != -1)
 			{
 				select.selectedIndex = select.options.length - 1;
-				backgroundCurrency = null;
+				backgroundCurrencies = null;
 			}
     });
 }
@@ -139,14 +50,14 @@ function addReceiptItem() {
   var receiptItemId = "receipt-item-" + receiptItemCount;
   $("<label/>", {"for": receiptItemId + "-name", text : "Item " + receiptItemCount + " Name"}).appendTo("#" + listItemId);
   //itemtype aka item name
-  $("<input/>", {"class" : "form-control", 
+  $("<input/>", {"class" : "form-control input-sm", 
                  "id": receiptItemId + "-name", 
                  "name": "itemtype",
                  "type" : "text"}).appendTo("#" + listItemId);
   //cost of item
   var costId = receiptItemId + "-cost";
   $("<label/>", {"for": costId, text : "Cost"}).appendTo("#" + listItemId);
-  $("<input/>", {"class" : "form-control cost-input",
+  $("<input/>", {"class" : "form-control cost-input input-sm",
                  "id": costId, 
                  "name": "cost", 
                  "type" : "text",
@@ -157,7 +68,7 @@ function addReceiptItem() {
   });
 
   $("<label/>", {"for": receiptItemId + "-quantity", text : "Quantity"}).appendTo("#" + listItemId);
-  $("<input/>", {"class" : "form-control",
+  $("<input/>", {"class" : "form-control input-sm",
                  "id": receiptItemId + "-quantity", 
                  "name": "quantity", 
                  "type" : "text"}).appendTo("#" + listItemId);
@@ -215,10 +126,184 @@ function getJsonData(jsonUrl, doneCallback)
      // errorThrown);
   });
 }
-// Run our kitten generation script as soon as the document's DOM is ready.
-document.addEventListener('DOMContentLoaded', function () 
+
+function dataButtonToggle(element)
 {
-  getJsonData(foldersUrl, getFolders);
+	if ($("label[for=receipt-form-" + element + "]").closest('div').hasClass('has-success'))
+	{
+		chrome.runtime.sendMessage({greeting: "pull-off"});
+		
+		$("label[for=receipt-form-" + element + "]").closest('div').removeClass('has-success');
+		$("#receipt-form-" + element + "-glyphicon").removeClass('glyphicon-floppy-saved');
+		$("#receipt-form-" + element + "-glyphicon").addClass('glyphicon-floppy-save');
+		$("#receipt-form-" + element + "-glyphicon").removeClass('green');
+		
+		for (var index = 0; index < buttonElements.length; index++)
+		{
+			if (buttonElements[index] != element)
+			{
+				$("#receipt-form-" + buttonElements[index] + "-button").removeAttr('disabled');
+			}
+		}
+	}
+	else
+	{
+		chrome.runtime.sendMessage({greeting: "pull-" + element});
+		
+		$("label[for=receipt-form-" + element + "]").closest('div').addClass('has-success');
+		$("#receipt-form-" + element + "-glyphicon").removeClass('glyphicon-floppy-save');
+		$("#receipt-form-" + element + "-glyphicon").addClass('glyphicon-floppy-saved');
+		$("#receipt-form-" + element + "-glyphicon").addClass('green');
+		
+		for (var index = 0; index < buttonElements.length; index++)
+		{
+			if (buttonElements[index] != element)
+			{
+				$("#receipt-form-" + buttonElements[index] + "-button").attr('disabled', 'disabled');
+			}
+		}
+	}
+}
+
+// Run our kitten generation script as soon as the document's DOM is ready.
+$(document).ready(function () {
+	// Add validation for required fields, etc.
+  $('#receipt-form').validate({
+     rules: {
+       // 'name' attribute of HTML element used to determine rules
+       // E.g. Element with name='title' uses the following rules
+       title: {
+         //minlength: 3,
+         required: true
+       },
+       vendor_name: {
+         required: true
+       }/*,
+			 // changed webapp to allow for receipts with no folder, so doesn't need to be required
+       folder_id: {
+         required: true,
+         notEqual: "0"
+       },*/
+       /*purchase_type_id: {
+         required: true
+       },
+       currency_id: {
+         required: true
+       }*/
+     },
+     highlight: function(element) {
+       $(element).closest('div').addClass('has-error');
+     },
+     unhighlight: function(element) {
+       $(element).closest('div').removeClass('has-error');
+     }
+  });
+
+	// set datepicker ui element
+	$("#receipt-form-date").datepicker();
+	
+	// toggle date element-click auto-fill
+	$("#receipt-form-date-button").click(function() {
+		dataButtonToggle('date');
+	});
+	
+	// toggle vendor element-click auto-fill
+	$("#receipt-form-vendor-button").click(function() {
+		dataButtonToggle('vendor');
+	});
+	
+	// toggle transaction element-click auto-fill
+	$("#receipt-form-transaction-button").click(function() {
+		dataButtonToggle('transaction');
+	});
+	
+	// prompt user to confirm close
+	window.onbeforeunload = function() {
+		return "Receipt data will be discarded.";
+	}
+	
+	// clean up message passing
+	window.onunload = function() {
+		chrome.runtime.sendMessage({greeting: "closeReceipt"});
+	}
+	
+	// setup message passing between add receipt and background
+	chrome.runtime.sendMessage({greeting: "addReceipt"});
+	
+	// long-lived connection from background
+	chrome.runtime.onConnect.addListener(function(port) {
+		console.log("Connected to background port: " + port.name);
+		console.assert(port.name == "pullBackground");
+		backgroundPort = port;
+		
+		port.onMessage.addListener(function(msg) {
+			console.log("Received msg: " + msg.request + " for port: " + port.name);
+			var contentElement = $("#receipt-form-" + msg.request);
+			contentElement.val(background.window[msg.request]);
+		});
+		
+		port.onDisconnect.addListener(function() {
+			console.log("Disconnected port");
+			backgroundPort = null;
+		});
+	});
+	
+	// pull data sent from site if it has not been pulled (event occurs after setting current date)
+	chrome.runtime.getBackgroundPage(function (loadedBackground) {
+		background = loadedBackground;
+		
+		$("#receipt-form-title").val(background.title);
+		if (background.date !== null)
+		{
+			$("#receipt-form-date").val(background.date);
+		}
+		else
+		{
+			// set current date
+			var today = new Date();
+			$("#receipt-form-date").val("" + ("0" + (today.getMonth() + 1).toString()).slice(-2) + "/" + ("0" + today.getDate()).slice(-2) + "/" + today.getFullYear());
+		}
+		$("#receipt-form-vendor").val(background.vendor);
+		$("#receipt-form-total").val(background.total);
+		$("#receipt-form-transaction").val(background.transaction);
+		backgroundCurrencies = background.currencies;
+		if (background.receipt_items != null && background.receipt_items.length > 0)
+		{
+			for (var itemCount = 0; itemCount < background.receipt_items.length; itemCount++) {
+				addReceiptItem();
+				var formItemCount = itemCount + 1;
+				
+				console.log("itemCount: " + itemCount);
+				console.log("receiptItemCount: " + receiptItemCount);
+				console.log(background.receipt_items[itemCount].name);
+				console.log($("#receipt-item-" + formItemCount + "-cost").val());
+				
+				$("#receipt-item-" + formItemCount + "-name").val(background.receipt_items[itemCount].name);
+				$("#receipt-item-" + formItemCount + "-cost").val(background.receipt_items[itemCount].cost);
+				$("#receipt-item-" + formItemCount + "-quantity").val(background.receipt_items[itemCount].quantity);
+				if (background.receipt_items[itemCount].cost < 0)
+				{
+					$("#receipt-item-" + formItemCount + "-is-credit").prop('checked', true);
+				}
+			}
+			
+			$("#receipt-form-total").prop("disabled", "true");
+			$("#receipt-form-total").val(sumReceiptItemCosts());
+		}
+		
+		background.title = null;
+		background.date = null;
+		background.vendor = null;
+		background.total = null;
+		background.currencies = null;
+		background.transaction = null;
+		background.receipt_items = null;
+		
+		$("#receipt-form-title").focus();
+		$("#receipt-form-title").select();
+	});
+	
+	getJsonData(foldersUrl, getFolders);
   var currenciesUrl = host + controllers["currencies"] + ".json";
   getJsonData(currenciesUrl, getCurrencies);
   var purchaseTypesUrl = host + controllers["purchase_types"] + ".json";
@@ -269,8 +354,10 @@ document.addEventListener('DOMContentLoaded', function ()
   });
 
   $('#receipt-submit-cancel').click(function(event){
-    // TODO: This is probably not the best way to create the divs and buttons for confirmation button
+		// using the default chrome dialog works for chrome.windows popup
 		window.close();
+	
+    // TODO: This is probably not the best way to create the divs and buttons for confirmation button
     /*$('body').append("<div id=\"receipt-cancel-confirm\" title=\"Delete confirmation\">"+
                      "<p>Are you sure you want to discard the current receipt?</p>"+
                       '<button type="button" class="btn btn-primary" id="receipt-trash">Discard Receipt</button>'+
