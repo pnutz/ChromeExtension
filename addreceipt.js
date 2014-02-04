@@ -19,30 +19,33 @@ function getFolders(data)
 {
     var select = document.getElementById("receipt-form-folders");
 		select.options[0] = new Option("", 0);
-    $.each(data, function(){
-      select.options[select.options.length] = new Option(this.name, this.id);
-    });
+		for (var i = 0; i < data.length; i++)
+		{
+			select.options[i+1] = new Option(data[i].name, data[i].id);
+		}
 }
 
 function getCurrencies(data)
 {
     var select = document.getElementById("receipt-form-currencies");
-    $.each(data, function(){
-      select.options[select.options.length] = new Option(this.code + " - " + this.description, this.id);
-			if (backgroundCurrencies != null && backgroundCurrencies.indexOf(this.code) != -1)
+    for (var i = 0; i < data.length; i++)
+		{
+      select.options[i] = new Option(data[i].code + " - " + data[i].description, data[i].id);
+			if (backgroundCurrencies != null && backgroundCurrencies.indexOf(data[i].code) != -1)
 			{
-				select.selectedIndex = select.options.length - 1;
+				select.selectedIndex = i;
 				backgroundCurrencies = null;
 			}
-    });
+    }
 }
 
 function getPurchaseTypes(data)
 {
     var select = document.getElementById("receipt-form-purchase-types");
-    $.each(data, function(){
-      select.options[select.options.length] = new Option(this.name, this.id);
-    });
+    for (var i = 0; i < data.length; i++)
+		{
+      select.options[i] = new Option(data[i].name, data[i].id);
+    }
 }
 
 function addSpanButtonTo(appendId, name, numValue) {
@@ -61,19 +64,22 @@ function addSpanButtonTo(appendId, name, numValue) {
 function addReceiptItem() {
   var listItemId = "receipt-form-list-item-" + receiptItemCount;
   $("<li></li>", {"class": "list-group-item", "id": listItemId}).appendTo("#receipt-form-item-list");
-  var receiptItemId = "receipt-item-" + receiptItemCount;
+	var receiptItemId = "receipt-item-" + receiptItemCount;
+	
+	// itemtype aka item name
 	var nameId = receiptItemId + "-name";
-	$("<div>", {"id": nameId + "-div"}).appendTo("#" + listItemId);
+	// div to hold name
+	$("<div>", {"id": nameId + "-div", "class": "item-name"}).appendTo("#" + listItemId);
   $("<label/>", {"for": nameId, text : "Item " + receiptItemCount + " Name", "class": "control-label"}).appendTo("#" + nameId + "-div");
-  //itemtype aka item name
 	addSpanButtonTo(nameId, "name", receiptItemCount);	
   $("<input/>", {"class" : "form-control input-sm", 
                  "id": nameId, 
                  "name": "itemtype",
                  "type" : "text"}).appendTo("#" + nameId + "-div");
-  //cost of item
+  // cost of item
   var costId = receiptItemId + "-cost";
-	$("<div>", {"id": costId + "-div"}).appendTo("#" + listItemId);
+	// div to hold cost
+	$("<div>", {"id": costId + "-div", "class": "item-cost"}).appendTo("#" + listItemId);
   $("<label/>", {"for": costId, text : "Cost", "class": "control-label"}).appendTo("#" + costId + "-div");
 	addSpanButtonTo(costId, "cost", receiptItemCount);	
   $("<input/>", {"class" : "form-control cost-input input-sm",
@@ -81,13 +87,15 @@ function addReceiptItem() {
                  "name": "cost", 
                  "type" : "text",
                  "value" : "0.00"}).appendTo("#" + costId + "-div");
-  //Register event handler for when the cost changes
+  // Register event handler for when the cost changes
   $("#" + costId).change(function(event){
     $("#receipt-form-total").val(sumReceiptItemCosts());
   });
 
+	// quantity
 	var quantityId = receiptItemId + "-quantity";
-	$("<div>", {"id": quantityId + "-div"}).appendTo("#" + listItemId);
+	// div to hold quantity
+	$("<div>", {"id": quantityId + "-div", "class": "item-quantity"}).appendTo("#" + listItemId);
   $("<label/>", {"for": quantityId, text : "Quantity", "class": "control-label"}).appendTo("#" + quantityId + "-div");
 	addSpanButtonTo(quantityId, "quantity", receiptItemCount);	
   $("<input/>", {"class" : "form-control input-sm",
@@ -105,24 +113,28 @@ function addReceiptItem() {
 function sumReceiptItemCosts()
 {
   var total = 0;
-  $("#receipt-form-item-list>li>.cost-input").each(function(index){
-    //alert(parseFloat($(this).val()));
-    total += parseFloat($(this).val());
-  });
+	var cost_inputs = $("#receipt-form-item-list>li>div.item-cost>.cost-input");
+	for (var index = 0; index < cost_inputs.length; index++)
+	{
+		//alert(parseFloat(cost_inputs.eq(index).val()));
+    total += parseFloat(cost_inputs.eq(index).val());
+	}
   return total;
 }
 
 function getReceiptItemsJSON()
 {
   var receiptItems = {};
-  $("#receipt-form-item-list>li").each(function(index){
-    receiptItems[index] = {};
-    receiptItems[index]["itemtype"] = $(this).find("input[name='itemtype']").val();
-    receiptItems[index]["cost"] = $(this).find("input[name='cost']").val();
-    receiptItems[index]["quantity"] = $(this).find("input[name='quantity']").val();
-    receiptItems[index]["is_credit"] = $(this).find("input[name='is_credit']").is(":checked") ? 1 : 0;
+	var item_list = $("#receipt-form-item-list>li");
+	for (var index = 0; index < item_list.length; index++)
+	{
+		receiptItems[index] = {};
+		receiptItems[index]["itemtype"] = item_list.eq(index).find("div.item-name>input[name='itemtype']").val();
+    receiptItems[index]["cost"] = item_list.eq(index).find("div.item-cost>input[name='cost']").val();
+    receiptItems[index]["quantity"] = item_list.eq(index).find("div.item-quantity>input[name='quantity']").val();
+    receiptItems[index]["is_credit"] = item_list.eq(index).find("input[name='is_credit']").is(":checked") ? 1 : 0;
     receiptItems[index]["_destroy"] = "false";
-  });
+	}
   return receiptItems;
 }
 
@@ -154,113 +166,67 @@ function dataButtonToggle(element, itemCount)
 	// regular form field
 	if (itemCount == null)
 	{
-		if ($("label[for=receipt-form-" + element + "]").closest('div').hasClass('has-success'))
+		var successDiv = $("label[for=receipt-form-" + element + "]").closest('div')
+		if (successDiv.hasClass('has-success'))
 		{
+			successDiv.removeClass('has-success');
+			var glyph = $("#" + activeElement + "-glyphicon");
+			glyph.removeClass('glyphicon-floppy-saved');
+			glyph.addClass('glyphicon-floppy-save');
+			glyph.removeClass('green');
+			
 			chrome.runtime.sendMessage({greeting: "pull-off"});
 			activeElement = null;
-			
-			$("label[for=receipt-form-" + element + "]").closest('div').removeClass('has-success');
-			$("#receipt-form-" + element + "-glyphicon").removeClass('glyphicon-floppy-saved');
-			$("#receipt-form-" + element + "-glyphicon").addClass('glyphicon-floppy-save');
-			$("#receipt-form-" + element + "-glyphicon").removeClass('green');
-			
-			var index, itemIndex;
-			for (index = 0; index < buttonElements.length; index++)
-			{
-				if (buttonElements[index] != element)
-				{
-					$("#receipt-form-" + buttonElements[index] + "-button").removeAttr('disabled');
-				}
-			}
-			for (index = 0; index < receiptItemCount; index++)
-			{
-				for (itemIndex = 0; itemIndex < receiptItemElements.length; itemIndex++)
-				{
-					$("#receipt-item-" + index + "-" + receiptItemElements[itemIndex] + "-button").removeAttr('disabled');
-				}
-			}
 		}
 		else
 		{
+			var glyph = $("#" + activeElement + "-glyphicon");
+			successDiv.removeClass('has-success');
+			glyph.removeClass('glyphicon-floppy-saved');
+			glyph.addClass('glyphicon-floppy-save');
+			glyph.removeClass('green');
+			
 			chrome.runtime.sendMessage({greeting: "pull-" + element});
 			activeElement = "receipt-form-" + element;
 			
-			$("label[for=receipt-form-" + element + "]").closest('div').addClass('has-success');
-			$("#receipt-form-" + element + "-glyphicon").removeClass('glyphicon-floppy-save');
-			$("#receipt-form-" + element + "-glyphicon").addClass('glyphicon-floppy-saved');
-			$("#receipt-form-" + element + "-glyphicon").addClass('green');
-			
-			var index, itemIndex;
-			for (index = 0; index < buttonElements.length; index++)
-			{
-				if (buttonElements[index] != element)
-				{
-					$("#receipt-form-" + buttonElements[index] + "-button").attr('disabled', 'disabled');
-				}
-			}
-			for (index = 0; index < receiptItemCount; index++)
-			{
-				for (itemIndex = 0; itemIndex < receiptItemElements.length; itemIndex++)
-				{
-					$("#receipt-item-" + index + "-" + receiptItemElements[itemIndex] + "-button").attr('disabled', 'disabled');
-				}
-			}
+			glyph = $("#" + activeElement + "-glyphicon");
+			$("label[for=" + activeElement + "]").closest('div').addClass('has-success');
+			glyph.removeClass('glyphicon-floppy-save');
+			glyph.addClass('glyphicon-floppy-saved');
+			glyph.addClass('green');
 		}
 	}
 	// assigned an itemCount
 	else
 	{
-		if ($("label[for=receipt-item-" + itemCount + "-" + element + "]").closest('div').hasClass('has-success'))
+		var successDiv = $("label[for=receipt-item-" + itemCount + "-" + element + "]").closest('div');
+		if (successDiv.hasClass('has-success'))
 		{
+			successDiv.removeClass('has-success');
+			var glyph = $("#" + activeElement + "-glyphicon");
+			glyph.removeClass('glyphicon-floppy-saved');
+			glyph.addClass('glyphicon-floppy-save');
+			glyph.removeClass('green');
+			
 			chrome.runtime.sendMessage({greeting: "pull-off"});
 			activeElement = null;
-			
-			$("label[for=receipt-item-" + itemCount + "-" + element + "]").closest('div').removeClass('has-success');
-			$("#receipt-item-" + itemCount + "-" + element + "-glyphicon").removeClass('glyphicon-floppy-saved');
-			$("#receipt-item-" + itemCount + "-" + element + "-glyphicon").addClass('glyphicon-floppy-save');
-			$("#receipt-item-" + itemCount + "-" + element + "-glyphicon").removeClass('green');
-			
-			var index, itemIndex;
-			for (index = 0; index < buttonElements.length; index++)
-			{
-				$("#receipt-form-" + buttonElements[index] + "-button").removeAttr('disabled');
-			}
-			for (index = 0; index < receiptItemCount; index++)
-			{
-				for (itemIndex = 0; itemIndex < receiptItemElements.length; itemIndex++)
-				{
-					if (index != itemCount || element != receiptItemElements[itemIndex])
-					{
-						$("#receipt-item-" + index + "-" + receiptItemElements[itemIndex] + "-button").removeAttr('disabled');
-					}
-				}
-			}
 		}
 		else
 		{
+			successDiv.removeClass('has-success');
+			var glyph = $("#" + activeElement + "-glyphicon");
+			glyph.removeClass('glyphicon-floppy-saved');
+			glyph.addClass('glyphicon-floppy-save');
+			glyph.removeClass('green');
+		
 			chrome.runtime.sendMessage({greeting: "pull-" + element});
 			activeElement = "receipt-item-" + itemCount + "-" + element;
 			
-			$("label[for=receipt-item-" + itemCount + "-" + element + "]").closest('div').addClass('has-success');
-			$("#receipt-item-" + itemCount + "-" + element + "-glyphicon").removeClass('glyphicon-floppy-save');
-			$("#receipt-item-" + itemCount + "-" + element + "-glyphicon").addClass('glyphicon-floppy-saved');
-			$("#receipt-item-" + itemCount + "-" + element + "-glyphicon").addClass('green');
-			
-			var index, itemIndex;
-			for (index = 0; index < buttonElements.length; index++)
-			{
-				$("#receipt-form-" + buttonElements[index] + "-button").attr('disabled', 'disabled');
-			}
-			for (index = 0; index < receiptItemCount; index++)
-			{
-				for (itemIndex = 0; itemIndex < receiptItemElements.length; itemIndex++)
-				{
-					if (index != itemCount || element != receiptItemElements[itemIndex])
-					{
-						$("#receipt-item-" + index + "-" + receiptItemElements[itemIndex] + "-button").attr('disabled', 'disabled');
-					}
-				}
-			}
+			$("label[for=" + activeElement + "]").closest('div').addClass('has-success');
+			glyph = $("#" + activeElement + "-glyphicon");
+			glyph.removeClass('glyphicon-floppy-save');
+			glyph.addClass('glyphicon-floppy-saved');
+			glyph.addClass('green');
 		}		
 	}
 }
@@ -375,11 +341,6 @@ $(document).ready(function () {
 				addReceiptItem();
 				var formItemCount = itemCount + 1;
 				
-				console.log("itemCount: " + itemCount);
-				console.log("receiptItemCount: " + receiptItemCount);
-				console.log(background.receipt_items[itemCount].name);
-				console.log($("#receipt-item-" + formItemCount + "-cost").val());
-				
 				$("#receipt-item-" + formItemCount + "-name").val(background.receipt_items[itemCount].name);
 				$("#receipt-item-" + formItemCount + "-cost").val(background.receipt_items[itemCount].cost);
 				$("#receipt-item-" + formItemCount + "-quantity").val(background.receipt_items[itemCount].quantity);
@@ -401,8 +362,9 @@ $(document).ready(function () {
 		background.transaction = null;
 		background.receipt_items = null;
 		
-		$("#receipt-form-title").focus();
-		$("#receipt-form-title").select();
+		var form_title = $("#receipt-form-title");
+		form_title.focus();
+		form_title.select();
 	});
 	
 	getJsonData(foldersUrl, getFolders);
@@ -413,8 +375,9 @@ $(document).ready(function () {
 
   $("#receipt-form-item-add").click(function(event){
     addReceiptItem();
-    $("#receipt-form-total").prop("disabled", "true");
-    $("#receipt-form-total").val(sumReceiptItemCosts());
+		var form_total = $("#receipt-form-total");
+    form_total.prop("disabled", "true");
+    form_total.val(sumReceiptItemCosts());
   });
 
   //Capture changes to item list
@@ -423,7 +386,8 @@ $(document).ready(function () {
     var check = $('#receipt-form').valid();
 
     //Serialize everything except receipt items
-    var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > input)"));
+		$("#receipt-form-total").removeAttr("disabled");
+    var formData = formToJSONKeyMap($("#receipt-form").find(":not(#receipt-form-item-list > li > div > input)"));
     
 		// formData["folder_id"] is a string, so cannot 'exactly equal to' 0
     if (formData["folder_id"] == 0)

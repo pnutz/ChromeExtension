@@ -22,10 +22,25 @@ $(document).ready(function() {
 		{
 			var element = $(event.target);
 			console.log("Element Clicked: " + element.text().trim());
-			
 			incomingPort.postMessage({response: htmlGet.substring(6), data: element.text().trim()});
 					
 			return false;
+		}
+	});
+	
+	// get selected text on mouseup
+	$(document).mouseup(function(event) {
+		if (window.getSelection().toString() != "")
+		{
+			if (htmlGet != "pull-off" && self !== top)
+			{
+				window.parent.postMessage(window.getSelection().toString(), '*');
+			}
+			else if (htmlGet != "pull-off")
+			{
+				console.log("Mouse-Up: " + window.getSelection().toString());
+				incomingPort.postMessage({response: htmlGet.substring(6), data: window.getSelection().toString()});
+			}
 		}
 	});
 });
