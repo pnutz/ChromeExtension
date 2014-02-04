@@ -6,6 +6,9 @@ var total = null;
 var currencies = null;
 var transaction = null;
 var receipt_items = null;
+var name;
+var cost;
+var quantity;
 
 // addReceipt popup sets to true when it opens
 var addReceipt = false;
@@ -33,21 +36,9 @@ function receiptSetup() {
 	
 	port.onMessage.addListener(function(msg) {
 		console.log("Received msg: " + msg.data + " from port: " + port.name);
-		if (msg.response == "sendDate")
-		{
-			date = msg.data;
-			receiptPort.postMessage({"request": "date"});
-		}
-		else if (msg.response == "sendVendor")
-		{
-			vendor = msg.data;
-			receiptPort.postMessage({"request": "vendor"});
-		}
-		else if (msg.response == "sendTransaction")
-		{
-			transaction = msg.data;
-			receiptPort.postMessage({"request": "transaction"});
-		}
+		
+		window[msg.data] = msg.data;
+		receiptPort.postMessage({"request": msg.data});
 	});
 	
 	port.onDisconnect.addListener(function(msg) {
@@ -70,12 +61,14 @@ function receiptPopupSetup() {
 chrome.tabs.onActivated.addListener(function(activeInfo) {
 	chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
 		//console.log("onActivated - " + tab[0].id);
+		// if addreceipt popup is opened
 		if (tab[0].url.match(/chrome-extension:\/\//) && tab[0].url.match(/addreceipt.html/))
 		{
 			receiptTabId = activeInfo.tabId;
 			
-			// setup run in onUpdated
+			// messaging setup run in onUpdated
 		}
+		// if a non-chrome-extension site is opened
 		else if (!tab[0].url.match(/chrome-extension:\/\//) && !tab[0].url.match(/chrome:\/\//))
 		{
 			currentTabId = activeInfo.tabId;

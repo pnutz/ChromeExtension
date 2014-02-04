@@ -23,18 +23,8 @@ $(document).ready(function() {
 			var element = $(event.target);
 			console.log("Element Clicked: " + element.text().trim());
 			
-			if (htmlGet == "pull-date")
-			{
-				incomingPort.postMessage({response: "sendDate", data: element.text().trim()});
-			}
-			else if (htmlGet == "pull-vendor")
-			{
-				incomingPort.postMessage({response: "sendVendor", data: element.text().trim()});
-			}
-			else if (htmlGet == "pull-transaction")
-			{
-				incomingPort.postMessage({response: "sendTransaction", data: element.text().trim()});
-			}
+			incomingPort.postMessage({response: htmlGet.substring(6), data: element.text().trim()});
+					
 			return false;
 		}
 	});
@@ -174,17 +164,10 @@ chrome.runtime.onMessage.addListener(
 					console.log(event.data);
 					window.parent.postMessage(event.data, '*');
 				}
-				else if (htmlGet == "pull-date")
+				// format of htmlGet = pull-date, pull-transaction, etc. send response if not off
+				else if (htmlGet.indexOf("pull-") != -1 && htmlGet.indexOf("off") == -1)
 				{
-					incomingPort.postMessage({response: "sendDate", data: event.data});
-				}
-				else if (htmlGet == "pull-vendor")
-				{
-					incomingPort.postMessage({response: "sendVendor", data: event.data});
-				}
-				else if (htmlGet == "pull-transaction")
-				{
-					incomingPort.postMessage({response: "sendTransaction", data: event.data});
+					incomingPort.postMessage({response: htmlGet.substring(6), data: event.data});
 				}
 			}
 		}
