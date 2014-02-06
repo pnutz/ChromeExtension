@@ -4,7 +4,7 @@
 
 var request;
 // Run our kitten generation script as soon as the document's DOM is ready.
-document.addEventListener('DOMContentLoaded', function () 
+document.addEventListener('DOMContentLoaded', function() 
 {
 	// Setup registration link click action
 	$("#registration").click(function()
@@ -56,18 +56,7 @@ document.addEventListener('DOMContentLoaded', function ()
 	$("#show-notification").click(function()
 	{
 		chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
-			chrome.tabs.sendMessage(tab[0].id, {greeting: "showNotification"}, function(response) {
-				//if (response.farewell == "showNotification") {
-					// to use this, add "notifications", to manifest.json permissions
-					/*chrome.notifications.create("", {
-						type: 'basic',
-						iconUrl: 'icon.png',
-						title: response.farewell,
-						message: response.data
-					}, function(notificationId) {
-					});*/
-				//}
-			});
+			chrome.tabs.sendMessage(tab[0].id, {greeting: "showNotification"});
 		});
 		window.close();
 	});
@@ -75,7 +64,6 @@ document.addEventListener('DOMContentLoaded', function ()
   //Initially hide all elements until authentication
   $("#login-div").hide();
   $("#main-div").hide();
-  //$("#receipt-div").hide();
   //If we have an auth Token, use it to login
   if (localStorage["authToken"]) 
   {
@@ -98,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function ()
     var $form = $("#login-form");
     //Get form inputs to disable
     var $inputs = $form.find("input");
+		// unsecure email/password
     var tokenAuth = $form.serialize();
 
     //disable forms temporarily
@@ -114,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function ()
       location.reload(true);
       //store email in localStorage
       localStorage["userEmail"] = $("#user-email").val();
-    }).fail(function (jqXHR, textStatus, errorThrown){
+    }).fail(function (jqXHR, textStatus, errorThr5own){
     // log the error to the console
       console.error(
         "The following error occurred: " + textStatus,
@@ -122,6 +111,13 @@ document.addEventListener('DOMContentLoaded', function ()
     });
   });
 
+	// external message from web application - to receive message when login/logout in web app
+	/*chrome.runtime.onMessageExternal.addListener(
+  function(request, sender, sendResponse) {
+    if (request.openUrlInEditor)
+      openUrl(request.openUrlInEditor);
+  });*/
+	
   // show receipt submission form
   $('#receipt-form-show').click(function(event){
 		chrome.windows.create({"url" : "addreceipt.html", "type" : "popup"});

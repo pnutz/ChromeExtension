@@ -22,8 +22,10 @@ $(document).ready(function() {
 		{
 			var element = $(event.target);
 			console.log("Element Clicked: " + element.text().trim());
-			incomingPort.postMessage({response: htmlGet.substring(6), data: element.text().trim()});
-					
+			if (window.getSelection().toString() === "")
+			{
+				incomingPort.postMessage({response: htmlGet.substring(6), data: element.text().trim()});
+			}
 			return false;
 		}
 	});

@@ -27,6 +27,10 @@
 		"css/bootstrap.min.css",
 		"jquery-2.0.3.min.js"
 	],
+	// for when sending messages from web application to chrome extension
+	//"externally_connectable": {
+	//	"matches": ["*://localhost/*"]
+	//},
   "permissions": [
     "tabs",
 		"background",

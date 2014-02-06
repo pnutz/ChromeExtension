@@ -102,10 +102,10 @@ function addReceiptItem() {
                  "id": quantityId, 
                  "name": "quantity", 
                  "type" : "text"}).appendTo("#" + quantityId + "-div");
-  $("<label/>", {"for": receiptItemId + "-is-credit", text: "Is Credit?"}).appendTo("#" + listItemId);
+  /*$("<label/>", {"for": receiptItemId + "-is-credit", text: "Is Credit?"}).appendTo("#" + listItemId);
   $("<input/>", {"id": receiptItemId + "-is-credit", 
                  "name": "is_credit", 
-                 "type" : "checkbox"}).appendTo("#" + listItemId);
+                 "type" : "checkbox"}).appendTo("#" + listItemId);*/
   receiptItemCount++;
 }
 
@@ -132,7 +132,7 @@ function getReceiptItemsJSON()
 		receiptItems[index]["itemtype"] = item_list.eq(index).find("div.item-name>input[name='itemtype']").val();
     receiptItems[index]["cost"] = item_list.eq(index).find("div.item-cost>input[name='cost']").val();
     receiptItems[index]["quantity"] = item_list.eq(index).find("div.item-quantity>input[name='quantity']").val();
-    receiptItems[index]["is_credit"] = item_list.eq(index).find("input[name='is_credit']").is(":checked") ? 1 : 0;
+    //receiptItems[index]["is_credit"] = item_list.eq(index).find("input[name='is_credit']").is(":checked") ? 1 : 0;
     receiptItems[index]["_destroy"] = "false";
 	}
   return receiptItems;
@@ -404,7 +404,7 @@ $(document).ready(function () {
     //receiptData["receipt"]["total"] = 0;
     //receiptData["receipt"]["transaction_number"] = 0;
     var receiptRequest = $.ajax({
-      url: receiptsUrl,
+      url: appendCred(receiptsUrl),
       type: 'POST',
       data : receiptData,
       dataType: 'json'
