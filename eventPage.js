@@ -107,11 +107,25 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
 	}
 });
 
+// this doesn't work and breaks things
+/*chrome.webRequest.onBeforeRequest.addListener(function (details) {
+	console.log("web request!");
+	for (var i = 0; i < details.requestHeaders.length; ++i) {
+		console.log("header: " + details.requestHeaders[i].name);
+	}
+	// entire web request life cycle has one request ID (several HTTP requests mapped to 1 web request)
+});*/
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	console.log("onMessage:", request);
 	
+	// setup auto-notification for purchase
+	if (request.greeting == "purchaseComplete")
+	{
+		//sender.tab.id
+	}
 	// uses html sanitizer to remove dangerous tags from the page html
-	if (request.greeting == "parseHTML")
+	else if (request.greeting == "parseHTML")
 	{
 		// html method
 		function urlX(url) { if(/^https?:\/\//.test(url)) { return url }}

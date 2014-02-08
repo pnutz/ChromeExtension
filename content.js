@@ -4,6 +4,29 @@ var htmlGet = "pull-off";
 var incomingPort;
 
 $(document).ready(function() {
+	// one case doesn't work -> login on paypal button - is also a input submit. button we want is pay
+	// display notification onclick?
+	$("form[method='post']").find(":input[type='submit']").each(function(index) {
+		var value = $(this).val().toLowerCase();
+		var text = $(this).text().toLowerCase();
+		if (value.indexOf("order") != -1 || text.indexOf("order") != -1 ||
+				value.indexOf("buy") != -1 || text.indexOf("buy") != -1 ||
+				value.indexOf("checkout") != -1 || text.indexOf("checkout") != -1 ||
+				value.indexOf("pay") != -1 || text.indexOf("pay") != -1)
+		{
+			console.log("text: " + text);
+			console.log("id: " + $(this).attr("id"));
+			console.log("class: " + $(this).attr("class"));
+			console.log("name: " + $(this).attr("name"));
+			console.log("value: " + value);
+			
+			$(this).submit(function(event) {
+				chrome.runtime.sendMessage({ greeting: "purchaseComplete" });
+				//createNotification();
+				return;
+			});
+		}
+	});
 	
 	// display notification if new purchase on amazon
 	if (location.href.indexOf("https://www.amazon.ca/gp/buy/thankyou/handlers/display.html") != -1) {
@@ -163,8 +186,7 @@ chrome.runtime.onMessage.addListener(
 							chrome.runtime.sendMessage({ greeting: "parseHTML",
 								data: data,
 								text: doc.body.innerText,
-								url: url},
-								function(response) {});
+								url: url});
 						}
 					});
 				}

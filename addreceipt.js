@@ -3,11 +3,11 @@
 // found in the LICENSE file.
 
 var receiptItemCount = 1;
-var backgroundCurrencies;
+var removedItemCount = 0;
 var background;
-var buttonElements = ['date', 'vendor', 'transaction'];
-var receiptItemElements = ['name', 'cost', 'quantity'];
 var backgroundPort;
+var backgroundCurrencies;
+// element that is toggled for pulling data
 var activeElement;
 
 // Augmenting the validator plugin, might need a separate JavaScript files for these custom additions
@@ -66,6 +66,8 @@ function addReceiptItem() {
   $("<li></li>", {"class": "list-group-item", "id": listItemId}).appendTo("#receipt-form-item-list");
 	var receiptItemId = "receipt-item-" + receiptItemCount;
 	
+	// all element groupings in divs to set colour on-pull and for consistency (ignore for json - formToJSONKeyMap, receipt-submit event)
+	
 	// itemtype aka item name
 	var nameId = receiptItemId + "-name";
 	// div to hold name
@@ -106,6 +108,32 @@ function addReceiptItem() {
   $("<input/>", {"id": receiptItemId + "-is-credit", 
                  "name": "is_credit", 
                  "type" : "checkbox"}).appendTo("#" + listItemId);*/
+
+	// _destroy
+	var destroyId = receiptItemId + "-_destroy";
+	$("<div>", {"id": destroyId + "-div", "class": "item-destroy"}).appendTo("#" + listItemId);
+	$("<button/>", {"id": receiptItemId + "-item-remove", "class": "btn btn-default", "type": "button", text: "Remove Item"}).appendTo("#" + destroyId + "-div");
+	$("<input/>", {"id": destroyId, "type": "hidden", "name": "_destroy", "value": false, "class": "destroy-input"}).appendTo("#" + destroyId + "-div");
+  
+	// Register event handler for when the cost changes
+  $("#" + receiptItemId + "-item-remove").click(function(event){
+		// set _destroy to true and hide receipt item
+		var id = $(this).attr('id');
+		var receiptItemId = id.substring(0, id.indexOf("-item-remove"));
+		$("#" + receiptItemId + "-_destroy").val(true);
+		$("#receipt-form-list-item-" + receiptItemId.substring(13)).hide();
+		
+		removedItemCount++;
+		
+		// re-calculate total and if there are no more receipt items, enable total
+		var form_total = $("#receipt-form-total");
+		if (removedItemCount + 1 === receiptItemCount)
+		{
+			form_total.removeAttr("disabled");
+		}
+    form_total.val(sumReceiptItemCosts());
+  });
+	
   receiptItemCount++;
 }
 
@@ -113,7 +141,8 @@ function addReceiptItem() {
 function sumReceiptItemCosts()
 {
   var total = 0;
-	var cost_inputs = $("#receipt-form-item-list>li>div.item-cost>.cost-input");
+	// check costs where item was not removed
+	var cost_inputs = $("#receipt-form-item-list>li>div.item-destroy>.destroy-input[value='false']").closest("li").find(">div.item-cost>.cost-input");
 	for (var index = 0; index < cost_inputs.length; index++)
 	{
 		//alert(parseFloat(cost_inputs.eq(index).val()));
@@ -133,7 +162,7 @@ function getReceiptItemsJSON()
     receiptItems[index]["cost"] = item_list.eq(index).find("div.item-cost>input[name='cost']").val();
     receiptItems[index]["quantity"] = item_list.eq(index).find("div.item-quantity>input[name='quantity']").val();
     //receiptItems[index]["is_credit"] = item_list.eq(index).find("input[name='is_credit']").is(":checked") ? 1 : 0;
-    receiptItems[index]["_destroy"] = "false";
+    receiptItems[index]["_destroy"] = item_list.eq(index).find("input[name='_destroy']").val();;
 	}
   return receiptItems;
 }
@@ -166,7 +195,8 @@ function dataButtonToggle(element, itemCount)
 	// regular form field
 	if (itemCount == null)
 	{
-		var successDiv = $("label[for=receipt-form-" + element + "]").closest('div')
+		var successDiv = $("label[for=receipt-form-" + element + "]").closest('div');
+		// toggled element is already selected
 		if (successDiv.hasClass('has-success'))
 		{
 			successDiv.removeClass('has-success');
@@ -178,13 +208,19 @@ function dataButtonToggle(element, itemCount)
 			chrome.runtime.sendMessage({greeting: "pull-off"});
 			activeElement = null;
 		}
+		// toggled element is not selected
 		else
 		{
-			var glyph = $("#" + activeElement + "-glyphicon");
-			successDiv.removeClass('has-success');
-			glyph.removeClass('glyphicon-floppy-saved');
-			glyph.addClass('glyphicon-floppy-save');
-			glyph.removeClass('green');
+			// turn off element selected
+			if (activeElement != null)
+			{
+				successDiv = $("label[for=" + activeElement + "]").closest('div');
+				var glyph = $("#" + activeElement + "-glyphicon");
+				successDiv.removeClass('has-success');
+				glyph.removeClass('glyphicon-floppy-saved');
+				glyph.addClass('glyphicon-floppy-save');
+				glyph.removeClass('green');
+			}
 			
 			chrome.runtime.sendMessage({greeting: "pull-" + element});
 			activeElement = "receipt-form-" + element;
@@ -200,6 +236,7 @@ function dataButtonToggle(element, itemCount)
 	else
 	{
 		var successDiv = $("label[for=receipt-item-" + itemCount + "-" + element + "]").closest('div');
+		// toggled element is already selected
 		if (successDiv.hasClass('has-success'))
 		{
 			successDiv.removeClass('has-success');
@@ -211,13 +248,19 @@ function dataButtonToggle(element, itemCount)
 			chrome.runtime.sendMessage({greeting: "pull-off"});
 			activeElement = null;
 		}
+		// toggled element is not selected
 		else
 		{
-			successDiv.removeClass('has-success');
-			var glyph = $("#" + activeElement + "-glyphicon");
-			glyph.removeClass('glyphicon-floppy-saved');
-			glyph.addClass('glyphicon-floppy-save');
-			glyph.removeClass('green');
+			// turn off element selected
+			if (activeElement != null)
+			{
+				successDiv = $("label[for=" + activeElement + "]").closest('div');
+				successDiv.removeClass('has-success');
+				var glyph = $("#" + activeElement + "-glyphicon");
+				glyph.removeClass('glyphicon-floppy-saved');
+				glyph.addClass('glyphicon-floppy-save');
+				glyph.removeClass('green');
+			}
 		
 			chrome.runtime.sendMessage({greeting: "pull-" + element});
 			activeElement = "receipt-item-" + itemCount + "-" + element;

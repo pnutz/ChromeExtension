@@ -19,8 +19,9 @@
 		}
 	],
 	"background": {
-		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "eventPage.js"],
-		"persistent": false
+		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "eventPage.js"]
+		// eventPage (persistent false) doesn't work with webRequest permissions
+		//, "persistent": false
 	},
 	"web_accessible_resources": [
 		"/notification/*",
@@ -33,6 +34,7 @@
 	//},
   "permissions": [
     "tabs",
+		"webRequest",
 		"background",
     "http://localhost:3000/api/v1/tokens.json"
   ]
