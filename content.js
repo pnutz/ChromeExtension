@@ -6,27 +6,42 @@ var incomingPort;
 $(document).ready(function() {
 	// one case doesn't work -> login on paypal button - is also a input submit. button we want is pay
 	// display notification onclick?
-	$("form[method='post']").find(":input[type='submit']").each(function(index) {
-		var value = $(this).val().toLowerCase();
-		var text = $(this).text().toLowerCase();
+	var postButtons = $("form[method='post']").find(":input[type='submit']");
+	var length = postButtons.length;
+	for (var index = 0; index < length; index++)
+	{
+		var submitElement = postButtons.eq(index);
+		var value = submitElement.val().toLowerCase();
+		var text = submitElement.text().toLowerCase();
 		if (value.indexOf("order") != -1 || text.indexOf("order") != -1 ||
 				value.indexOf("buy") != -1 || text.indexOf("buy") != -1 ||
 				value.indexOf("checkout") != -1 || text.indexOf("checkout") != -1 ||
-				value.indexOf("pay") != -1 || text.indexOf("pay") != -1)
+				value.indexOf("pay") != -1 || text.indexOf("pay") != -1
+				// "sign in" for testing with GMAIL
+				|| value.indexOf("sign in") != -1)
 		{
 			console.log("text: " + text);
-			console.log("id: " + $(this).attr("id"));
-			console.log("class: " + $(this).attr("class"));
-			console.log("name: " + $(this).attr("name"));
+			console.log("id: " + submitElement.attr("id"));
+			console.log("class: " + submitElement.attr("class"));
+			console.log("name: " + submitElement.attr("name"));
 			console.log("value: " + value);
 			
-			$(this).submit(function(event) {
+			// submission with <ENTER> triggers HERE2
+			submitElement.click(function(event) {
+				//alert("HERE2");
+				chrome.runtime.sendMessage({ greeting: "purchaseComplete" });
+			});
+			
+			/*var form = submitElement.closest("form");
+			// when detected button is submitted, send to background to check if page actually loaded
+			form.submit(function(event) {
+				alert("HERE");
 				chrome.runtime.sendMessage({ greeting: "purchaseComplete" });
 				//createNotification();
 				return;
-			});
+			});*/
 		}
-	});
+	}
 	
 	// display notification if new purchase on amazon
 	if (location.href.indexOf("https://www.amazon.ca/gp/buy/thankyou/handlers/display.html") != -1) {
@@ -108,7 +123,7 @@ chrome.runtime.onConnect.addListener(function(port) {
 	if (self == top)
 	{
 		console.log("Connected to port: " + port.name);
-		console.assert(port.name == "addReceipt");
+		console.assert(port.name == "newReceipt");
 		incomingPort = port;
 		
 		port.onMessage.addListener(function(msg) {

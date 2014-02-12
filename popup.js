@@ -118,9 +118,9 @@ document.addEventListener('DOMContentLoaded', function()
       openUrl(request.openUrlInEditor);
   });*/
 	
-  // show receipt submission form
+  // ask background to show receipt submission form
   $('#receipt-form-show').click(function(event){
-		chrome.windows.create({"url" : "addreceipt.html", "type" : "popup"});
+		chrome.extension.sendMessage({greeting: "addReceipt"});
 		window.close();
   });
 });

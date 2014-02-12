@@ -143,7 +143,8 @@ function sumReceiptItemCosts()
   var total = 0;
 	// check costs where item was not removed
 	var cost_inputs = $("#receipt-form-item-list>li>div.item-destroy>.destroy-input[value='false']").closest("li").find(">div.item-cost>.cost-input");
-	for (var index = 0; index < cost_inputs.length; index++)
+	var length = cost_inputs.length;
+	for (var index = 0; index < length; index++)
 	{
 		//alert(parseFloat(cost_inputs.eq(index).val()));
     total += parseFloat(cost_inputs.eq(index).val());
@@ -155,14 +156,16 @@ function getReceiptItemsJSON()
 {
   var receiptItems = {};
 	var item_list = $("#receipt-form-item-list>li");
-	for (var index = 0; index < item_list.length; index++)
+	var length = item_list.length;
+	for (var index = 0; index < length; index++)
 	{
+		var item = item_list.eq(index);
 		receiptItems[index] = {};
-		receiptItems[index]["itemtype"] = item_list.eq(index).find("div.item-name>input[name='itemtype']").val();
-    receiptItems[index]["cost"] = item_list.eq(index).find("div.item-cost>input[name='cost']").val();
-    receiptItems[index]["quantity"] = item_list.eq(index).find("div.item-quantity>input[name='quantity']").val();
-    //receiptItems[index]["is_credit"] = item_list.eq(index).find("input[name='is_credit']").is(":checked") ? 1 : 0;
-    receiptItems[index]["_destroy"] = item_list.eq(index).find("input[name='_destroy']").val();;
+		receiptItems[index]["itemtype"] = item.find("div.item-name>input[name='itemtype']").val();
+    receiptItems[index]["cost"] = item.find("div.item-cost>input[name='cost']").val();
+    receiptItems[index]["quantity"] = item.find("div.item-quantity>input[name='quantity']").val();
+    //receiptItems[index]["is_credit"] = item.find("input[name='is_credit']").is(":checked") ? 1 : 0;
+    receiptItems[index]["_destroy"] = item.find("input[name='_destroy']").val();;
 	}
   return receiptItems;
 }
@@ -337,7 +340,7 @@ $(document).ready(function () {
 	}
 	
 	// setup message passing between add receipt and background
-	chrome.runtime.sendMessage({greeting: "addReceipt"});
+	chrome.runtime.sendMessage({greeting: "newReceipt"});
 	
 	// long-lived connection from background
 	chrome.runtime.onConnect.addListener(function(port) {
@@ -378,23 +381,28 @@ $(document).ready(function () {
 		$("#receipt-form-total").val(background.total);
 		$("#receipt-form-transaction").val(background.transaction);
 		backgroundCurrencies = background.currencies;
-		if (background.receipt_items != null && background.receipt_items.length > 0)
+		var bgReceiptItems = background.receipt_items;
+		if (bgReceiptItems != null)
 		{
-			for (var itemCount = 0; itemCount < background.receipt_items.length; itemCount++) {
-				addReceiptItem();
-				var formItemCount = itemCount + 1;
-				
-				$("#receipt-item-" + formItemCount + "-name").val(background.receipt_items[itemCount].name);
-				$("#receipt-item-" + formItemCount + "-cost").val(background.receipt_items[itemCount].cost);
-				$("#receipt-item-" + formItemCount + "-quantity").val(background.receipt_items[itemCount].quantity);
-				if (background.receipt_items[itemCount].cost < 0)
-				{
-					$("#receipt-item-" + formItemCount + "-is-credit").prop('checked', true);
+			var length = bgReceiptItems.length;
+			if (length > 0)
+			{
+				for (var itemCount = 0; itemCount < length; itemCount++) {
+					addReceiptItem();
+					var formItemCount = itemCount + 1;
+					
+					$("#receipt-item-" + formItemCount + "-name").val(bgReceiptItems[itemCount].name);
+					$("#receipt-item-" + formItemCount + "-cost").val(bgReceiptItems[itemCount].cost);
+					$("#receipt-item-" + formItemCount + "-quantity").val(bgReceiptItems[itemCount].quantity);
+					if (bgReceiptItems[itemCount].cost < 0)
+					{
+						$("#receipt-item-" + formItemCount + "-is-credit").prop('checked', true);
+					}
 				}
+				
+				$("#receipt-form-total").prop("disabled", "true");
+				$("#receipt-form-total").val(sumReceiptItemCosts());
 			}
-			
-			$("#receipt-form-total").prop("disabled", "true");
-			$("#receipt-form-total").val(sumReceiptItemCosts());
 		}
 		
 		background.title = null;
@@ -465,28 +473,5 @@ $(document).ready(function () {
   $('#receipt-submit-cancel').click(function(event){
 		// using the default chrome dialog works for chrome.windows popup
 		window.close();
-	
-    // TODO: This is probably not the best way to create the divs and buttons for confirmation button
-    /*$('body').append("<div id=\"receipt-cancel-confirm\" title=\"Delete confirmation\">"+
-                     "<p>Are you sure you want to discard the current receipt?</p>"+
-                      '<button type="button" class="btn btn-primary" id="receipt-trash">Discard Receipt</button>'+
-                      '<button type="button" class="btn" id="receipt-save">Cancel</button>'+
-                      "</div>");
-    $("#receipt-cancel-confirm").dialog({
-         closeOnEscape: false,
-         open: function(event, ui) {
-           $(".ui-dialog-titlebar-close").hide(); 
-         },
-         resizable: false
-    });
-
-    // Attach confirmation listeners
-    $('#receipt-save').click(function(e){
-      $('#receipt-cancel-confirm').dialog('close');
-      $('#receipt-cancel-confirm').remove();
-    });
-    $('#receipt-trash').click(function(e){
-      window.close();
-    });*/
   });
 });
