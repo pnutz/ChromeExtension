@@ -21,6 +21,10 @@ var removeReceipt = null;
 
 // purchase notification
 var purchaseTabId;
+var pendingRequestId;
+// status variable to track purchase notification
+var notificationStatusArray = ["noPurchase", "onBeforeRequest", "onComplete", "onUpdate"];
+var notificationStatus = notificationStatusArray[0];
 
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
 function stringBetween(string, substring1, substring2) {
@@ -120,6 +124,13 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
 		{
 			receiptPopupSetup();
 		}
+		
+		// purchase notification handling (waiting for next page to load)
+		if (tabId === purchaseTabId && notificationStatus === notificationStatusArray[3])
+		{
+			chrome.tabs.sendMessage(tabId, {greeting: "showNotification"});
+			notificationStatus = notificationStatusArray[0];
+		}
 	}
 });
 
@@ -131,21 +142,70 @@ chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 		removeReceipt = null;
 		chrome.windows.create({"url" : "addreceipt.html", "type" : "popup"});
 	}
+	// purchase notification handling (if tab is closed)
+	else if (tabId === purchaseTabId)
+	{
+		notificationStatus = notificationStatusArray[0];
+	}
 });
 
-// SINCE ASYNCHRONOUS, IF CHROME MESSAGE COMES LATER, POST WILL BE MISSED
+// machine learning, store successful url, fail url
 
-// ONE POSTBACK is same url, check if it changes on next postback? CONFIRM THIS
+// all HTTP requests fall under:
+// onCompleted - CAN REDIRECT
+// onErrorOccurred - if not completed - don't worry about
+// onBeforeRedirect
 
-/*chrome.webRequest.onBeforeRedirect.addListener(function (details) {
-	console.log(details);
-	console.log("purchase WEBREQUEST " + purchaseTabId);
-}, {urls: ["<all_urls>"]});*/
+// timer after button press? no
+// url? frame? - source address
+// is it ever posted from iframe?! should assume no until proven otherwise
+// onbeforerequest - what data can i pull to know? - can find out if "pay with paypal" button (login)
 
-// completed postback
-chrome.webRequest.onCompleted.addListener(function (details) {
-	if (details.method == "POST" && purchaseTabId === details.tabId)
+// web request types
+// main_frame: main window
+// sub_frame: iframe
+// xmlhttprequest: AJAX, data transfer for URL without full page refresh (not just xml)
+// ignore: stylesheet, script, image, object, other
+
+chrome.webRequest.onBeforeRequest.addListener(function (details) {
+	if (details.method == "POST" && details.tabId === purchaseTabId && (details.type == "main_frame" || details.type == "sub_type" || details.type == "xmlhttprequest"))
 	{
+		console.log("onBeforeRequest");
+		console.log(details);
+		// currently only accepts one request, to prevent overwriting
+		if (notificationStatus == notificationStatusArray[1])
+		{
+			pendingRequestId = details.requestId;
+			notificationStatus = notificationStatusArray[2];
+		}
+	}
+}, {urls: ["<all_urls>"]}, ["requestBody"]);
+
+// error detected, clean up request
+chrome.webRequest.onErrorOccurred.addListener(function (details) {
+	if (details.requestId === pendingRequestId)
+	{
+		console.log("onErrorOccurred");
+		console.log(details);
+		notificationStatus = notificationStatusArray[0];
+		purchaseTabId = null;
+	}
+}, {urls: ["<all_urls>"]});
+
+chrome.webRequest.onBeforeRedirect.addListener(function (details) {
+	if (details.requestId === pendingRequestId)
+	{
+		console.log("onBeforeRedirect");
+		notificationStatus = notificationStatusArray[3];
+		console.log(details);
+	}
+}, {urls: ["<all_urls>"]});
+
+chrome.webRequest.onCompleted.addListener(function (details) {
+		if (details.requestId === pendingRequestId)
+	{
+		console.log("onCompleted");
+		notificationStatus = notificationStatusArray[3];
 		console.log(details);
 	}
 }, {urls: ["<all_urls>"]});
@@ -199,8 +259,16 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			
 		// setup auto-notification for purchase
 		case "purchaseComplete":
-			purchaseTabId = sender.tab.id;
-			console.log("purchaseComplete " + purchaseTabId);
+			if (notificationStatus === notificationStatusArray[0])
+			{
+				purchaseTabId = sender.tab.id;
+				notificationStatus = notificationStatusArray[1];
+				console.log(notificationStatus + ": purchaseComplete " + purchaseTabId);
+			}
+			else
+			{
+				console.log("purchaseComplete rejected from " + sender.tab.id);
+			}
 			break;
 		
 		// uses html sanitizer to remove dangerous tags from the page html
@@ -211,8 +279,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			var output = request.data;
 			output = html_sanitize(request.data, urlX, idX);
 			// sanitized html
-			//console.log(output);
-			/*var parser = new DOMParser();
+			/*console.log(output);
+			var parser = new DOMParser();
 			var doc = parser.parseFromString(output, "text/html");
 			// DOM
 			console.log(doc);*/

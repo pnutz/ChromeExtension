@@ -4,8 +4,10 @@ var htmlGet = "pull-off";
 var incomingPort;
 
 $(document).ready(function() {
+	console.log("document ready");
+	
 	// one case doesn't work -> login on paypal button - is also a input submit. button we want is pay
-	// display notification onclick?
+	// cancel and return to best buy. // create a paypal account // Pay with my PayPal account
 	var postButtons = $("form[method='post']").find(":input[type='submit']");
 	var length = postButtons.length;
 	for (var index = 0; index < length; index++)
@@ -18,7 +20,9 @@ $(document).ready(function() {
 				value.indexOf("checkout") != -1 || text.indexOf("checkout") != -1 ||
 				value.indexOf("pay") != -1 || text.indexOf("pay") != -1
 				// "sign in" for testing with GMAIL
-				|| value.indexOf("sign in") != -1)
+				|| value.indexOf("sign in") != -1
+				// "Create Receipt" for testing with webapp
+				|| value.indexOf("create receipt") != -1)
 		{
 			console.log("text: " + text);
 			console.log("id: " + submitElement.attr("id"));
