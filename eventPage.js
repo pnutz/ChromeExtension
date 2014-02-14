@@ -22,9 +22,21 @@ var removeReceipt = null;
 // purchase notification
 var purchaseTabId;
 var pendingRequestId;
-// status variable to track purchase notification
-var notificationStatusArray = ["noPurchase", "onBeforeRequest", "onComplete", "onUpdate"];
+var getRequestId;
+// status variable to track purchase notification (all main_frame web requests)
+/*
+noPurchase - nothing happening
+POSTRequest - found POST
+POSTComplete - completed found POST
+GETRequest - found a GET following POSTComplete
+UpdateLoading - Loading URL after GET Request (CAN SKIP - but don't know if changed page?! [url != undefined])
+GETComplete - (any) GET request was completed
+UpdateComplete - Completely Loaded URL
+*/
+var notificationStatusArray = ["noPurchase", "POSTRequest", "POSTComplete", "GETRequest", "UpdateLoading", "GETComplete", "UpdateComplete"];
 var notificationStatus = notificationStatusArray[0];
+var notificationTimeout;
+var TIMEOUT = 10000;
 
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
 function stringBetween(string, substring1, substring2) {
@@ -77,6 +89,18 @@ function receiptPopupSetup() {
 	});
 }
 
+function setNotificationStatus(index) {
+	notificationStatus = notificationStatusArray[index];
+	clearTimeout(notificationTimeout);
+	notificationTimeout = setTimeout(function() {
+		if (notificationStatus === notificationStatusArray[index])
+		{
+			console.log(notificationStatus + " TIMEOUT");
+			notificationStatus = notificationStatusArray[0];
+		}
+	}, TIMEOUT);
+}
+
 // track latest active tab and store it if it isn't a chrome-extension OR addreceipt popup
 chrome.tabs.onActivated.addListener(function(activeInfo) {
 	chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
@@ -102,12 +126,11 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 	});
 });
 
-// track tab load/refreshed
+// track tab changes
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
-	// tab created or refreshed (changeInfo.url only set if different from previous state)
+	// tab created or refreshed (changeInfo.url only set if different from previous state - in loading status)
 	if (changeInfo.status == "complete" && changeInfo.url === undefined)
-	{
-		//console.log("onUpdated " + tabId);
+	{	
 		// setup communication if tab not addreceipt refreshed/created, but addreceipt exists
 		if (newReceipt != null && tabId != newReceipt)
 		{
@@ -125,13 +148,25 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
 			receiptPopupSetup();
 		}
 		
-		// purchase notification handling (waiting for next page to load)
-		if (tabId === purchaseTabId && notificationStatus === notificationStatusArray[3])
+		// purchase notification handling (waiting for next page to load) -- next complete page load
+		if (tabId === purchaseTabId && notificationStatus === notificationStatusArray[6])
 		{
 			chrome.tabs.sendMessage(tabId, {greeting: "showNotification"});
+			
 			notificationStatus = notificationStatusArray[0];
+			clearTimeout(notificationTimeout);
 		}
 	}
+	// looking for redirect
+	else if (changeInfo.status == "loading" && changeInfo.url != undefined)
+	{
+		if (tabId === purchaseTabId && notificationStatus === notificationStatusArray[4])
+		{
+			setNotificationStatus(5);
+		}
+	}
+	console.log(notificationStatus + " onUpdated");
+	console.log(changeInfo);
 });
 
 // track tab removed
@@ -146,6 +181,9 @@ chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 	else if (tabId === purchaseTabId)
 	{
 		notificationStatus = notificationStatusArray[0];
+		clearTimeout(notificationTimeout);
+		
+		console.log(notificationStatus);
 	}
 });
 
@@ -156,56 +194,91 @@ chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 // onErrorOccurred - if not completed - don't worry about
 // onBeforeRedirect
 
-// timer after button press? no
-// url? frame? - source address
-// is it ever posted from iframe?! should assume no until proven otherwise
-// onbeforerequest - what data can i pull to know? - can find out if "pay with paypal" button (login)
-
 // web request types
 // main_frame: main window
 // sub_frame: iframe
 // xmlhttprequest: AJAX, data transfer for URL without full page refresh (not just xml)
 // ignore: stylesheet, script, image, object, other
 
+// currently only accepts one purchase request, to prevent overwriting
 chrome.webRequest.onBeforeRequest.addListener(function (details) {
-	if (details.method == "POST" && details.tabId === purchaseTabId && (details.type == "main_frame" || details.type == "sub_type" || details.type == "xmlhttprequest"))
+	if (details.tabId === purchaseTabId && details.type == "main_frame")
 	{
-		console.log("onBeforeRequest");
-		console.log(details);
-		// currently only accepts one request, to prevent overwriting
-		if (notificationStatus == notificationStatusArray[1])
+		// post request detected
+		if (details.method == "POST" && notificationStatus == notificationStatusArray[1])
 		{
 			pendingRequestId = details.requestId;
-			notificationStatus = notificationStatusArray[2];
+			
+			setNotificationStatus(2);
 		}
+		// get request detected
+		else if (details.method == "GET" && notificationStatus == notificationStatusArray[3])
+		{
+			getRequestId = details.requestId;
+			
+			setNotificationStatus(4);
+		}
+		
+		console.log(notificationStatus + " onBeforeRequest");
+		console.log(details);
 	}
 }, {urls: ["<all_urls>"]}, ["requestBody"]);
 
 // error detected, clean up request
 chrome.webRequest.onErrorOccurred.addListener(function (details) {
-	if (details.requestId === pendingRequestId)
+	if (details.tabId === purchaseTabId)
 	{
-		console.log("onErrorOccurred");
+		if (details.requestId === pendingRequestId || details.requestId === getRequestId)
+		{
+			notificationStatus = notificationStatusArray[0];
+			clearTimeout(notificationTimeout);
+
+			purchaseTabId = null;
+			getRequestId = null;
+		}
+		
+		console.log(notificationStatus + " onErrorOccurred");
 		console.log(details);
-		notificationStatus = notificationStatusArray[0];
-		purchaseTabId = null;
 	}
 }, {urls: ["<all_urls>"]});
 
 chrome.webRequest.onBeforeRedirect.addListener(function (details) {
-	if (details.requestId === pendingRequestId)
+	if (details.type == "main_frame")
 	{
-		console.log("onBeforeRedirect");
-		notificationStatus = notificationStatusArray[3];
+		// post request completed
+		if (details.requestId === pendingRequestId && notificationStatus === notificationStatusArray[2])
+		{
+			setNotificationStatus(3);
+		}
+		// if get request was a redirect
+		else if (details.requestId === getRequestId)
+		{
+			setNotificationStatus(3);
+			getRequestId = null;
+		}
+		
+		console.log(notificationStatus + " onBeforeRedirect");
 		console.log(details);
 	}
 }, {urls: ["<all_urls>"]});
 
+// get requests are only completed
 chrome.webRequest.onCompleted.addListener(function (details) {
-		if (details.requestId === pendingRequestId)
+	if (details.type == "main_frame")
 	{
-		console.log("onCompleted");
-		notificationStatus = notificationStatusArray[3];
+		// post request completed
+		if (details.requestId === pendingRequestId && notificationStatus === notificationStatusArray[2])
+		{
+			setNotificationStatus(3);
+		}
+		// a get request completed
+		else if (details.requestId === getRequestId)
+		{
+			setNotificationStatus(6);
+			getRequestId = null;
+		}
+		
+		console.log(notificationStatus + " onCompleted");
 		console.log(details);
 	}
 }, {urls: ["<all_urls>"]});
@@ -261,8 +334,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		case "purchaseComplete":
 			if (notificationStatus === notificationStatusArray[0])
 			{
+				setNotificationStatus(1);
+				
 				purchaseTabId = sender.tab.id;
-				notificationStatus = notificationStatusArray[1];
 				console.log(notificationStatus + ": purchaseComplete " + purchaseTabId);
 			}
 			else

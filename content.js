@@ -4,10 +4,12 @@ var htmlGet = "pull-off";
 var incomingPort;
 
 $(document).ready(function() {
-	console.log("document ready");
+	if (self === top)
+	{
+		console.log("document ready");
+	}
 	
-	// one case doesn't work -> login on paypal button - is also a input submit. button we want is pay
-	// cancel and return to best buy. // create a paypal account // Pay with my PayPal account
+	// "paypal" "pay with paypal" "bestbuy" don't work
 	var postButtons = $("form[method='post']").find(":input[type='submit']");
 	var length = postButtons.length;
 	for (var index = 0; index < length; index++)
@@ -15,21 +17,23 @@ $(document).ready(function() {
 		var submitElement = postButtons.eq(index);
 		var value = submitElement.val().toLowerCase();
 		var text = submitElement.text().toLowerCase();
-		if (value.indexOf("order") != -1 || text.indexOf("order") != -1 ||
-				value.indexOf("buy") != -1 || text.indexOf("buy") != -1 ||
-				value.indexOf("checkout") != -1 || text.indexOf("checkout") != -1 ||
-				value.indexOf("pay") != -1 || text.indexOf("pay") != -1
+		value = " " + value + " ";
+		text = " " + text + " ";
+		
+		if (value.indexOf(" order ") != -1 || text.indexOf(" order ") != -1 ||
+				value.indexOf(" buy ") != -1 || text.indexOf(" buy ") != -1 ||
+				value.indexOf(" checkout ") != -1 || text.indexOf(" checkout ") != -1 ||
+				value.indexOf(" pay ") != -1 || text.indexOf(" pay ") != -1
 				// "sign in" for testing with GMAIL
-				|| value.indexOf("sign in") != -1
+				|| value.indexOf(" sign in ") != -1
 				// "Create Receipt" for testing with webapp
-				|| value.indexOf("create receipt") != -1)
+				|| value.indexOf(" create receipt ") != -1)
 		{
 			console.log("text: " + text);
 			console.log("id: " + submitElement.attr("id"));
 			console.log("class: " + submitElement.attr("class"));
 			console.log("name: " + submitElement.attr("name"));
 			console.log("value: " + value);
-			
 			// submission with <ENTER> triggers HERE2
 			submitElement.click(function(event) {
 				//alert("HERE2");
@@ -44,6 +48,44 @@ $(document).ready(function() {
 				//createNotification();
 				return;
 			});*/
+		}
+	}
+	
+	var postButtons = $("form[method='post']").find(":input[type='image']");
+	var length = postButtons.length;
+	for (var index = 0; index < length; index++)
+	{
+		var submitElement = postButtons.eq(index);
+		var value = submitElement.val().toLowerCase();
+		var text = submitElement.text().toLowerCase();
+		value = " " + value + " ";
+		text = " " + text + " ";
+		
+		var alt = "";
+		if (submitElement.attr("alt") != undefined)
+		{
+			alt = submitElement.attr("alt").toLowerCase();
+			alt = " " + alt + " ";
+		}
+		
+		if (value.indexOf(" order ") != -1 || text.indexOf(" order ") != -1 ||
+				value.indexOf(" buy ") != -1 || text.indexOf(" buy ") != -1 ||
+				value.indexOf(" checkout ") != -1 || text.indexOf(" checkout ") != -1 ||
+				value.indexOf(" pay ") != -1 || text.indexOf(" pay ") != -1
+				// amazon image one-click
+				|| alt.indexOf(" buy ") != -1)
+		{
+			console.log("text: " + text);
+			console.log("id: " + submitElement.attr("id"));
+			console.log("class: " + submitElement.attr("class"));
+			console.log("name: " + submitElement.attr("name"));
+			console.log("value: " + value);
+			console.log("alt: " + alt);
+			// submission with <ENTER> triggers HERE2
+			submitElement.click(function(event) {
+				//alert("HERE2");
+				chrome.runtime.sendMessage({ greeting: "purchaseComplete" });
+			});
 		}
 	}
 	
@@ -145,10 +187,10 @@ chrome.runtime.onConnect.addListener(function(port) {
 
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
-		console.log("received onMessage connection instead of port connect");
 		// do not load for iframe
 		if (self == top)
 		{
+			console.log("received onMessage connection instead of port connect");
 			if (request.greeting == "getHTML")
 			{
 				sendResponse({
@@ -161,6 +203,10 @@ chrome.runtime.onMessage.addListener(
 			{
 				createNotification();
 			}
+		}
+		else
+		{
+			console.log("IFRAME (nothing run) - received onMessage connection instead of port connect");
 		}
 	});
 	
