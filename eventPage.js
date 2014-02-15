@@ -165,8 +165,11 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
 			setNotificationStatus(5);
 		}
 	}
-	console.log(notificationStatus + " onUpdated");
-	console.log(changeInfo);
+	if (changeInfo.favIconUrl == null)
+	{
+		console.log(notificationStatus + " onUpdated");
+		console.log(changeInfo);
+	}
 });
 
 // track tab removed

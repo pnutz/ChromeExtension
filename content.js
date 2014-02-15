@@ -2,6 +2,7 @@ var overflow = document.body.style.overflow;
 var amazon = false;
 var htmlGet = "pull-off";
 var incomingPort;
+var lastClicked;
 
 $(document).ready(function() {
 	if (self === top)
@@ -51,6 +52,16 @@ $(document).ready(function() {
 		}
 	}
 	
+	// find out element that caused submit (possibly purchase) & parent form element
+	$('form').submit(function() {
+		if ($(this).has(lastClicked))
+		{
+			console.log($(this));
+			
+			//return lastClicked & $(this)
+		}
+	});
+	
 	var postButtons = $("form[method='post']").find(":input[type='image']");
 	var length = postButtons.length;
 	for (var index = 0; index < length; index++)
@@ -97,6 +108,8 @@ $(document).ready(function() {
 	
 	// only run function when user prompts to start, so links keep working
 	$(document).click(function(event) {
+		lastClicked = $(event.target);
+		
 		if (htmlGet != "pull-off" && self !== top)
 		{
 				window.parent.postMessage(element.text().trim(), '*');
