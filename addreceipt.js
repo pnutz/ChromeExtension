@@ -63,7 +63,7 @@ function addSpanButtonTo(appendId, name, numValue) {
 //TODO:Should probably put receipt items into a class
 function addReceiptItem() {
   var listItemId = "receipt-form-list-item-" + receiptItemCount;
-  $("<li></li>", {"class": "list-group-item", "id": listItemId}).appendTo("#receipt-form-item-list");
+  $("<li></li>", {"class": "list-group-item receipt-item", "id": listItemId}).appendTo("#receipt-form-item-list");
 	var receiptItemId = "receipt-item-" + receiptItemCount;
 	
 	// all element groupings in divs to set colour on-pull and for consistency (ignore for json - formToJSONKeyMap, receipt-submit event)
@@ -81,7 +81,7 @@ function addReceiptItem() {
   // cost of item
   var costId = receiptItemId + "-cost";
 	// div to hold cost
-	$("<div>", {"id": costId + "-div", "class": "item-cost"}).appendTo("#" + listItemId);
+	$("<div>", {"id": costId + "-div", "class": "form-group item-cost"}).appendTo("#" + listItemId);
   $("<label/>", {"for": costId, text : "Cost", "class": "control-label"}).appendTo("#" + costId + "-div");
 	addSpanButtonTo(costId, "cost", receiptItemCount);	
   $("<input/>", {"class" : "form-control cost-input input-sm",
@@ -89,25 +89,27 @@ function addReceiptItem() {
                  "name": "cost", 
                  "type" : "text",
                  "value" : "0.00"}).appendTo("#" + costId + "-div");
-  // Register event handler for when the cost changes
-  $("#" + costId).change(function(event){
-    $("#receipt-form-total").val(sumReceiptItemCosts());
-  });
-
+  
 	// quantity
 	var quantityId = receiptItemId + "-quantity";
 	// div to hold quantity
-	$("<div>", {"id": quantityId + "-div", "class": "item-quantity"}).appendTo("#" + listItemId);
+	$("<div>", {"id": quantityId + "-div", "class": "form-group item-quantity"}).appendTo("#" + listItemId);
   $("<label/>", {"for": quantityId, text : "Quantity", "class": "control-label"}).appendTo("#" + quantityId + "-div");
 	addSpanButtonTo(quantityId, "quantity", receiptItemCount);	
-  $("<input/>", {"class" : "form-control input-sm",
+  $("<input/>", {"class" : "form-control input-sm input-quantity",
                  "id": quantityId, 
                  "name": "quantity", 
-                 "type" : "text"}).appendTo("#" + quantityId + "-div");
+                 "type" : "text",
+                 "value" : "1"}).appendTo("#" + quantityId + "-div");
   /*$("<label/>", {"for": receiptItemId + "-is-credit", text: "Is Credit?"}).appendTo("#" + listItemId);
   $("<input/>", {"id": receiptItemId + "-is-credit", 
                  "name": "is_credit", 
                  "type" : "checkbox"}).appendTo("#" + listItemId);*/
+
+  // Register event handler for when the cost changes
+  $(".input-quantity, .cost-input").keyup(function(event){
+      $("#receipt-form-total").val(sumReceiptItemCosts());
+  });
 
 	// _destroy
 	var destroyId = receiptItemId + "-_destroy";
@@ -137,18 +139,20 @@ function addReceiptItem() {
   receiptItemCount++;
 }
 
-//TODO: Modify to use int
+//TODO: round to 4 decimal places
 function sumReceiptItemCosts()
 {
   var total = 0;
 	// check costs where item was not removed
-	var cost_inputs = $("#receipt-form-item-list>li>div.item-destroy>.destroy-input[value='false']").closest("li").find(">div.item-cost>.cost-input");
-	var length = cost_inputs.length;
+	var items = $("#receipt-form-item-list").find(".receipt-item:has(div.item-destroy>.destroy-input[value='false'])");
+	var length = items.length;
 	for (var index = 0; index < length; index++)
 	{
-		//alert(parseFloat(cost_inputs.eq(index).val()));
-    total += parseFloat(cost_inputs.eq(index).val());
+    var itemCost = items.eq(index).find(".cost-input").val();
+    var quantity = items.eq(index).find(".input-quantity").val();
+    total += parseFloat(itemCost) * parseFloat(quantity);
 	}
+
   return total;
 }
 
@@ -288,6 +292,16 @@ $(document).ready(function () {
          //minlength: 3,
          required: true
        },
+       cost: {
+         //minlength: 3,
+         required: true,
+         number: true
+       },
+       quantity: {
+         //minlength: 3,
+         required: true,
+         digits: true
+       },
        vendor_name: {
          required: true
        }/*,
@@ -424,6 +438,8 @@ $(document).ready(function () {
   var purchaseTypesUrl = host + controllers["purchase_types"] + ".json";
   getJsonData(purchaseTypesUrl, getPurchaseTypes);
 
+  //If we manually add a receipt item, disable
+  //the ability to enter total
   $("#receipt-form-item-add").click(function(event){
     addReceiptItem();
 		var form_total = $("#receipt-form-total");
