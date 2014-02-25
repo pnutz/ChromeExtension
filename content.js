@@ -40,28 +40,9 @@ $(document).ready(function() {
 				//alert("HERE2");
 				chrome.runtime.sendMessage({ greeting: "purchaseComplete" });
 			});
-			
-			/*var form = submitElement.closest("form");
-			// when detected button is submitted, send to background to check if page actually loaded
-			form.submit(function(event) {
-				alert("HERE");
-				chrome.runtime.sendMessage({ greeting: "purchaseComplete" });
-				//createNotification();
-				return;
-			});*/
 		}
 	}
-	
-	// find out element that caused submit (possibly purchase) & parent form element
-	$('form').submit(function() {
-		if ($(this).has(lastClicked))
-		{
-			console.log($(this));
-			
-			//return lastClicked & $(this)
-		}
-	});
-	
+
 	var postButtons = $("form[method='post']").find(":input[type='image']");
 	var length = postButtons.length;
 	for (var index = 0; index < length; index++)
@@ -100,6 +81,16 @@ $(document).ready(function() {
 		}
 	}
 	
+	// find out element that caused submit (possibly purchase) & parent form element
+	$('form').submit(function() {
+		if ($(this).has(lastClicked))
+		{
+			console.log($(this));
+			
+			//return lastClicked & $(this)
+		}
+	});
+	
 	// display notification if new purchase on amazon
 	if (location.href.indexOf("https://www.amazon.ca/gp/buy/thankyou/handlers/display.html") != -1) {
 		amazon = true;
@@ -109,7 +100,8 @@ $(document).ready(function() {
 	// only run function when user prompts to start, so links keep working
 	$(document).click(function(event) {
 		lastClicked = $(event.target);
-		
+		//console.log("click " + Math.floor((event.timeStamp/10000 - Math.floor(event.timeStamp/10000))*100) + " " + lastClicked.prop("tagName") + " " + lastClicked.text());
+		// iframe, send it to main page content script
 		if (htmlGet != "pull-off" && self !== top)
 		{
 				window.parent.postMessage(element.text().trim(), '*');
@@ -119,6 +111,7 @@ $(document).ready(function() {
 		{
 			var element = $(event.target);
 			console.log("Element Clicked: " + element.text().trim());
+			// only send message if nothing selected
 			if (window.getSelection().toString() === "")
 			{
 				incomingPort.postMessage({response: htmlGet.substring(6), data: element.text().trim()});
@@ -129,8 +122,11 @@ $(document).ready(function() {
 	
 	// get selected text on mouseup
 	$(document).mouseup(function(event) {
+		//console.log("mouseup " + Math.floor((event.timeStamp/10000 - Math.floor(event.timeStamp/10000))*100));
+		// only send message if text is selected
 		if (window.getSelection().toString() != "")
 		{
+			// iframe, send it to main page content script
 			if (htmlGet != "pull-off" && self !== top)
 			{
 				window.parent.postMessage(window.getSelection().toString(), '*');
@@ -198,6 +194,16 @@ chrome.runtime.onConnect.addListener(function(port) {
 	}
 });
 
+/*
+	incomingPort.postMessage({
+		response: htmlGet.substring(6),
+		data: window.getSelection().toString(),
+		html: document.body.outerHTML,
+		text: document.body.innerText,
+		url: location.href -> only hostname not case sensitive
+		});
+*/
+
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
 		// do not load for iframe
@@ -245,7 +251,7 @@ chrome.runtime.onMessage.addListener(
 				chrome.runtime.sendMessage({ greeting: "parseHTML",
 							data: document.body.outerHTML,
 							text: document.body.innerText,
-							url: location.href.toLowerCase() });
+							url: location.href });
 			}
 			else if (event.data == "no")
 			{
