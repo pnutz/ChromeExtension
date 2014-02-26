@@ -101,9 +101,11 @@ document.addEventListener('DOMContentLoaded', function()
     }).done(function(data){
       localStorage["authToken"] = data["token"];
       location.reload(true);
-      //store email in localStorage
+      // store email in localStorage
       localStorage["userEmail"] = $("#user-email").val();
-    }).fail(function (jqXHR, textStatus, errorThr5own){
+			// store userID in localStorage
+			localStorage["userID"] = data["user"];
+    }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
         "The following error occurred: " + textStatus,

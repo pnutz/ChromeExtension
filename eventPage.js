@@ -44,6 +44,10 @@ function stringBetween(string, substring1, substring2) {
 	return string.substring(first_index + substring1.length, string.indexOf(substring2, first_index));
 }
 
+// html sanitizer helper methods
+function urlX(url) { if(/^https?:\/\//.test(url)) { return url }};
+function idX(id) { return id };
+
 function createReceiptPopup()
 {
 	// addreceipt popup exists
@@ -67,10 +71,32 @@ function receiptSetup() {
 	port.postMessage({"request": pullState});
 	
 	port.onMessage.addListener(function(msg) {
-		console.log("Received msg: " + msg.data + " from port: " + port.name);
 		
-		window[msg.data] = msg.data;
-		receiptPort.postMessage({"request": msg.data});
+		var element = msg.data;
+		element = html_sanitize(element, urlX, idX);
+		console.log(element);
+		
+		// encompasses element html text inside html, head, and body tags
+		var parser = new DOMParser();
+		var doc = parser.parseFromString(element, "text/html");
+		console.log(doc);
+		
+		var sendData;
+		if (msg.selection === "")
+		{
+			sendData = doc.body.innerText;
+		}
+		else
+		{
+			sendData = msg.selection;
+		}
+		console.log("Received msg: " + sendData + " from port: " + port.name);
+
+		window[sendData] = sendData;
+		receiptPort.postMessage({"request": sendData});
+		
+		console.log(localStorage["userID"]);
+		// SEND DATA TO NODE JS SERVER
 	});
 	
 	port.onDisconnect.addListener(function(msg) {
@@ -298,6 +324,7 @@ purchaseComplete:
 	trigger: purchase input onSubmit event triggered
 	action: checks if page successfully http postbacks and redirects to new page
 	-- WHAT IF THEY DO ANOTHER TAB AT SAME TIME?! track correct tab
+	
 parseHTML:
 	from: content.js
 	trigger: notification bar, YES selected
@@ -351,8 +378,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		// uses html sanitizer to remove dangerous tags from the page html
 		case "parseHTML":
 			// html method
-			function urlX(url) { if(/^https?:\/\//.test(url)) { return url }};
-			function idX(id) { return id };
 			var output = request.data;
 			output = html_sanitize(request.data, urlX, idX);
 			// sanitized html

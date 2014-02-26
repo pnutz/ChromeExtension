@@ -3,6 +3,7 @@ var amazon = false;
 var htmlGet = "pull-off";
 var incomingPort;
 var lastClicked;
+var mouseDownElement;
 
 $(document).ready(function() {
 	if (self === top)
@@ -112,19 +113,35 @@ $(document).ready(function() {
 			var element = $(event.target);
 			console.log("Element Clicked: " + element.text().trim());
 			// only send message if nothing selected
-			if (window.getSelection().toString() === "")
+			if (element[0].tagName === "A" || window.getSelection().toString() === "")
 			{
-				incomingPort.postMessage({response: htmlGet.substring(6), data: element.text().trim()});
+				console.log(element);
+				incomingPort.postMessage({
+					response: htmlGet.substring(6),
+					selection: "",
+					data: element[0].outerHTML,
+					html: document.body.outerHTML,
+					text: document.body.innerText,
+					url: location.href,
+					domain: document.domain
+				});
 			}
 			return false;
 		}
 	});
 	
-	// get selected text on mouseup
+	// detect mousedown element
+	$(document).mousedown(function(event) {
+		//console.log("mousedown " + Math.floor((event.timeStamp/10000 - Math.floor(event.timeStamp/10000))*100));
+		mouseDownElement = $(event.target);
+});
+	
+	// get selected text on mouseup (and element)
 	$(document).mouseup(function(event) {
 		//console.log("mouseup " + Math.floor((event.timeStamp/10000 - Math.floor(event.timeStamp/10000))*100));
-		// only send message if text is selected
-		if (window.getSelection().toString() != "")
+		
+		// only send message if text is selected or user did not click link
+		if (window.getSelection().toString() != "" || mouseDownElement[0].tagName !== "A")
 		{
 			// iframe, send it to main page content script
 			if (htmlGet != "pull-off" && self !== top)
@@ -134,7 +151,31 @@ $(document).ready(function() {
 			else if (htmlGet != "pull-off")
 			{
 				console.log("Mouse-Up: " + window.getSelection().toString());
-				incomingPort.postMessage({response: htmlGet.substring(6), data: window.getSelection().toString()});
+				
+				var mouseUpElement = $(event.target);
+				console.log("MouseDownElement:");
+				console.log(mouseDownElement);
+				console.log("MouseUpElement:");
+				console.log(mouseUpElement);
+				
+				// while mouseUpElement is not body/html, does not equal mouseDownElement, and does not contain mouseDownElement
+				while (!$.contains(mouseUpElement[0], mouseDownElement[0]) && mouseUpElement[0] !== mouseDownElement[0]
+				&& mouseUpElement[0].tagName !== "BODY" && mouseUpElement[0].tagName !== "HTML")
+				{
+					mouseUpElement = mouseUpElement.parent();
+					console.log("Parent:");
+					console.log(mouseUpElement);
+				}
+				
+				incomingPort.postMessage({
+					response: htmlGet.substring(6),
+					selection: window.getSelection().toString(),
+					data: mouseUpElement[0].outerHTML,
+					html: document.body.outerHTML,
+					text: document.body.innerText,
+					url: location.href,
+					domain: document.domain
+				});
 			}
 		}
 	});
@@ -193,16 +234,6 @@ chrome.runtime.onConnect.addListener(function(port) {
 		});
 	}
 });
-
-/*
-	incomingPort.postMessage({
-		response: htmlGet.substring(6),
-		data: window.getSelection().toString(),
-		html: document.body.outerHTML,
-		text: document.body.innerText,
-		url: location.href -> only hostname not case sensitive
-		});
-*/
 
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
