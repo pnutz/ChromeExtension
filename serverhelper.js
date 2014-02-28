@@ -31,4 +31,3 @@ function appendCred(url)
         "?email=" + localStorage["userEmail"] + 
         "&token=" + localStorage["authToken"];
 }
-

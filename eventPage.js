@@ -38,6 +38,18 @@ var notificationStatus = notificationStatusArray[0];
 var notificationTimeout;
 var TIMEOUT = 10000;
 
+function authResourceServer() {
+	request = $.post("http://localhost:8888",
+	{
+		token: localStorage["authToken"],
+		userID: localStorage["userID"],
+		email: localStorage["userEmail"]
+	},
+	function(data,status){
+		alert("Data: " + data + "\nStatus: " + status);
+	});
+}
+
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
 function stringBetween(string, substring1, substring2) {
 	var first_index = string.indexOf(substring1);
@@ -50,6 +62,8 @@ function idX(id) { return id };
 
 function createReceiptPopup()
 {
+	authResourceServer();
+	
 	// addreceipt popup exists
 	if (newReceipt != null)
 	{

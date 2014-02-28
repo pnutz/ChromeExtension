@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function()
     request = $.ajax({
       url: loginServer,
       type: 'POST',
-      data : tokenAuth,
+      data: tokenAuth,
       dataType: 'json'
     }).done(function(data){
       localStorage["authToken"] = data["token"];

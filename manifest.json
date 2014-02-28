@@ -37,6 +37,7 @@
 		"<all_urls>",
 		"webRequest",
 		"background",
-    "http://localhost:3000/api/v1/tokens.json"
+    "http://localhost:3000/api/v1/tokens.json",
+		"http://localhost:8888/"
   ]
 }
