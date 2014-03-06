@@ -12,7 +12,7 @@ $(document).ready(function() {
 	}
 	
 	// "paypal" "pay with paypal" "bestbuy" don't work
-	var postButtons = $("form[method='post']").find(":input[type='submit']");
+	/*var postButtons = $("form[method='post']").find(":input[type='submit']");
 	var length = postButtons.length;
 	for (var index = 0; index < length; index++)
 	{
@@ -96,7 +96,7 @@ $(document).ready(function() {
 	if (location.href.indexOf("https://www.amazon.ca/gp/buy/thankyou/handlers/display.html") != -1) {
 		amazon = true;
 		createNotification();
-	}
+	}*/
 	
 	// only run function when user prompts to start, so links keep working
 	$(document).click(function(event) {
@@ -105,8 +105,30 @@ $(document).ready(function() {
 		// iframe, send it to main page content script
 		if (htmlGet != "pull-off" && self !== top)
 		{
-				window.parent.postMessage(element.text().trim(), '*');
-				return false;
+			var element = $(event.target);
+			console.log("Element Clicked: " + element.text().trim());
+			// only send message if nothing selected
+			if (element[0].tagName === "A" || window.getSelection().toString() === "")
+			{
+				element.className += "TwoReceipt";
+				
+				console.log(element);
+				
+				var msg_data = {
+					response: htmlGet.substring(5),
+					selection: "",
+					data: element[0].outerHTML,
+					html: document.body.outerHTML,
+					text: document.body.innerText,
+					url: location.href,
+					domain: document.domain
+				};
+				
+				window.parent.postMessage(JSON.stringify(msg_data), '*');
+				
+				element.className = element.className.replace("TwoReceipt", "");
+			}
+			return false;
 		}
 		else if (htmlGet != "pull-off")
 		{
@@ -115,16 +137,23 @@ $(document).ready(function() {
 			// only send message if nothing selected
 			if (element[0].tagName === "A" || window.getSelection().toString() === "")
 			{
+				element.className += "TwoReceipt";
+				
 				console.log(element);
-				incomingPort.postMessage({
-					response: htmlGet.substring(6),
+				
+				var msg_data = {
+					response: htmlGet.substring(5),
 					selection: "",
 					data: element[0].outerHTML,
 					html: document.body.outerHTML,
 					text: document.body.innerText,
 					url: location.href,
 					domain: document.domain
-				});
+				};
+				
+				incomingPort.postMessage(msg_data);
+				
+				element.className = element.className.replace("TwoReceipt", "");
 			}
 			return false;
 		}
@@ -140,42 +169,95 @@ $(document).ready(function() {
 	$(document).mouseup(function(event) {
 		//console.log("mouseup " + Math.floor((event.timeStamp/10000 - Math.floor(event.timeStamp/10000))*100));
 		
+		var textSelection = window.getSelection().toString();
+		
 		// only send message if text is selected or user did not click link
-		if (window.getSelection().toString() != "" || mouseDownElement[0].tagName !== "A")
+		if (textSelection != "" || (mouseDownElement !== null && mouseDownElement[0].tagName !== "A"))
 		{
 			// iframe, send it to main page content script
 			if (htmlGet != "pull-off" && self !== top)
 			{
-				window.parent.postMessage(window.getSelection().toString(), '*');
-			}
-			else if (htmlGet != "pull-off")
-			{
-				console.log("Mouse-Up: " + window.getSelection().toString());
+				console.log("Mouse-Up: " + textSelection);
 				
-				var mouseUpElement = $(event.target);
-				console.log("MouseDownElement:");
-				console.log(mouseDownElement);
-				console.log("MouseUpElement:");
-				console.log(mouseUpElement);
+				var range = window.getSelection().getRangeAt(0);
+				var startContainer = range.startContainer;
+				var endContainer = range.endContainer;
+				var startOffset = range.startOffset;
+				var endOffset = range.endOffset;
 				
-				// while mouseUpElement is not body/html, does not equal mouseDownElement, and does not contain mouseDownElement
-				while (!$.contains(mouseUpElement[0], mouseDownElement[0]) && mouseUpElement[0] !== mouseDownElement[0]
-				&& mouseUpElement[0].tagName !== "BODY" && mouseUpElement[0].tagName !== "HTML")
-				{
-					mouseUpElement = mouseUpElement.parent();
-					console.log("Parent:");
-					console.log(mouseUpElement);
+				// startContainer insertion will alter endOffset so we do endContainer first
+				endContainer.insertData(endOffset, "-!|_|!-");
+				startContainer.insertData(startOffset, "-!|_|!-");
+
+				console.log(range);
+				var commonAncestorContainer = range.commonAncestorContainer;
+				// Node.TEXT_NODE is 3 for <#text> XML nodes
+				while (commonAncestorContainer.nodeType === Node.TEXT_NODE) {
+					commonAncestorContainer = commonAncestorContainer.parentElement;
 				}
 				
-				incomingPort.postMessage({
-					response: htmlGet.substring(6),
-					selection: window.getSelection().toString(),
-					data: mouseUpElement[0].outerHTML,
+				commonAncestorContainer.className += "TwoReceipt";
+				
+				var msg_data = {
+					response: htmlGet.substring(5),
+					selection: textSelection,
+					data: commonAncestorContainer.outerHTML,
 					html: document.body.outerHTML,
 					text: document.body.innerText,
 					url: location.href,
 					domain: document.domain
-				});
+				};
+				
+				console.log(msg_data);
+				window.parent.postMessage(JSON.stringify(msg_data), '*');
+				
+				commonAncestorContainer.className = commonAncestorContainer.className.replace("TwoReceipt", "");
+				
+				// startContainer deletion first so we can use existing endOffset
+				startContainer.deleteData(startOffset, 7);
+				endContainer.deleteData(endOffset, 7);
+			}
+			else if (htmlGet != "pull-off")
+			{
+				console.log("Mouse-Up: " + textSelection);
+				
+				var range = window.getSelection().getRangeAt(0);
+				var startContainer = range.startContainer;
+				var endContainer = range.endContainer;
+				var startOffset = range.startOffset;
+				var endOffset = range.endOffset;
+				
+				// startContainer insertion will alter endOffset so we do endContainer first
+				endContainer.insertData(endOffset, "-!|_|!-");
+				startContainer.insertData(startOffset, "-!|_|!-");
+
+				console.log(range);
+				var commonAncestorContainer = range.commonAncestorContainer;
+				// Node.TEXT_NODE is 3 for <#text> XML nodes
+				while (commonAncestorContainer.nodeType === Node.TEXT_NODE) {
+					commonAncestorContainer = commonAncestorContainer.parentElement;
+				}
+				
+				commonAncestorContainer.className += "TwoReceipt";
+				
+				var msg_data = {
+					response: htmlGet.substring(5),
+					selection: textSelection,
+					data: commonAncestorContainer.outerHTML,
+					html: document.body.outerHTML,
+					text: document.body.innerText,
+					url: location.href,
+					domain: document.domain
+				};
+				
+				console.log(msg_data);
+				incomingPort.postMessage(msg_data);
+				
+				commonAncestorContainer.className = commonAncestorContainer.className.replace("TwoReceipt", "");
+				
+				// startContainer deletion first so we can use existing endOffset
+				startContainer.deleteData(startOffset, 7);
+				endContainer.deleteData(endOffset, 7);
 			}
 		}
 	});
@@ -321,7 +403,8 @@ chrome.runtime.onMessage.addListener(
 				// format of htmlGet = pull-date, pull-transaction, etc. send response if not off
 				else if (htmlGet.indexOf("pull-") != -1 && htmlGet.indexOf("off") == -1)
 				{
-					incomingPort.postMessage({response: htmlGet.substring(6), data: event.data});
+					var msg_data = JSON.parse(event.data);
+					incomingPort.postMessage(msg_data);
 				}
 			}
 		}

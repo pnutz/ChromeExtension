@@ -1,28 +1,28 @@
 // form data
-var title = null;
-var date = null;
-var vendor = null;
-var total = null;
-var currencies = null;
-var transaction = null;
-var receipt_items = null;
-var name;
-var cost;
-var quantity;
+var title = null,
+date = null,
+vendor = null,
+total = null,
+currencies = null,
+transaction = null,
+receipt_items = null,
+name,
+cost,
+quantity,
 
 // addReceipt popup sets to tabId when it opens, null when closed
-var newReceipt = null;
-var port;
-var receiptPort;
-var pullState = "pull-off";
+newReceipt = null,
+port,
+receiptPort,
+pullState = "pull-off",
 // track last non chrome- url tab
-var currentTabId;
-var removeReceipt = null;
+currentTabId,
+removeReceipt = null,
 
 // purchase notification
-var purchaseTabId;
-var pendingRequestId;
-var getRequestId;
+purchaseTabId,
+pendingRequestId,
+getRequestId,
 // status variable to track purchase notification (all main_frame web requests)
 /*
 noPurchase - nothing happening
@@ -33,20 +33,30 @@ UpdateLoading - Loading URL after GET Request (CAN SKIP - but don't know if chan
 GETComplete - (any) GET request was completed
 UpdateComplete - Completely Loaded URL
 */
-var notificationStatusArray = ["noPurchase", "POSTRequest", "POSTComplete", "GETRequest", "UpdateLoading", "GETComplete", "UpdateComplete"];
-var notificationStatus = notificationStatusArray[0];
-var notificationTimeout;
-var TIMEOUT = 10000;
+notificationStatusArray = ["noPurchase", "POSTRequest", "POSTComplete", "GETRequest", "UpdateLoading", "GETComplete", "UpdateComplete"],
+notificationStatus = notificationStatusArray[0],
+notificationTimeout,
+TIMEOUT = 10000;
 
-function authResourceServer() {
-	request = $.post("http://localhost:8888",
+function messageResourceServer(selection, data, html, text, url, domain) {
+	var host = "http://localhost:8888/";
+	
+	request = $.post(host,
 	{
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
-		email: localStorage["userEmail"]
-	},
-	function(data,status){
+		email: localStorage["userEmail"],
+		selection: selection,
+		data: data,
+		html: html,
+		text: text,
+		url: url,
+		domain: domain
+	}, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
+	})
+	.fail( function(xhr, textStatus, errorThrown) {
+		alert(xhr.responseText);
 	});
 }
 
@@ -62,8 +72,6 @@ function idX(id) { return id };
 
 function createReceiptPopup()
 {
-	authResourceServer();
-	
 	// addreceipt popup exists
 	if (newReceipt != null)
 	{
@@ -85,15 +93,19 @@ function receiptSetup() {
 	port.postMessage({"request": pullState});
 	
 	port.onMessage.addListener(function(msg) {
-		
 		var element = msg.data;
 		element = html_sanitize(element, urlX, idX);
 		console.log(element);
+		
+		var pageHTML = msg.html;
+		pageHTML = html_sanitize(pageHTML, urlX, idX);
 		
 		// encompasses element html text inside html, head, and body tags
 		var parser = new DOMParser();
 		var doc = parser.parseFromString(element, "text/html");
 		console.log(doc);
+		
+		// iframe message, url/domain may not match
 		
 		var sendData;
 		if (msg.selection === "")
@@ -105,12 +117,13 @@ function receiptSetup() {
 			sendData = msg.selection;
 		}
 		console.log("Received msg: " + sendData + " from port: " + port.name);
-
+		
+		// message attribute field text to receipt popup
 		window[sendData] = sendData;
 		receiptPort.postMessage({"request": sendData});
 		
-		console.log(localStorage["userID"]);
-		// SEND DATA TO NODE JS SERVER
+		// message node js server attribute data
+		messageResourceServer(msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
 	});
 	
 	port.onDisconnect.addListener(function(msg) {
@@ -229,9 +242,6 @@ chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 		console.log(notificationStatus);
 	}
 });
-
-// machine learning, store successful url, fail url
-
 // all HTTP requests fall under:
 // onCompleted - CAN REDIRECT
 // onErrorOccurred - if not completed - don't worry about
@@ -244,7 +254,7 @@ chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 // ignore: stylesheet, script, image, object, other
 
 // currently only accepts one purchase request, to prevent overwriting
-chrome.webRequest.onBeforeRequest.addListener(function (details) {
+/*chrome.webRequest.onBeforeRequest.addListener(function (details) {
 	if (details.tabId === purchaseTabId && details.type == "main_frame")
 	{
 		// post request detected
@@ -324,7 +334,7 @@ chrome.webRequest.onCompleted.addListener(function (details) {
 		console.log(notificationStatus + " onCompleted");
 		console.log(details);
 	}
-}, {urls: ["<all_urls>"]});
+}, {urls: ["<all_urls>"]});*/
 
 // message handling - by request.greeting
 /*
@@ -670,6 +680,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 				receiptPort.disconnect();
 			}
 			receiptPort = null;
+			
 			break;
 		
 		default:
