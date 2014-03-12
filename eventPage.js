@@ -40,9 +40,7 @@ TIMEOUT = 10000;
 
 function messageResourceServer(receipt_attr, selection, data, html, text, url, domain) {
 	var host = "http://localhost:8888/";
-	
-	request = $.post(host,
-	{
+	var message = {
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
 		email: localStorage["userEmail"],
@@ -53,45 +51,23 @@ function messageResourceServer(receipt_attr, selection, data, html, text, url, d
 		text: text,
 		url: url,
 		domain: domain
-	}, function (data, status) {
+	};
+	
+	request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
 	});
 	
-	/*$.post(host,
-	{
-		token: localStorage["authToken"],
-		userID: localStorage["userID"],
-		email: localStorage["userEmail"],
-		attribute: receipt_attr,
-		selection: selection,
-		element: data,
-		html: html,
-		text: text,
-		url: url + "this",
-		domain: domain + "this"
-	}, function (data, status) {
+	/*$.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
 	});
 	
-	$.post(host,
-	{
-		token: localStorage["authToken"],
-		userID: localStorage["userID"],
-		email: localStorage["userEmail"],
-		attribute: receipt_attr,
-		selection: selection,
-		element: data,
-		html: html,
-		text: text,
-		url: url + "that",
-		domain: domain + "that"
-	}, function (data, status) {
+	$.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
@@ -134,15 +110,11 @@ function receiptSetup() {
 	port.onMessage.addListener(function(msg) {
 		var element = msg.data;
 		element = html_sanitize(element, urlX, idX);
-		console.log(element);
 		
 		var pageHTML = msg.html;
 		pageHTML = html_sanitize(pageHTML, urlX, idX);
-		
-		// encompasses element html text inside html, head, and body tags
 		var parser = new DOMParser();
 		var doc = parser.parseFromString(element, "text/html");
-		console.log(doc);
 		
 		// iframe message, url/domain may not match
 		
@@ -160,9 +132,8 @@ function receiptSetup() {
 		// message attribute field text to receipt popup
 		window[sendData] = sendData;
 		receiptPort.postMessage({"request": sendData});
-		
 		// message node js server attribute data
-		//messageResourceServer(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+		messageResourceServer(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
 	});
 	
 	port.onDisconnect.addListener(function(msg) {

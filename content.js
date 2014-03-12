@@ -108,12 +108,11 @@ $(document).ready(function() {
 			var element = $(event.target);
 			console.log("Element Clicked: " + element.text().trim());
 			// only send message if nothing selected
-			if (element[0].tagName === "A" || window.getSelection().toString() === "")
+			if (element[0].tagName === "A" || window.getSelection().toString() === "" || element[0].tagName === "BODY")
 			{
-				element.className += " TwoReceipt";
-				
+				element[0].className += " TwoReceipt";
 				console.log(element);
-				
+
 				var msg_data = {
 					response: htmlGet.substring(5),
 					selection: "",
@@ -126,7 +125,7 @@ $(document).ready(function() {
 				
 				window.parent.postMessage(JSON.stringify(msg_data), '*');
 				
-				element.className = element.className.replace(" TwoReceipt", "");
+				element[0].className = element[0].className.replace(" TwoReceipt", "");
 			}
 			return false;
 		}
@@ -135,12 +134,11 @@ $(document).ready(function() {
 			var element = $(event.target);
 			console.log("Element Clicked: " + element.text().trim());
 			// only send message if nothing selected
-			if (element[0].tagName === "A" || window.getSelection().toString() === "")
+			if (element[0].tagName === "A" || window.getSelection().toString() === "" || element[0].tagName === "BODY")
 			{
-				element.className += " TwoReceipt";
+				element[0].className += " TwoReceipt";
 				
 				console.log(element);
-				
 				var msg_data = {
 					response: htmlGet.substring(5),
 					selection: "",
@@ -153,7 +151,7 @@ $(document).ready(function() {
 				
 				incomingPort.postMessage(msg_data);
 				
-				element.className = element.className.replace(" TwoReceipt", "");
+				element[0].className = element[0].className.replace(" TwoReceipt", "");
 			}
 			return false;
 		}
@@ -172,7 +170,7 @@ $(document).ready(function() {
 		var textSelection = window.getSelection().toString();
 		
 		// only send message if text is selected or user did not click link
-		if (textSelection != "" || (mouseDownElement !== null && mouseDownElement[0].tagName !== "A"))
+		if (textSelection != "" || (mouseDownElement !== null && mouseDownElement[0].tagName !== "A" && mouseDownElement[0].tagName !== "BODY"))
 		{
 			// iframe, send it to main page content script
 			if (htmlGet != "pull-off" && self !== top)

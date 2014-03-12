@@ -476,8 +476,9 @@ $(document).ready(function () {
       data : receiptData,
       dataType: 'json'
     }).done(function(data){
-      alert("submitted");
+			alert("submitted");
       window.close();
+			chrome.runtime.sendMessage({greeting: "closeReceipt"});
     }).fail(function (jqXHR, textStatus, errorThrown){
       // log the error to the console
       console.error(
