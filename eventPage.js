@@ -38,7 +38,7 @@ notificationStatus = notificationStatusArray[0],
 notificationTimeout,
 TIMEOUT = 10000;
 
-function messageResourceServer(selection, data, html, text, url, domain) {
+function messageResourceServer(receipt_attr, selection, data, html, text, url, domain) {
 	var host = "http://localhost:8888/";
 	
 	request = $.post(host,
@@ -46,8 +46,9 @@ function messageResourceServer(selection, data, html, text, url, domain) {
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
 		email: localStorage["userEmail"],
+		attribute: receipt_attr,
 		selection: selection,
-		data: data,
+		element: data,
 		html: html,
 		text: text,
 		url: url,
@@ -58,6 +59,44 @@ function messageResourceServer(selection, data, html, text, url, domain) {
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
 	});
+	
+	/*$.post(host,
+	{
+		token: localStorage["authToken"],
+		userID: localStorage["userID"],
+		email: localStorage["userEmail"],
+		attribute: receipt_attr,
+		selection: selection,
+		element: data,
+		html: html,
+		text: text,
+		url: url + "this",
+		domain: domain + "this"
+	}, function (data, status) {
+		alert("Data: " + data + "\nStatus: " + status);
+	})
+	.fail( function(xhr, textStatus, errorThrown) {
+		alert(xhr.responseText);
+	});
+	
+	$.post(host,
+	{
+		token: localStorage["authToken"],
+		userID: localStorage["userID"],
+		email: localStorage["userEmail"],
+		attribute: receipt_attr,
+		selection: selection,
+		element: data,
+		html: html,
+		text: text,
+		url: url + "that",
+		domain: domain + "that"
+	}, function (data, status) {
+		alert("Data: " + data + "\nStatus: " + status);
+	})
+	.fail( function(xhr, textStatus, errorThrown) {
+		alert(xhr.responseText);
+	});*/
 }
 
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
@@ -123,7 +162,7 @@ function receiptSetup() {
 		receiptPort.postMessage({"request": sendData});
 		
 		// message node js server attribute data
-		messageResourceServer(msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+		//messageResourceServer(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
 	});
 	
 	port.onDisconnect.addListener(function(msg) {

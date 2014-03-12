@@ -110,7 +110,7 @@ $(document).ready(function() {
 			// only send message if nothing selected
 			if (element[0].tagName === "A" || window.getSelection().toString() === "")
 			{
-				element.className += "TwoReceipt";
+				element.className += " TwoReceipt";
 				
 				console.log(element);
 				
@@ -126,7 +126,7 @@ $(document).ready(function() {
 				
 				window.parent.postMessage(JSON.stringify(msg_data), '*');
 				
-				element.className = element.className.replace("TwoReceipt", "");
+				element.className = element.className.replace(" TwoReceipt", "");
 			}
 			return false;
 		}
@@ -137,7 +137,7 @@ $(document).ready(function() {
 			// only send message if nothing selected
 			if (element[0].tagName === "A" || window.getSelection().toString() === "")
 			{
-				element.className += "TwoReceipt";
+				element.className += " TwoReceipt";
 				
 				console.log(element);
 				
@@ -153,7 +153,7 @@ $(document).ready(function() {
 				
 				incomingPort.postMessage(msg_data);
 				
-				element.className = element.className.replace("TwoReceipt", "");
+				element.className = element.className.replace(" TwoReceipt", "");
 			}
 			return false;
 		}
@@ -196,7 +196,7 @@ $(document).ready(function() {
 					commonAncestorContainer = commonAncestorContainer.parentElement;
 				}
 				
-				commonAncestorContainer.className += "TwoReceipt";
+				commonAncestorContainer.className += " TwoReceipt";
 				
 				var msg_data = {
 					response: htmlGet.substring(5),
@@ -211,7 +211,7 @@ $(document).ready(function() {
 				console.log(msg_data);
 				window.parent.postMessage(JSON.stringify(msg_data), '*');
 				
-				commonAncestorContainer.className = commonAncestorContainer.className.replace("TwoReceipt", "");
+				commonAncestorContainer.className = commonAncestorContainer.className.replace(" TwoReceipt", "");
 				
 				// startContainer deletion first so we can use existing endOffset
 				startContainer.deleteData(startOffset, 7);
@@ -238,7 +238,7 @@ $(document).ready(function() {
 					commonAncestorContainer = commonAncestorContainer.parentElement;
 				}
 				
-				commonAncestorContainer.className += "TwoReceipt";
+				commonAncestorContainer.className += " TwoReceipt";
 				
 				var msg_data = {
 					response: htmlGet.substring(5),
@@ -253,7 +253,7 @@ $(document).ready(function() {
 				console.log(msg_data);
 				incomingPort.postMessage(msg_data);
 				
-				commonAncestorContainer.className = commonAncestorContainer.className.replace("TwoReceipt", "");
+				commonAncestorContainer.className = commonAncestorContainer.className.replace(" TwoReceipt", "");
 				
 				// startContainer deletion first so we can use existing endOffset
 				startContainer.deleteData(startOffset, 7);
