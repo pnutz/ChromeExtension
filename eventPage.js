@@ -39,7 +39,7 @@ notificationTimeout,
 TIMEOUT = 10000;
 
 function messageResourceServer(receipt_attr, selection, data, html, text, url, domain) {
-	var host = "http://localhost:8888/";
+	var host = "http://localhost:8888/template";
 	var message = {
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
