@@ -4,6 +4,8 @@ var htmlGet = "pull-off";
 var incomingPort;
 var lastClicked;
 var mouseDownElement;
+var TEXT_ID = "-!|_|!-";
+var CLASS_NAME = " TwoReceipt";
 
 $(document).ready(function() {
 	if (self === top)
@@ -110,7 +112,7 @@ $(document).ready(function() {
 			// only send message if nothing selected
 			if (element[0].tagName === "A" || window.getSelection().toString() === "" || element[0].tagName === "BODY")
 			{
-				element[0].className += " TwoReceipt";
+				element[0].className += CLASS_NAME;
 				console.log(element);
 
 				var msg_data = {
@@ -125,7 +127,7 @@ $(document).ready(function() {
 				
 				window.parent.postMessage(JSON.stringify(msg_data), '*');
 				
-				element[0].className = element[0].className.replace(" TwoReceipt", "");
+				element[0].className = element[0].className.replace(CLASS_NAME, "");
 			}
 			return false;
 		}
@@ -136,7 +138,7 @@ $(document).ready(function() {
 			// only send message if nothing selected
 			if (element[0].tagName === "A" || window.getSelection().toString() === "" || element[0].tagName === "BODY")
 			{
-				element[0].className += " TwoReceipt";
+				element[0].className += CLASS_NAME;
 				
 				console.log(element);
 				var msg_data = {
@@ -151,7 +153,7 @@ $(document).ready(function() {
 				
 				incomingPort.postMessage(msg_data);
 				
-				element[0].className = element[0].className.replace(" TwoReceipt", "");
+				element[0].className = element[0].className.replace(CLASS_NAME, "");
 			}
 			return false;
 		}
@@ -184,8 +186,8 @@ $(document).ready(function() {
 				var endOffset = range.endOffset;
 				
 				// startContainer insertion will alter endOffset so we do endContainer first
-				endContainer.insertData(endOffset, "-!|_|!-");
-				startContainer.insertData(startOffset, "-!|_|!-");
+				endContainer.insertData(endOffset, TEXT_ID);
+				startContainer.insertData(startOffset, TEXT_ID);
 
 				console.log(range);
 				var commonAncestorContainer = range.commonAncestorContainer;
@@ -194,7 +196,7 @@ $(document).ready(function() {
 					commonAncestorContainer = commonAncestorContainer.parentElement;
 				}
 				
-				commonAncestorContainer.className += " TwoReceipt";
+				commonAncestorContainer.className += CLASS_NAME;
 				
 				var msg_data = {
 					response: htmlGet.substring(5),
@@ -209,11 +211,11 @@ $(document).ready(function() {
 				console.log(msg_data);
 				window.parent.postMessage(JSON.stringify(msg_data), '*');
 				
-				commonAncestorContainer.className = commonAncestorContainer.className.replace(" TwoReceipt", "");
+				commonAncestorContainer.className = commonAncestorContainer.className.replace(CLASS_NAME, "");
 				
 				// startContainer deletion first so we can use existing endOffset
-				startContainer.deleteData(startOffset, 7);
-				endContainer.deleteData(endOffset, 7);
+				startContainer.deleteData(startOffset, TEXT_ID.length);
+				endContainer.deleteData(endOffset, TEXT_ID.length);
 			}
 			else if (htmlGet != "pull-off")
 			{
@@ -226,8 +228,8 @@ $(document).ready(function() {
 				var endOffset = range.endOffset;
 				
 				// startContainer insertion will alter endOffset so we do endContainer first
-				endContainer.insertData(endOffset, "-!|_|!-");
-				startContainer.insertData(startOffset, "-!|_|!-");
+				endContainer.insertData(endOffset, TEXT_ID);
+				startContainer.insertData(startOffset, TEXT_ID);
 
 				console.log(range);
 				var commonAncestorContainer = range.commonAncestorContainer;
@@ -236,7 +238,7 @@ $(document).ready(function() {
 					commonAncestorContainer = commonAncestorContainer.parentElement;
 				}
 				
-				commonAncestorContainer.className += " TwoReceipt";
+				commonAncestorContainer.className += CLASS_NAME;
 				
 				var msg_data = {
 					response: htmlGet.substring(5),
@@ -251,11 +253,11 @@ $(document).ready(function() {
 				console.log(msg_data);
 				incomingPort.postMessage(msg_data);
 				
-				commonAncestorContainer.className = commonAncestorContainer.className.replace(" TwoReceipt", "");
+				commonAncestorContainer.className = commonAncestorContainer.className.replace(CLASS_NAME, "");
 				
 				// startContainer deletion first so we can use existing endOffset
-				startContainer.deleteData(startOffset, 7);
-				endContainer.deleteData(endOffset, 7);
+				startContainer.deleteData(startOffset, TEXT_ID.length);
+				endContainer.deleteData(endOffset, TEXT_ID.length);
 			}
 		}
 	});
