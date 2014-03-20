@@ -36,10 +36,12 @@ UpdateComplete - Completely Loaded URL
 notificationStatusArray = ["noPurchase", "POSTRequest", "POSTComplete", "GETRequest", "UpdateLoading", "GETComplete", "UpdateComplete"],
 notificationStatus = notificationStatusArray[0],
 notificationTimeout,
-TIMEOUT = 10000;
+TIMEOUT = 10000,
 
-function messageResourceServer(receipt_attr, selection, data, html, text, url, domain) {
-	var host = "http://localhost:8888/template";
+aServerHost = "http://localhost:8888";
+
+function sendAttributeTemplate(receipt_attr, selection, data, html, text, url, domain) {
+	var host = aServerHost + "/template";
 	var message = {
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
@@ -59,20 +61,25 @@ function messageResourceServer(receipt_attr, selection, data, html, text, url, d
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
 	});
+}
+
+function sendDomain(html, url, domain) {
+	var host = aServerHost + "/load";
+	var message = {
+		token: localStorage["authToken"],
+		userID: localStorage["userID"],
+		email: localStorage["userEmail"],
+		html: html,
+		url: url,
+		domain: domain
+	};
 	
-	/*$.post(host, message, function (data, status) {
+	request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
 	});
-	
-	$.post(host, message, function (data, status) {
-		alert("Data: " + data + "\nStatus: " + status);
-	})
-	.fail( function(xhr, textStatus, errorThrown) {
-		alert(xhr.responseText);
-	});*/
 }
 
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
@@ -99,41 +106,53 @@ function createReceiptPopup()
 	chrome.windows.create({"url" : "addreceipt.html", "type" : "popup"});
 }
 
-function receiptSetup() {
+function receiptSetup(first) {
 	// setup message passing connection with current tab
 	port = chrome.tabs.connect(currentTabId, {name: "newReceipt"});
 	console.log("Connected to port: " + port.name + " for tab: " + currentTabId);
 	
+  // prompt content.js for data if new receipt popup
+  if (first) {
+    port.postMessage({"request": "initializeData"});
+  }
+  
 	// maintain existing pull state
 	port.postMessage({"request": pullState});
 	
 	port.onMessage.addListener(function(msg) {
-		var element = msg.data;
-		element = html_sanitize(element, urlX, idX);
-		
-		var pageHTML = msg.html;
+    var pageHTML = msg.html;
 		pageHTML = html_sanitize(pageHTML, urlX, idX);
-		var parser = new DOMParser();
-		var doc = parser.parseFromString(element, "text/html");
-		
-		// iframe message, url/domain may not match
-		
-		var sendData;
-		if (msg.selection === "")
-		{
-			sendData = doc.body.innerText;
-		}
-		else
-		{
-			sendData = msg.selection;
-		}
-		console.log("Received msg: " + sendData + " from port: " + port.name);
-		
-		// message attribute field text to receipt popup
-		window[sendData] = sendData;
-		receiptPort.postMessage({"request": sendData});
-		// message node js server attribute data
-		messageResourceServer(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+    
+		if (msg.response == "initializeData") {
+      // message node js server html & domain data
+      sendDomain(pageHTML, msg.url, msg.domain);
+    } else {
+      var element = msg.data;
+      element = html_sanitize(element, urlX, idX);
+
+   		var parser = new DOMParser();
+      var doc = parser.parseFromString(element, "text/html");
+      
+      // iframe message, url/domain may not match
+      
+      var sendData;
+      if (msg.selection === "")
+      {
+        sendData = doc.body.innerText;
+      }
+      else
+      {
+        sendData = msg.selection;
+      }
+      console.log("Received msg: " + sendData + " from port: " + port.name);
+
+      // message attribute field text to receipt popup
+      window[sendData] = sendData;
+      receiptPort.postMessage({"request": sendData});
+      
+      // message node js server attribute data
+      messageAttributeTemplate(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+    }
 	});
 	
 	port.onDisconnect.addListener(function(msg) {
@@ -669,7 +688,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 				newReceipt = sender.tab.id;
 				if (currentTabId != null)
 				{
-					receiptSetup();
+					receiptSetup(true);
 				}
 			}
 			break;

@@ -113,8 +113,7 @@ $(document).ready(function() {
 			if (element[0].tagName === "A" || window.getSelection().toString() === "" || element[0].tagName === "BODY")
 			{
 				element[0].className += CLASS_NAME;
-				console.log(element);
-
+				
 				var msg_data = {
 					response: htmlGet.substring(5),
 					selection: "",
@@ -140,7 +139,6 @@ $(document).ready(function() {
 			{
 				element[0].className += CLASS_NAME;
 				
-				console.log(element);
 				var msg_data = {
 					response: htmlGet.substring(5),
 					selection: "",
@@ -172,7 +170,7 @@ $(document).ready(function() {
 		var textSelection = window.getSelection().toString();
 		
 		// only send message if text is selected or user did not click link
-		if (textSelection != "" || (mouseDownElement !== null && mouseDownElement[0].tagName !== "A" && mouseDownElement[0].tagName !== "BODY"))
+		if (textSelection != "" && mouseDownElement !== null && mouseDownElement[0].tagName !== "A" && mouseDownElement[0].tagName !== "BODY")
 		{
 			// iframe, send it to main page content script
 			if (htmlGet != "pull-off" && self !== top)
@@ -184,12 +182,19 @@ $(document).ready(function() {
 				var endContainer = range.endContainer;
 				var startOffset = range.startOffset;
 				var endOffset = range.endOffset;
-				
-				// startContainer insertion will alter endOffset so we do endContainer first
-				endContainer.insertData(endOffset, TEXT_ID);
-				startContainer.insertData(startOffset, TEXT_ID);
-
 				console.log(range);
+				// startContainer insertion will alter endOffset so we do endContainer first
+				if (endContainer.nodeType === Node.TEXT_NODE) {
+					endContainer.insertData(endOffset, TEXT_ID);
+				} else {
+					endContainer.appendChild(document.createTextNode(TEXT_ID));
+				}
+				if (startContainer.nodeType === Node.TEXT_NODE) {
+					startContainer.insertData(startOffset, TEXT_ID);
+				} else {
+					startContainer.insertBefore(document.createTextNode(TEXT_ID), startContainer.firstChild);
+				}
+
 				var commonAncestorContainer = range.commonAncestorContainer;
 				// Node.TEXT_NODE is 3 for <#text> XML nodes
 				while (commonAncestorContainer.nodeType === Node.TEXT_NODE) {
@@ -214,8 +219,18 @@ $(document).ready(function() {
 				commonAncestorContainer.className = commonAncestorContainer.className.replace(CLASS_NAME, "");
 				
 				// startContainer deletion first so we can use existing endOffset
-				startContainer.deleteData(startOffset, TEXT_ID.length);
-				endContainer.deleteData(endOffset, TEXT_ID.length);
+				if (startContainer.nodeType === Node.TEXT_NODE) {
+					startContainer.deleteData(startOffset, TEXT_ID.length);
+				} else {
+					var removeNode = startContainer.childNodes[0];
+					startContainer.removeChild(removeNode);
+				}
+				if (endContainer.nodeType === Node.TEXT_NODE) {
+					endContainer.deleteData(endOffset, TEXT_ID.length);
+				} else {
+					var removeNode = endContainer.childNodes[endContainer.childNodes.length - 1];
+					endContainer.removeChild(removeNode);
+				}
 			}
 			else if (htmlGet != "pull-off")
 			{
@@ -226,12 +241,19 @@ $(document).ready(function() {
 				var endContainer = range.endContainer;
 				var startOffset = range.startOffset;
 				var endOffset = range.endOffset;
-				
-				// startContainer insertion will alter endOffset so we do endContainer first
-				endContainer.insertData(endOffset, TEXT_ID);
-				startContainer.insertData(startOffset, TEXT_ID);
-
 				console.log(range);
+				// startContainer insertion will alter endOffset so we do endContainer first
+				if (endContainer.nodeType === Node.TEXT_NODE) {
+					endContainer.insertData(endOffset, TEXT_ID);
+				} else {
+					endContainer.appendChild(document.createTextNode(TEXT_ID));
+				}
+				if (startContainer.nodeType === Node.TEXT_NODE) {
+					startContainer.insertData(startOffset, TEXT_ID);
+				} else {
+					startContainer.insertBefore(document.createTextNode(TEXT_ID), startContainer.firstChild);
+				}
+
 				var commonAncestorContainer = range.commonAncestorContainer;
 				// Node.TEXT_NODE is 3 for <#text> XML nodes
 				while (commonAncestorContainer.nodeType === Node.TEXT_NODE) {
@@ -256,8 +278,18 @@ $(document).ready(function() {
 				commonAncestorContainer.className = commonAncestorContainer.className.replace(CLASS_NAME, "");
 				
 				// startContainer deletion first so we can use existing endOffset
-				startContainer.deleteData(startOffset, TEXT_ID.length);
-				endContainer.deleteData(endOffset, TEXT_ID.length);
+				if (startContainer.nodeType === Node.TEXT_NODE) {
+					startContainer.deleteData(startOffset, TEXT_ID.length);
+				} else {
+					var removeNode = startContainer.childNodes[0];
+					startContainer.removeChild(removeNode);
+				}
+				if (endContainer.nodeType === Node.TEXT_NODE) {
+					endContainer.deleteData(endOffset, TEXT_ID.length);
+				} else {
+					var removeNode = endContainer.childNodes[endContainer.childNodes.length - 1];
+					endContainer.removeChild(removeNode);
+				}
 			}
 		}
 	});
@@ -305,8 +337,18 @@ chrome.runtime.onConnect.addListener(function(port) {
 		incomingPort = port;
 		
 		port.onMessage.addListener(function(msg) {
-			console.log("Received msg: " + msg.request + " for port: " + port.name);
-			htmlGet = msg.request;
+      console.log("Received msg: " + msg.request + " for port: " + port.name);
+      if (msg.request == "initializeData") {
+        var msg_data = {
+					response: msg.request,
+					html: document.body.outerHTML,
+					url: location.href,
+					domain: document.domain
+				};
+				incomingPort.postMessage(msg_data);
+      } else {
+        htmlGet = msg.request;
+      }
 		});
 		
 		port.onDisconnect.addListener(function() {

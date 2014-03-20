@@ -189,11 +189,7 @@ function getJsonData(jsonUrl, doneCallback)
   }).done(function(data){
     doneCallback(data);
   }).fail(function (jqXHR, textStatus, errorThrown){
-    alert("Failed to retrieve json data");
-  // log the error to the console
-   // console.error(
-    //  "The following error occurred: " + textStatus,
-     // errorThrown);
+    //alert("Failed to retrieve json data");
   });
 }
 
