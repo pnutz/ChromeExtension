@@ -151,7 +151,7 @@ function receiptSetup(first) {
       receiptPort.postMessage({"request": sendData});
       
       // message node js server attribute data
-      messageAttributeTemplate(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+      sendAttributeTemplate(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
     }
 	});
 	
