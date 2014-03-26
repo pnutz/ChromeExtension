@@ -359,11 +359,17 @@ $(document).ready(function () {
 		backgroundPort = port;
 		
 		port.onMessage.addListener(function(msg) {
-			console.log("Received msg: " + msg.request + " for port: " + port.name);
-			if (activeElement != null)
-			{
-				$("#" + activeElement).val(background.window[msg.request]);
-			}
+      if (msg.attribute == null) {
+        console.log("Received msg: " + msg.request + " for port: " + port.name);
+        if (activeElement != null)
+        {
+          $("#" + activeElement).val(background.window[msg.request]);
+        }
+      } else {
+        console.log(msg.attribute);
+        console.log(msg.request);
+        $("#receipt-form-" + msg.attribute).val(msg.request);
+      }
 		});
 		
 		port.onDisconnect.addListener(function() {

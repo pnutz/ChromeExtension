@@ -75,7 +75,16 @@ function sendDomain(html, url, domain) {
 	};
 	
 	request = $.post(host, message, function (data, status) {
-		alert("Data: " + data + "\nStatus: " + status);
+    var json_data = "[" + data + "]";
+    console.log(json_data);
+    var response = $.parseJSON(json_data);
+    // message attribute field text to receipt popup
+    $.each(response, function() {
+      $.each(this, function(key, value) {
+        receiptPort.postMessage({"request": value, "attribute": key});
+      });
+    });
+		alert("Data: " + response + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
@@ -136,7 +145,7 @@ function receiptSetup(first) {
       // iframe message, url/domain may not match
       
       var sendData;
-      if (msg.selection === "")
+      if (msg.selection === null)
       {
         sendData = doc.body.innerText;
       }
@@ -151,7 +160,11 @@ function receiptSetup(first) {
       receiptPort.postMessage({"request": sendData});
       
       // message node js server attribute data
-      sendAttributeTemplate(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+      if (msg.selection == null) {
+        sendAttributeTemplate(msg.response, "", element, pageHTML, msg.text, msg.url, msg.domain);
+      } else if (msg.selection.trim() !== "") {
+        sendAttributeTemplate(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+      }
     }
 	});
 	
