@@ -1,5 +1,3 @@
-// TODO: Deprecate this and use API comm
-
 var host = "http://localhost:3000";
 //var host = "http://72.52.131.224";
 var controllers = {"tokens" : "/api/v1/tokens",
