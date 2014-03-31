@@ -1,5 +1,5 @@
 // form data
-var title = null,
+/*var title = null,
 date = null,
 vendor = null,
 total = null,
@@ -8,10 +8,10 @@ transaction = null,
 receipt_items = null,
 name,
 cost,
-quantity,
+quantity,*/
 
 // addReceipt popup sets to tabId when it opens, null when closed
-newReceipt = null,
+var newReceipt = null,
 port,
 receiptPort,
 pullState = "pull-off",
@@ -38,22 +38,66 @@ notificationStatus = notificationStatusArray[0],
 notificationTimeout,
 TIMEOUT = 10000,
 
+attributes = [],
 aServerHost = "http://localhost:8888";
 
-function sendAttributeTemplate(receipt_attr, selection, data, html, text, url, domain) {
+function appendAttributeData(receipt_attr, selection, data, html, text, url, domain) {
+  /*    attributes = [
+      name = 
+      // need to know which receipt item the data is coming from..
+      // actual pull-message doesn't matter.
+      // can have 1-quantity, 1-name
+      // loop through each receipt_attr
+      {
+        attribute: receipt_attr,
+        selection: selection,
+        element: data,
+        html: html,
+        text: text,
+        url: url,
+        domain: domain
+      },
+      {
+        attribute: receipt_attr,
+        selection: selection,
+        element: data,
+        html: html,
+        text: text,
+        url: url,
+        domain: domain
+      },
+      // grouped, loop through each receipt_attr
+      grouped: [
+        {
+          attribute: receipt_attr,
+          selection: selection,
+          element: data,
+          html: html,
+          text: text,
+          url: url,
+          domain: domain
+        },
+        {
+        attribute: receipt_attr,
+        selection: selection,
+        element: data,
+        html: html,
+        text: text,
+        url: url,
+        domain: domain
+      }, 
+      ]
+    ];*/
+}
+
+function sendAttributeTemplate() {
 	var host = aServerHost + "/template";
 	var message = {
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
-		email: localStorage["userEmail"],
-		attribute: receipt_attr,
-		selection: selection,
-		element: data,
-		html: html,
-		text: text,
-		url: url,
-		domain: domain
+		email: localStorage["userEmail"]
 	};
+  message["attributes"] = attributes;
 	
 	request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
@@ -75,7 +119,13 @@ function sendDomain(html, url, domain) {
 	};
 	
 	request = $.post(host, message, function (data, status) {
-		alert("Data: " + data + "\nStatus: " + status);
+    var json_data = "[" + data + "]";
+    var response = $.parseJSON(json_data);
+    // message attribute field text to receipt popup
+    $.each(response[0], function(key, value) {
+      receiptPort.postMessage({"request": value, "attribute": key});
+    });
+		alert("Data: " + json_data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
@@ -136,7 +186,7 @@ function receiptSetup(first) {
       // iframe message, url/domain may not match
       
       var sendData;
-      if (msg.selection === "")
+      if (msg.selection === null)
       {
         sendData = doc.body.innerText;
       }
@@ -151,7 +201,11 @@ function receiptSetup(first) {
       receiptPort.postMessage({"request": sendData});
       
       // message node js server attribute data
-      sendAttributeTemplate(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+      if (msg.selection == null) {
+        appendAttributeData(msg.response, "", element, pageHTML, msg.text, msg.url, msg.domain);
+      } else if (msg.selection.trim() !== "") {
+        appendAttributeData(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
+      }
     }
 	});
 	
@@ -271,6 +325,26 @@ chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 		console.log(notificationStatus);
 	}
 });
+
+function closeReceipt() {
+  console.log("Popup closed - Disconnected from port & receiptPort");
+  newReceipt = null;
+  pullState = "pull-off";
+  
+  if (port != null)
+  {
+    port.disconnect();
+  }
+  port = null;
+  
+  if (receiptPort != null)
+  {
+    receiptPort.disconnect();
+  }
+  receiptPort = null;
+  attributes = [];
+}
+
 // all HTTP requests fall under:
 // onCompleted - CAN REDIRECT
 // onErrorOccurred - if not completed - don't worry about
@@ -428,18 +502,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			}
 			break;
 		
+    // MANUAL CASE, NOT NECESSARY ANYMORE
 		// uses html sanitizer to remove dangerous tags from the page html
-		case "parseHTML":
-			// html method
-			var output = request.data;
-			output = html_sanitize(request.data, urlX, idX);
-			// sanitized html
-			/*console.log(output);
-			var parser = new DOMParser();
-			var doc = parser.parseFromString(output, "text/html");
-			// DOM
-			console.log(doc);*/
-			
+		/*case "parseHTML":
 			// trying text method
 			var text = request.text;
 			console.log(text);
@@ -658,28 +723,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 				}
 				
 				receipt_items.push({'name': tax2, 'cost': cost, 'quantity': quantity});
-									
-				/*receipt_items = [
-					{
-						'name': "Nintendo 3DS XL",
-						'cost': 12.99,
-						'quantity': 2
-					},
-					{
-						'name': "SteelSeries QcK Gaming Mouse Pad (Black)",
-						'cost': 9.98,
-						'quantity': 1
-					},
-					{
-						'name': "Shipping & Handling",
-						'cost': -4.48,
-						'quantity': 1
-					}
-				];*/
 				
 				createReceiptPopup();
 			}
-			break;
+			break;*/
 		
 		// new Receipt popup - only connects to one at a time!
 		case "newReceipt":
@@ -693,23 +740,14 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			}
 			break;
 		
+    // receipt popup saved, send data to aServer
+    case "saveReceipt":
+      sendAttributeTemplate();
+      closeReceipt();
+      break;
+    
 		case "closeReceipt":
-			console.log("Popup closed - Disconnected from port & receiptPort");
-			newReceipt = null;
-			pullState = "pull-off";
-			
-			if (port != null)
-			{
-				port.disconnect();
-			}
-			port = null;
-			
-			if (receiptPort != null)
-			{
-				receiptPort.disconnect();
-			}
-			receiptPort = null;
-			
+			closeReceipt();
 			break;
 		
 		default:

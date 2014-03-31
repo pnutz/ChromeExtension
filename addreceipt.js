@@ -265,7 +265,7 @@ function dataButtonToggle(element, itemCount)
 				glyph.removeClass('green');
 			}
 		
-			chrome.runtime.sendMessage({greeting: "pull-" + element});
+			chrome.runtime.sendMessage({greeting: "pull-" + itemCount + "-" + element});
 			activeElement = "receipt-item-" + itemCount + "-" + element;
 			
 			$("label[for=" + activeElement + "]").closest('div').addClass('has-success');
@@ -359,11 +359,22 @@ $(document).ready(function () {
 		backgroundPort = port;
 		
 		port.onMessage.addListener(function(msg) {
-			console.log("Received msg: " + msg.request + " for port: " + port.name);
-			if (activeElement != null)
-			{
-				$("#" + activeElement).val(background.window[msg.request]);
-			}
+      console.log("Received msg: " + msg.request + " for port: " + port.name);
+      // message from pulled data
+      if (msg.attribute == null) {
+        if (activeElement != null)
+        {
+          $("#" + activeElement).val(background.window[msg.request]);
+          background.window[msg.request] = null;
+          // need to know what activeElement is on eventPage
+        }
+      }
+      // message from aServer
+      else {
+        // if receipt items, need to create new rows
+        console.log("Message data: " + msg.attribute);
+        $("#receipt-form-" + msg.attribute).val(msg.request);
+      }
 		});
 		
 		port.onDisconnect.addListener(function() {
@@ -375,7 +386,8 @@ $(document).ready(function () {
 	// pull data sent from site if it has not been pulled (event occurs after setting current date)
 	chrome.runtime.getBackgroundPage(function (loadedBackground) {
 		background = loadedBackground;
-		
+		/*
+    // OLD METHOD OF SETTING FORM DATA
 		$("#receipt-form-title").val(background.title);
 		if (background.date !== null)
 		{
@@ -422,12 +434,18 @@ $(document).ready(function () {
 		background.currencies = null;
 		background.transaction = null;
 		background.receipt_items = null;
-		
-		var form_title = $("#receipt-form-title");
-		form_title.focus();
-		form_title.select();
+    */
 	});
 	
+  // set current date
+  var today = new Date();
+  $("#receipt-form-date").val("" + ("0" + (today.getMonth() + 1).toString()).slice(-2) + "/" + ("0" + today.getDate()).slice(-2) + "/" + today.getFullYear());
+  
+  // focus on receipt title
+  var form_title = $("#receipt-form-title");
+	form_title.focus();
+  form_title.select();
+  
 	getJsonData(foldersUrl, getFolders);
   var currenciesUrl = host + controllers["currencies"] + ".json";
   getJsonData(currenciesUrl, getCurrencies);
@@ -474,7 +492,7 @@ $(document).ready(function () {
     }).done(function(data){
 			alert("submitted");
       window.close();
-			chrome.runtime.sendMessage({greeting: "closeReceipt"});
+			chrome.runtime.sendMessage({greeting: "saveReceipt"});
     }).fail(function (jqXHR, textStatus, errorThrown){
       // log the error to the console
       console.error(

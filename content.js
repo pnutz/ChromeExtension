@@ -116,7 +116,7 @@ $(document).ready(function() {
 				
 				var msg_data = {
 					response: htmlGet.substring(5),
-					selection: "",
+					selection: null,
 					data: element[0].outerHTML,
 					html: document.body.outerHTML,
 					text: document.body.innerText,
@@ -141,7 +141,7 @@ $(document).ready(function() {
 				
 				var msg_data = {
 					response: htmlGet.substring(5),
-					selection: "",
+					selection: null,
 					data: element[0].outerHTML,
 					html: document.body.outerHTML,
 					text: document.body.innerText,
