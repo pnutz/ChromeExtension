@@ -67,10 +67,18 @@ document.addEventListener('DOMContentLoaded', function()
   //If we have an auth Token, use it to login
   if (localStorage["authToken"]) 
   {
-    //TODO: we should probably check if the token works
-    $("#main-div").show();
-    $("#main-div-user-email").text("Logged in as: " + localStorage["userEmail"]);
-  }
+    var folderUrl = appendCred(getCtrlUrlJson("folders"));
+    // Grab folders from server to check authentication
+    $.get(folderUrl, function(data){
+      // success
+      $("#main-div").show();
+      $("#main-div-user-email").text("Logged in as: " + localStorage["userEmail"]);
+    })
+    .fail(function(){
+      $("#login-div").show();
+      console.log("Failed to retrieve folders on login.");
+    });
+      }
   else //else prompt for credentials
   {
     $("#login-div").show();
