@@ -38,56 +38,63 @@ notificationStatus = notificationStatusArray[0],
 notificationTimeout,
 TIMEOUT = 10000,
 
-attributes = [],
+attributes = {},
 aServerHost = "http://localhost:8888";
 
+// store json message with the latest data for each attribute
 function appendAttributeData(receipt_attr, selection, data, html, text, url, domain) {
-  /*    attributes = [
-      name = 
-      // need to know which receipt item the data is coming from..
-      // actual pull-message doesn't matter.
-      // can have 1-quantity, 1-name
-      // loop through each receipt_attr
-      {
-        attribute: receipt_attr,
-        selection: selection,
-        element: data,
-        html: html,
-        text: text,
-        url: url,
-        domain: domain
-      },
-      {
-        attribute: receipt_attr,
-        selection: selection,
-        element: data,
-        html: html,
-        text: text,
-        url: url,
-        domain: domain
-      },
-      // grouped, loop through each receipt_attr
-      grouped: [
-        {
-          attribute: receipt_attr,
-          selection: selection,
-          element: data,
-          html: html,
-          text: text,
-          url: url,
-          domain: domain
-        },
-        {
-        attribute: receipt_attr,
-        selection: selection,
-        element: data,
-        html: html,
-        text: text,
-        url: url,
-        domain: domain
-      }, 
-      ]
-    ];*/
+
+  /* format
+    attributes {  name: {},
+                  date: {},
+                  items: {
+                    1: {
+                          name: {},
+                          quantity: {},
+                          price: {}
+                      },
+                    2: {
+                          name: {},
+                          quantity: {},
+                          price: {}
+                      }
+                  }
+  */
+
+  // non-receipt-item attributes
+  if (receipt_attr.indexOf("-") == -1) {
+    attributes[receipt_attr] = {
+      attribute: receipt_attr,
+      selection: selection,
+      element: data,
+      html: html,
+      text: text,
+      url: url,
+      domain: domain
+    };
+  // receipt-item attributes
+  } else {
+    var index = receipt_attr.indexOf("-");
+    var attr = receipt_attr.substring(index + 1);
+    var item_num = receipt_attr.substring(0, index);
+    // initialize items key
+    if (attributes["items"] == null) {
+      attributes["items"] = {};
+    }
+    if (attributes["items"][item_num] == null) {
+      attributes["items"][item_num] = {};
+    }
+    attributes["items"][item_num][attr] = {
+      attribute: attr,
+      selection: selection,
+      element: data,
+      html: html,
+      text: text,
+      url: url,
+      domain: domain
+    };
+  }
+  console.log(attributes);
 }
 
 function sendAttributeTemplate() {
@@ -95,10 +102,11 @@ function sendAttributeTemplate() {
 	var message = {
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
-		email: localStorage["userEmail"]
+		email: localStorage["userEmail"],
+    attributes: {}
 	};
-  message["attributes"] = attributes;
-	
+  message["attributes"] = JSON.stringify(attributes);
+  
 	request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
@@ -342,7 +350,7 @@ function closeReceipt() {
     receiptPort.disconnect();
   }
   receiptPort = null;
-  attributes = [];
+  attributes = {};
 }
 
 // all HTTP requests fall under:
