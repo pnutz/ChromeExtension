@@ -6,7 +6,7 @@ var lastClicked;
 var mouseDownElement;
 var TEXT_ID = "-!|_|!-";
 var CLASS_NAME = " TwoReceipt";
-
+ 
 $(document).ready(function() {
 	if (self === top)
 	{

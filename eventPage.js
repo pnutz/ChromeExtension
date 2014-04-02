@@ -9,7 +9,7 @@ receipt_items = null,
 name,
 cost,
 quantity,*/
-
+ 
 // addReceipt popup sets to tabId when it opens, null when closed
 var newReceipt = null,
 port,
