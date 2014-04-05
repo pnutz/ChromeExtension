@@ -137,6 +137,13 @@ $(document).ready(function() {
 			{
 				element[0].className += CLASS_NAME;
 				
+        var message_domain;
+        if (document.domain == null || document.domain == "") {
+          message_domain = "DOMAIN";
+        } else {
+          message_domain = document.domain;
+        }
+        
 				var msg_data = {
 					response: htmlGet.substring(5),
 					selection: null,
@@ -144,7 +151,7 @@ $(document).ready(function() {
 					html: document.body.outerHTML,
 					text: document.body.innerText,
 					url: location.href,
-					domain: document.domain
+					domain: message_domain
 				};
 				
         // iframe, send it to main page content script
@@ -223,6 +230,13 @@ $(document).ready(function() {
 				
 				commonAncestorContainer.className += CLASS_NAME;
 				
+        var message_domain;
+        if (document.domain == null || document.domain == "") {
+          message_domain = "DOMAIN";
+        } else {
+          message_domain = document.domain;
+        }
+        
 				var msg_data = {
 					response: htmlGet.substring(5),
 					selection: textSelection,
@@ -230,7 +244,7 @@ $(document).ready(function() {
 					html: document.body.outerHTML,
 					text: document.body.innerText,
 					url: location.href,
-					domain: document.domain
+					domain: message_domain
 				};
 				
 				console.log(msg_data);
@@ -301,7 +315,14 @@ chrome.runtime.onConnect.addListener(function(port) {
 		console.log("Connected to port: " + port.name);
 		console.assert(port.name == "newReceipt");
 		incomingPort = port;
-		
+    
+    var message_domain;
+    if (document.domain == null || document.domain == "") {
+      message_domain = "DOMAIN";
+    } else {
+      message_domain = document.domain;
+    }
+    
 		port.onMessage.addListener(function(msg) {
       console.log("Received msg: " + msg.request + " for port: " + port.name);
       if (msg.request == "initializeData") {
@@ -309,7 +330,7 @@ chrome.runtime.onConnect.addListener(function(port) {
 					response: msg.request,
 					html: document.body.outerHTML,
 					url: location.href,
-					domain: document.domain
+					domain: message_domain
 				};
 				incomingPort.postMessage(msg_data);
       } else {

@@ -131,7 +131,14 @@ function sendDomain(html, url, domain) {
     var response = $.parseJSON(json_data);
     // message attribute field text to receipt popup
     $.each(response[0], function(key, value) {
-      receiptPort.postMessage({"request": value, "attribute": key});
+      if (key != "items") {
+        receiptPort.postMessage({"request": value, "attribute": key});
+      } else {
+        $.each(value, function(key2, item_attributes) {
+          // new receipt item
+          receiptPort.postMessage({"request": item_attributes, "attribute": "item"});
+        });
+      }
     });
 		alert("Data: " + json_data + "\nStatus: " + status);
 	})

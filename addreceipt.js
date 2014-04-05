@@ -48,20 +48,27 @@ function getPurchaseTypes(data)
     }
 }
 
-function addSpanButtonTo(appendId, name, numValue) {
-	$("<button>", {"class": "btn btn-default btn-md",
-															"id": appendId + "-button",
-															"type": "button"}).appendTo("#" + appendId + "-div");
-	$("<span/>", {"class": "glyphicon glyphicon-floppy-save",
-																	"id": appendId + "-glyphicon"}).appendTo("#" + appendId + "-button");
-	// event handler for button-press
-	$("#" + appendId + "-button").click(function() {
-		dataButtonToggle(name, numValue);
-	});
+function ReceiptItem(name, quantity, cost) {
+  if (name != null) {
+    this.name = name;
+  } else {
+    this.name = "";
+  }
+  
+  if (quantity != null) {
+    this.quantity = quantity;
+  } else {
+    this.quantity = 1;
+  }
+  
+  if (cost != null) {
+    this.cost = cost;
+  } else {
+    this.cost = "0.00";
+  }
 }
 
-//TODO:Should probably put receipt items into a class
-function addReceiptItem() {
+ReceiptItem.prototype.render = function() {
   var listItemId = "receipt-form-list-item-" + receiptItemCount;
   $("<li></li>", {"class": "list-group-item receipt-item", "id": listItemId}).appendTo("#receipt-form-item-list");
 	var receiptItemId = "receipt-item-" + receiptItemCount;
@@ -73,38 +80,39 @@ function addReceiptItem() {
 	// div to hold name
 	$("<div>", {"id": nameId + "-div", "class": "item-name"}).appendTo("#" + listItemId);
   $("<label/>", {"for": nameId, text : "Item " + receiptItemCount + " Name", "class": "control-label"}).appendTo("#" + nameId + "-div");
-	addSpanButtonTo(nameId, "name", receiptItemCount);	
+	addSpanButton(nameId, "name", receiptItemCount);	
   $("<input/>", {"class" : "form-control input-sm", 
                  "id": nameId, 
                  "name": "itemtype",
-                 "type" : "text"}).appendTo("#" + nameId + "-div");
+                 "type" : "text",
+                 "value": this.name}).appendTo("#" + nameId + "-div");
   // cost of item
   var costId = receiptItemId + "-cost";
 	// div to hold cost
 	$("<div>", {"id": costId + "-div", "class": "form-group item-cost"}).appendTo("#" + listItemId);
   $("<label/>", {"for": costId, text : "Cost", "class": "control-label"}).appendTo("#" + costId + "-div");
-	addSpanButtonTo(costId, "cost", receiptItemCount);	
+	addSpanButton(costId, "cost", receiptItemCount);	
   $("<input/>", {"class" : "form-control cost-input input-sm",
                  "id": costId,
                  "name": "cost", 
-                 "type" : "text",
-                 "value" : "0.00"}).appendTo("#" + costId + "-div");
+                 "type": "text",
+                 "value": this.cost}).appendTo("#" + costId + "-div");
   
 	// quantity
 	var quantityId = receiptItemId + "-quantity";
 	// div to hold quantity
 	$("<div>", {"id": quantityId + "-div", "class": "form-group item-quantity"}).appendTo("#" + listItemId);
   $("<label/>", {"for": quantityId, text : "Quantity", "class": "control-label"}).appendTo("#" + quantityId + "-div");
-	addSpanButtonTo(quantityId, "quantity", receiptItemCount);	
+	addSpanButton(quantityId, "quantity", receiptItemCount);	
   $("<input/>", {"class" : "form-control input-sm input-quantity",
                  "id": quantityId, 
                  "name": "quantity", 
-                 "type" : "text",
-                 "value" : "1"}).appendTo("#" + quantityId + "-div");
+                 "type": "text",
+                 "value": this.quantity}).appendTo("#" + quantityId + "-div");
   /*$("<label/>", {"for": receiptItemId + "-is-credit", text: "Is Credit?"}).appendTo("#" + listItemId);
-  $("<input/>", {"id": receiptItemId + "-is-credit", 
-                 "name": "is_credit", 
-                 "type" : "checkbox"}).appendTo("#" + listItemId);*/
+  $("<input/>", {"id": receiptItemId + "-is-credit",
+                 "name": "is_credit",
+                 "type": "checkbox"}).appendTo("#" + listItemId);*/
 
   // Register event handler for when the cost changes
   $(".input-quantity, .cost-input").keyup(function(event){
@@ -116,6 +124,10 @@ function addReceiptItem() {
 	$("<div>", {"id": destroyId + "-div", "class": "item-destroy"}).appendTo("#" + listItemId);
 	$("<button/>", {"id": receiptItemId + "-item-remove", "class": "btn btn-default", "type": "button", text: "Remove Item"}).appendTo("#" + destroyId + "-div");
 	$("<input/>", {"id": destroyId, "type": "hidden", "name": "_destroy", "value": false, "class": "destroy-input"}).appendTo("#" + destroyId + "-div");
+  
+  var form_total = $("#receipt-form-total");
+  form_total.prop("disabled", "true");
+  form_total.val(sumReceiptItemCosts());
   
 	// Register event handler for when the cost changes
   $("#" + receiptItemId + "-item-remove").click(function(event){
@@ -137,6 +149,18 @@ function addReceiptItem() {
   });
 	
   receiptItemCount++;
+};
+
+function addSpanButton(appendId, name, numValue) {
+	$("<button>", {"class": "btn btn-default btn-md",
+															"id": appendId + "-button",
+															"type": "button"}).appendTo("#" + appendId + "-div");
+	$("<span/>", {"class": "glyphicon glyphicon-floppy-save",
+																	"id": appendId + "-glyphicon"}).appendTo("#" + appendId + "-button");
+	// event handler for button-press
+	$("#" + appendId + "-button").click(function() {
+		dataButtonToggle(name, numValue);
+	});
 }
 
 //TODO: round to 4 decimal places
@@ -371,9 +395,28 @@ $(document).ready(function () {
       }
       // message from aServer
       else {
-        // if receipt items, need to create new rows
         console.log("Message data: " + msg.attribute);
-        $("#receipt-form-" + msg.attribute).val(msg.request);
+        if (msg.attribute !== "item") {
+          $("#receipt-form-" + msg.attribute).val(msg.request);
+        }
+        // if receipt items, need to create new rows
+        else {
+          var name = null;
+          if (msg.request.hasOwnProperty("name")) {
+            name = msg.request["name"];
+          }
+          
+          var quantity = null;
+          if (msg.request.hasOwnProperty("quantity")) {
+            quantity = msg.request["quantity"];
+          }
+          
+          var cost = null;
+          if (msg.request.hasOwnProperty("cost")) {
+            cost = msg.request["cost"];
+          }
+          new ReceiptItem(name, quantity, cost).render();
+        }
       }
 		});
 		
@@ -410,16 +453,7 @@ $(document).ready(function () {
 			if (length > 0)
 			{
 				for (var itemCount = 0; itemCount < length; itemCount++) {
-					addReceiptItem();
-					var formItemCount = itemCount + 1;
-					
-					$("#receipt-item-" + formItemCount + "-name").val(bgReceiptItems[itemCount].name);
-					$("#receipt-item-" + formItemCount + "-cost").val(bgReceiptItems[itemCount].cost);
-					$("#receipt-item-" + formItemCount + "-quantity").val(bgReceiptItems[itemCount].quantity);
-					if (bgReceiptItems[itemCount].cost < 0)
-					{
-						$("#receipt-item-" + formItemCount + "-is-credit").prop('checked', true);
-					}
+					new ReceiptItem(bgReceiptItems[itemCount].name, bgReceiptItems[itemCount].cost, bgReceiptItems[itemCount].quantity).render();
 				}
 				
 				$("#receipt-form-total").prop("disabled", "true");
@@ -455,10 +489,7 @@ $(document).ready(function () {
   //If we manually add a receipt item, disable
   //the ability to enter total
   $("#receipt-form-item-add").click(function(event){
-    addReceiptItem();
-		var form_total = $("#receipt-form-total");
-    form_total.prop("disabled", "true");
-    form_total.val(sumReceiptItemCosts());
+    new ReceiptItem().render();
   });
 
   //Capture changes to item list
@@ -482,8 +513,6 @@ $(document).ready(function () {
 		// are you sure dialog should not appear
 		window.onbeforeunload = null;
 		
-    //receiptData["receipt"]["total"] = 0;
-    //receiptData["receipt"]["transaction_number"] = 0;
     var receiptRequest = $.ajax({
       url: appendCred(receiptsUrl),
       type: 'POST',
