@@ -366,12 +366,12 @@ $(document).ready(function () {
 	// prompt user to confirm close
 	window.onbeforeunload = function() {
 		return "Receipt data will be discarded.";
-	}
+	};
 	
 	// clean up message passing
 	window.onunload = function() {
 		chrome.runtime.sendMessage({greeting: "closeReceipt"});
-	}
+	};
 	
 	// setup message passing between add receipt and background
 	chrome.runtime.sendMessage({greeting: "newReceipt"});
@@ -533,5 +533,6 @@ $(document).ready(function () {
   $('#receipt-submit-cancel').click(function(event){
 		// using the default chrome dialog works for chrome.windows popup
 		window.close();
+    chrome.runtime.sendMessage({greeting: "closeReceipt"});
   });
 });
