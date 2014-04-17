@@ -15,11 +15,12 @@
 		{
 			"matches": ["<all_urls>"],
 			"js":	["jquery-2.0.3.min.js", "content.js"],
-			"all_frames": true
+			"all_frames": false,
+      "run_at" : "document_start"
 		}
 	],
 	"background": {
-		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "eventPage.js"]
+		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "eventPage.js", "serverhelper.js"]
 		// eventPage ("persistent": false) doesn't work with webRequest permissions
 	},
 	"web_accessible_resources": [

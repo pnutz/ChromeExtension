@@ -39,7 +39,11 @@ notificationTimeout,
 TIMEOUT = 10000,
 
 attributes = {},
-aServerHost = "http://localhost:8888";
+aServerHost = "http://localhost:8888",
+fbOauthData = { 
+                bIsLoggingIn : false,
+                tabId: 0 
+              };
 
 // store json message with the latest data for each attribute
 function appendAttributeData(receipt_attr, selection, data, html, text, url, domain) {
@@ -279,6 +283,21 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 
 // track tab changes
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
+  // If we are logging in
+  if (fbOauthData.bIsLoggingIn && 
+      (tabId == fbOauthData.tabId) &&
+      (changeInfo.url != undefined))
+  {
+    console.log(changeInfo.url);
+    // split the url to remove the hostname
+    splitUrl = changeInfo.url.split("#");
+    // split the url with "&" delimiter to get param and value of access_token and expires_in
+    splitUrl = splitUrl[1].split("&");
+    // get the access token
+    accessToken = splitUrl[0].split("=");
+    localStorage["fbAccessToken"] = accessToken[1];
+  }
+
 	// tab created or refreshed (changeInfo.url only set if different from previous state - in loading status)
 	if (changeInfo.status == "complete" && changeInfo.url === undefined)
 	{	
@@ -517,6 +536,15 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			}
 			break;
 		
+    // Facebook login flow
+    case "FB_LOGIN_OAUTH":
+      console.log("got fb login flow message");
+      // Create a new tab for the facebook oauth flow
+      chrome.tabs.create({ url: k_redirectUrlFb }, function(tab) {
+        fbOauthData.bIsLoggingIn = true;
+        fbOauthData.tabId = tab.id;
+      });
+      break;
     // MANUAL CASE, NOT NECESSARY ANYMORE
 		// uses html sanitizer to remove dangerous tags from the page html
 		/*case "parseHTML":

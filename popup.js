@@ -3,9 +3,12 @@
 // found in the LICENSE file.
 
 var request;
-// Run our kitten generation script as soon as the document's DOM is ready.
 document.addEventListener('DOMContentLoaded', function() 
 {
+  $("#fb-login").click(function(){
+    chrome.runtime.sendMessage({greeting: "FB_LOGIN_OAUTH"});
+  });
+
 	// Setup registration link click action
 	$("#registration").click(function()
 	{
