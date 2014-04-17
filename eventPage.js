@@ -39,6 +39,7 @@ notificationTimeout,
 TIMEOUT = 10000,
 
 attributes = {},
+generated = {},
 aServerHost = "http://localhost:8888",
 fbOauthData = { 
                 bIsLoggingIn : false,
@@ -47,7 +48,6 @@ fbOauthData = {
 
 // store json message with the latest data for each attribute
 function appendAttributeData(receipt_attr, selection, data, html, text, url, domain) {
-
   /* format
     attributes {  name: {},
                   date: {},
@@ -107,9 +107,11 @@ function sendAttributeTemplate() {
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
 		email: localStorage["userEmail"],
-    attributes: {}
+    attributes: {},
+    generated: {}
 	};
-  message["attributes"] = JSON.stringify(attributes);
+  message.attributes = JSON.stringify(attributes);
+  message.generated = JSON.stringify(generated);
   
 	request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
@@ -129,21 +131,32 @@ function sendDomain(html, url, domain) {
 		url: url,
 		domain: domain
 	};
-	
+  
 	request = $.post(host, message, function (data, status) {
     var json_data = "[" + data + "]";
     var response = $.parseJSON(json_data);
+    generated.templates = {};
     // message attribute field text to receipt popup
     $.each(response[0], function(key, value) {
-      if (key != "items") {
+      if (key != "items" && key != "templates") {
+        generated[key] = value;
+        generated.templates[key] = response[0].templates[key];
         receiptPort.postMessage({"request": value, "attribute": key});
-      } else {
+      } else if (key != "templates") {
+        generated.items = {};
+        generated.templates.items = {};
+        var item_index = 1;
+        // receipt items start at 1
         $.each(value, function(key2, item_attributes) {
+          generated.items[item_index] = item_attributes;
+          generated.templates.items[item_index] = response[0].templates.items[key2];
+          item_index++;
           // new receipt item
           receiptPort.postMessage({"request": item_attributes, "attribute": "item"});
         });
       }
     });
+    console.log(generated);
 		alert("Data: " + json_data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
@@ -205,12 +218,9 @@ function receiptSetup(first) {
       // iframe message, url/domain may not match
       
       var sendData;
-      if (msg.selection === null)
-      {
+      if (msg.selection === null) {
         sendData = doc.body.innerText;
-      }
-      else
-      {
+      } else {
         sendData = msg.selection;
       }
       console.log("Received msg: " + sendData + " from port: " + port.name);
@@ -261,20 +271,16 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 	chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
 		//console.log("onActivated - " + tab[0].id);
 		// if active tab isn't addreceipt popup - ASYNCHRONOUS, so newReceipt may not be set
-		if (!tab[0].url.match(/chrome-extension:\/\//) || !tab[0].url.match(/addreceipt.html/))
-		{
+		if (!tab[0].url.match(/chrome-extension:\/\//) || !tab[0].url.match(/addreceipt.html/)) {
 			currentTabId = activeInfo.tabId;
 			console.log(currentTabId + " " + tab[0].url);
 			
 			// popup already exists, setup connection to new tab
-			if (newReceipt != null)
-			{
-				if (port != null)
-				{
+			if (newReceipt != null) {
+				if (port != null) {
 					port.disconnect();
 					port = null;
-				}
-			
+				}			
 				receiptSetup();
 			}
 		}
@@ -548,232 +554,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         fbOauthData.tabId = tab.id;
       });
       break;
-    // MANUAL CASE, NOT NECESSARY ANYMORE
-		// uses html sanitizer to remove dangerous tags from the page html
-		/*case "parseHTML":
-			// trying text method
-			var text = request.text;
-			console.log(text);
-			
-			// MANUAL CASE FOR AMAZON
-			if (request.url.indexOf("amazon") != -1)
-			{
-				var dateSearch = "Order Placed:";
-				var orderNumberSearch = "Amazon.ca order number:";
-				var orderTotal = "Order Total:";
-				var money = "$";
-				var currencyStatus = "";
-				var shipped = "Shipment #1:";
-				var shipped_print = "Shipped on";
-				var price = "Price";
-				var howMany = "of:";
-				var condition = "Condition:";
-				var soldBy = "Sold by:";
-				var sellerProfile = "(seller profile)";
-				var shipping = "Shipping & Handling";
-				var tax1 = "Estimated GST/HST";
-				var tax2 = "Estimated PST/RST/QST";
-				
-				date = stringBetween(text, dateSearch, orderNumberSearch).trim();
-				var tempdate = new Date(date);
-				date = ("0" + tempdate.getMonth() + 1).slice(-2) + "/" + ("0" + tempdate.getDate()).slice(-2) + "/" + tempdate.getFullYear()
-				console.log("Date: " + date);
-				title = "Amazon Purchase On " + date;
-				console.log("Title: " + title);
-				transaction = stringBetween(text, orderNumberSearch, orderTotal).trim();
-				console.log("Order Number: " + transaction);
-				currencyStatus = stringBetween(text, orderTotal, money).trim();
-				currencies = currencyStatus;
-				
-				if (currencies == "")
-				{
-					currencies = "USD";
-				}
-				else if (currencies == "CDN")
-				{
-					currencies = "CAD";
-				}
-				console.log("Currency: " + currencies);
-				if (text.indexOf(shipped) == -1)
-				{
-					total = stringBetween(text, money, shipped_print).trim();
-				}
-				else
-				{
-					total = stringBetween(text, money, shipped).trim();
-				}
-				console.log("Total: " + total);
-				// vendor is amazon
-				if (text.indexOf(sellerProfile) == -1)
-				{
-					if (currencyStatus == "")
-					{
-						vendor = stringBetween(text, soldBy, money).trim();
-					}
-					else
-					{
-						vendor = stringBetween(text, soldBy, currencyStatus).trim();
-					}
-				}
-				// vendor is not amazon -- for amazon, vendor should be amazon, not individual stores purchased from
-				else
-				{
-					vendor = stringBetween(text, soldBy, sellerProfile).trim();
-				}
-				console.log("Vendor: " + vendor);
-				
-				// set text after first occurrence of currency - we know total (w/ currency) is displayed at the top
-				if (currencyStatus == "")
-				{
-					text = text.substring(text.indexOf(money) + money.length);
-				}
-				else
-				{
-					text = text.substring(text.indexOf(currencyStatus) + currencyStatus.length);
-				}
-				
-				// find number of receipt_items on page
-				var receiptItemCount = 0;
-				var ofIndex = text.indexOf(howMany);
-				while (ofIndex != -1)
-				{
-					receiptItemCount++;
-					ofIndex = text.indexOf(howMany, ofIndex + 1);
-				}
-				
-				receipt_items = [];
 
-				var name;
-				var cost;
-				var quantity;
-				var costIndex;
-				var costEnd;
-				var float_cost;
-				for (var currentItem = 1; currentItem <= receiptItemCount; currentItem++)
-				{
-					// special case for 1st item in list
-					if (currentItem == 1)
-					{
-						quantity = stringBetween(text, price, howMany).trim();
-					}
-					// every other item in list
-					else
-					{
-						quantity = text.substring(0, text.indexOf(howMany)-1).trim();
-					}
-					
-					// at most 2 decimal places for each price
-					if (currencyStatus == "")
-					{
-						costIndex = text.indexOf(money);
-						costEnd = text.indexOf(".", costIndex);
-						cost = text.substring(costIndex + money.length, costIndex + costEnd);
-						costEnd = cost.indexOf(".") + 3;
-						cost = cost.substring(1, costEnd);
-					}
-					else
-					{
-						costIndex = text.indexOf(currencyStatus);
-						costEnd = text.indexOf(".", costIndex) + 2;
-						cost = text.substring(costIndex + currencyStatus.length, costIndex + costEnd);
-						costEnd = cost.indexOf(".") + 3;
-						cost = cost.substring(2, costEnd);
-					}
-
-					
-					name = stringBetween(text, howMany, condition).trim();
-					
-					// remove product type if it exists
-					name = name.replace(/\[.+\]/g, '').trim();
-					
-					// calculate cost
-					float_cost = parseFloat(cost) / parseFloat(quantity);
-					
-					console.log("Name: " + name);
-					console.log("Cost: " + float_cost);
-					console.log("Quantity: " + quantity);
-					
-					receipt_items.push({'name': name, 'cost': float_cost, 'quantity': quantity});
-					
-					// set text after first occurrence of cost
-					text = text.substring(text.indexOf(cost) + cost.length)
-				}
-				
-				quantity = 1;
-				
-				// shipping & handling
-				text = text.substring(text.indexOf(shipping));
-				
-				// at most 2 decimal places for each price
-				if (currencyStatus == "")
-				{
-					costIndex = text.indexOf(money);
-					costEnd = text.indexOf(".", costIndex) + 2;
-					cost = text.substring(costIndex + money.length, costIndex + costEnd);
-					costEnd = cost.indexOf(".") + 3;
-					cost = cost.substring(1, costEnd);
-				}
-				else
-				{
-					costIndex = text.indexOf(currencyStatus);
-					costEnd = text.indexOf(".", costIndex) + 2;
-					cost = text.substring(costIndex + currencyStatus.length, costIndex + costEnd);
-					costEnd = cost.indexOf(".") + 3;
-					cost = cost.substring(2, costEnd);
-				}
-				
-				receipt_items.push({'name': shipping, 'cost': cost, 'quantity': quantity});
-				
-				// tax1
-				text = text.substring(text.indexOf(tax1));
-				
-				// at most 2 decimal places for each price
-				if (currencyStatus == "")
-				{
-					costIndex = text.indexOf(money);
-					costEnd = text.indexOf(".", costIndex) + 2;
-					cost = text.substring(costIndex + money.length, costIndex + costEnd);
-					costEnd = cost.indexOf(".") + 3;
-					cost = cost.substring(1, costEnd);
-				}
-				else
-				{
-					costIndex = text.indexOf(currencyStatus);
-					costEnd = text.indexOf(".", costIndex) + 2;
-					cost = text.substring(costIndex + currencyStatus.length, costIndex + costEnd);
-					costEnd = cost.indexOf(".") + 3;
-					cost = cost.substring(2, costEnd);
-				}
-				
-				receipt_items.push({'name': tax1, 'cost': cost, 'quantity': quantity});
-				
-				// tax2
-				text = text.substring(text.indexOf(tax2));
-				
-				// at most 2 decimal places for each price
-				if (currencyStatus == "")
-				{
-					costIndex = text.indexOf(money);
-					costEnd = text.indexOf(".", costIndex) + 2;
-					cost = text.substring(costIndex + money.length, costIndex + costEnd);
-					costEnd = cost.indexOf(".") + 3;
-					cost = cost.substring(1, costEnd);
-				}
-				else
-				{
-					costIndex = text.indexOf(currencyStatus);
-					costEnd = text.indexOf(".", costIndex) + 2;
-					cost = text.substring(costIndex + currencyStatus.length, costIndex + costEnd);
-					costEnd = cost.indexOf(".") + 3;
-					cost = cost.substring(2, costEnd);
-				}
-				
-				receipt_items.push({'name': tax2, 'cost': cost, 'quantity': quantity});
-				
-				createReceiptPopup();
-			}
-			break;*/
-		
 		// new Receipt popup - only connects to one at a time!
 		case "newReceipt":
 			if (newReceipt == null)

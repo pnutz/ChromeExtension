@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-var receiptItemCount = 1;
-var removedItemCount = 0;
-var background;
-var backgroundPort;
-var backgroundCurrencies;
+var receiptItemCount = 1,
+removedItemCount = 0,
+background,
+backgroundPort,
+backgroundCurrencies,
 // element that is toggled for pulling data
-var activeElement;
+activeElement;
 
 // Augmenting the validator plugin, might need a separate JavaScript files for these custom additions
 $.validator.addMethod("notEqual", function(value, element, param) {
@@ -136,8 +136,7 @@ ReceiptItem.prototype.render = function() {
 		var receiptItemId = id.substring(0, id.indexOf("-item-remove"));
 		$("#" + receiptItemId + "-_destroy").val(true);
 		$("#receipt-form-list-item-" + receiptItemId.substring(13)).hide();
-		
-		removedItemCount++;
+    removedItemCount++;
 		
 		// re-calculate total and if there are no more receipt items, enable total
 		var form_total = $("#receipt-form-total");
@@ -177,7 +176,7 @@ function sumReceiptItemCosts()
     total += parseFloat(itemCost) * parseFloat(quantity);
 	}
 
-  return total;
+  return total.toFixed(2);
 }
 
 function getReceiptItemsJSON()

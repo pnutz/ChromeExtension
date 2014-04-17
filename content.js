@@ -1,4 +1,3 @@
-var overflow = document.body.style.overflow;
 var amazon = false;
 var htmlGet = "pull-off";
 var incomingPort;
@@ -304,7 +303,6 @@ function createNotification() {
 	document.documentElement.appendChild(div);
 	
 	document.documentElement.style.paddingTop = "27px";
-	//document.body.style.overflow = "scroll";
 }
 
 // long-lived connection from background
@@ -379,43 +377,14 @@ chrome.runtime.onMessage.addListener(
 			notdiv.parentNode.removeChild(notdiv);
 			
 			document.documentElement.style.paddingTop = "0px";
-			/*if (overflow === "")
-			{
-				document.body.style.overflow = "visible";
-			}
-			else
-			{
-				document.body.style.overflow = overflow;
-			}*/
-			
+						
 			if (event.data == "yes")
 			{
-				chrome.runtime.sendMessage({ greeting: "parseHTML",
-							data: document.body.outerHTML,
-							text: document.body.innerText,
-							url: location.href });
+
 			}
 			else if (event.data == "no")
 			{
-				// UNTESTED
-				if (amazon)
-				{
-					var orderId = "orderId=";
-					var orderNumber = location.href.substring(location.href.indexOf(orderId) + orderId.length, location.href.indexOf("&purchaseId"));
-					var url = 'https://www.amazon.ca/gp/css/summary/print.html/ref=oh_pi_o00_?ie=UTF8&orderID=' + orderNumber;
-					$.ajax({ url: url,
-						success: function(data) {
-							var parser = new DOMParser();
-							var doc = parser.parseFromString(data, "text/html");
-							// DOM
-							
-							chrome.runtime.sendMessage({ greeting: "parseHTML",
-								data: data,
-								text: doc.body.innerText,
-								url: url});
-						}
-					});
-				}
+				
 			}
 			else if (event.data == "x")
 			{
