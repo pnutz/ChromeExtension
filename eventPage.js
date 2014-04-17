@@ -288,6 +288,9 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
       (tabId == fbOauthData.tabId) &&
       (changeInfo.url != undefined))
   {
+    //TODO: right now code throws some errors if the user is not
+    //      logged into facebook, improve filter so we don't go into 
+    //      this flow if the url is not the redirect
     console.log(changeInfo.url);
     // split the url to remove the hostname
     splitUrl = changeInfo.url.split("#");
