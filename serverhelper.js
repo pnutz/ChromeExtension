@@ -13,14 +13,6 @@ var foldersUrl = host + controllers["folders"] + ".json";
 var receiptsUrl = host + controllers["receipts"] + ".json";
 var registrationUrl = host + controllers["registration"];
 
-// Facebook app Id
-var k_appId = "847371951945853";
-// Facebook login flow redirect
-var k_redirectUrlFb = "https://www.facebook.com/dialog/oauth?" +
-                      "client_id=" + k_appId + 
-                      "&response_type=token&scope=email" + 
-                      "&redirect_uri=https://www.facebook.com/connect/login_success.html";
-
 //Return url string mapped to controller
 function getCtrlUrl(controllerStr)
 {

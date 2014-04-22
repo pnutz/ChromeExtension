@@ -41,11 +41,9 @@ TIMEOUT = 10000,
 temp_domain = "",
 attributes = {},
 generated = {},
-aServerHost = "http://localhost:8888",
-fbOauthData = { 
-                bIsLoggingIn : false,
-                tabId: 0 
-              };
+aServerHost = "http://localhost:8888";
+
+var facebookAPI = new FaceBookAPI();
 
 // store json message with the latest data for each attribute
 function appendAttributeData(receipt_attr, selection, data, html, text, url, domain) {
@@ -320,22 +318,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 // track tab changes
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
   // If we are logging in
-  if (fbOauthData.bIsLoggingIn && 
-      (tabId == fbOauthData.tabId) &&
-      (changeInfo.url != undefined))
-  {
-    //TODO: right now code throws some errors if the user is not
-    //      logged into facebook, improve filter so we don't go into 
-    //      this flow if the url is not the redirect
-    console.log(changeInfo.url);
-    // split the url to remove the hostname
-    splitUrl = changeInfo.url.split("#");
-    // split the url with "&" delimiter to get param and value of access_token and expires_in
-    splitUrl = splitUrl[1].split("&");
-    // get the access token
-    accessToken = splitUrl[0].split("=");
-    localStorage["fbAccessToken"] = accessToken[1];
-  }
+  facebookAPI.GetAccessTokenFromLoginTab(tabId, changeInfo.url);
 
 	// tab created or refreshed (changeInfo.url only set if different from previous state - in loading status)
 	if (changeInfo.status == "complete" && changeInfo.url === undefined)
@@ -556,6 +539,11 @@ pull-...:
 	trigger: button toggled on/off for attribute date, etc.
 	action: send content.js the requested pull state
 */
+
+// TODO: In the future we need to encapsulate this into it's own class. 
+//       We should be able to "register" each of these cases in the switch
+//       statement and provide a callback.
+//       P.S probably better to utilize actual event pages as well.
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	console.log("onMessage:", request);
 	
@@ -583,12 +571,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		
     // Facebook login flow
     case "FB_LOGIN_OAUTH":
-      console.log("got fb login flow message");
-      // Create a new tab for the facebook oauth flow
-      chrome.tabs.create({ url: k_redirectUrlFb }, function(tab) {
-        fbOauthData.bIsLoggingIn = true;
-        fbOauthData.tabId = tab.id;
-      });
+      facebookAPI.StartLoginFlow();
       break;
 
 		// new Receipt popup - only connects to one at a time!
@@ -627,3 +610,4 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			}
 	}
 });
+

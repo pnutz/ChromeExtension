@@ -20,7 +20,7 @@
 		}
 	],
 	"background": {
-		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "eventPage.js", "serverhelper.js"]
+		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "FaceBookAPI.js", "eventPage.js"]
 		// eventPage ("persistent": false) doesn't work with webRequest permissions
 	},
 	"web_accessible_resources": [
