@@ -138,6 +138,8 @@ ReceiptItem.prototype.render = function() {
 		$("#receipt-form-list-item-" + receiptItemId.substring(13)).hide();
     removedItemCount++;
 		
+    chrome.runtime.sendMessage({greeting: "deleteReceiptItem", data: receiptItemId.substring(13)});
+    
 		// re-calculate total and if there are no more receipt items, enable total
 		var form_total = $("#receipt-form-total");
 		if (removedItemCount + 1 === receiptItemCount)
@@ -518,9 +520,9 @@ $(document).ready(function () {
       data : receiptData,
       dataType: 'json'
     }).done(function(data){
+      chrome.runtime.sendMessage({greeting: "saveReceipt", data: formData});
 			alert("submitted");
       window.close();
-			chrome.runtime.sendMessage({greeting: "saveReceipt"});
     }).fail(function (jqXHR, textStatus, errorThrown){
       // log the error to the console
       console.error(

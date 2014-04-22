@@ -38,6 +38,7 @@ notificationStatus = notificationStatusArray[0],
 notificationTimeout,
 TIMEOUT = 10000,
 
+temp_domain = "",
 attributes = {},
 generated = {},
 aServerHost = "http://localhost:8888",
@@ -101,17 +102,37 @@ function appendAttributeData(receipt_attr, selection, data, html, text, url, dom
   console.log(attributes);
 }
 
-function sendAttributeTemplate() {
+function sendAttributeTemplate(saved_data) {
+  // formatting saved_data to match aServer defaults
+  saved_data.vendor = saved_data.vendor_name;
+  saved_data.transaction = saved_data.transaction_number;
+  saved_data.items = saved_data.receipt_items_attributes;
+  delete saved_data.vendor_name;
+  delete saved_data.transaction_number;
+  delete saved_data.receipt_items_attributes;
+  delete saved_data.note;
+  delete saved_data.title;
+  delete saved_data.purchase_type_id;
+  
+  var keys = Object.keys(saved_data.items);
+  keys.forEach(function(key) {
+    saved_data.items[key].name = saved_data.items[key].itemtype;
+    delete saved_data.items[key].itemtype;
+  });
+  
 	var host = aServerHost + "/template";
 	var message = {
 		token: localStorage["authToken"],
 		userID: localStorage["userID"],
 		email: localStorage["userEmail"],
+    domain: temp_domain,
     attributes: {},
-    generated: {}
+    generated: {},
+    saved_data: {}
 	};
   message.attributes = JSON.stringify(attributes);
   message.generated = JSON.stringify(generated);
+  message.saved_data = JSON.stringify(saved_data);
   
 	request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
@@ -122,6 +143,8 @@ function sendAttributeTemplate() {
 }
 
 function sendDomain(html, url, domain) {
+  temp_domain = domain;
+  
 	var host = aServerHost + "/load";
 	var message = {
 		token: localStorage["authToken"],
@@ -145,7 +168,7 @@ function sendDomain(html, url, domain) {
       } else if (key != "templates") {
         generated.items = {};
         generated.templates.items = {};
-        var item_index = 1;
+        var item_index = 0;
         // receipt items start at 1
         $.each(value, function(key2, item_attributes) {
           generated.items[item_index] = item_attributes;
@@ -162,6 +185,13 @@ function sendDomain(html, url, domain) {
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
 	});
+}
+
+function flagGeneratedItem(item_id) {
+  if (generated.items != null && generated.items.hasOwnProperty(item_id) && generated.templates.items.hasOwnProperty(item_id)) {
+    generated.templates.items[item_id].deleted = true;
+    console.log(generated);
+  }
 }
 
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
@@ -386,6 +416,7 @@ function closeReceipt() {
   }
   receiptPort = null;
   attributes = {};
+  temp_domain = "";
 }
 
 // all HTTP requests fall under:
@@ -495,21 +526,26 @@ purchaseComplete:
 	action: checks if page successfully http postbacks and redirects to new page
 	-- WHAT IF THEY DO ANOTHER TAB AT SAME TIME?! track correct tab
 	
-parseHTML:
-	from: content.js
-	trigger: notification bar, YES selected
-	action: create new addreceipt popup with amazon receipt details
-	
 newReceipt:
 	from: addreceipt.js
 	trigger: addreceipt window created
 	action: setup receipt details
-	
+
+saveReceipt:
+  from: addreceipt.js
+  trigger: addreceipt popup saved
+  action: close connection to addreceipt, send template data to aserver
+
 closeReceipt:
 	from: addreceipt.js
 	trigger: addreceipt onunload event triggered (window closed)
 	action: clean up receipt details
 
+deleteReceiptItem:
+  from: addreceipt.js
+  trigger: receipt item deleted
+  action: set flag to data for generated receipt item
+  
 default:
 {
 pull-off:
@@ -569,7 +605,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		
     // receipt popup saved, send data to aServer
     case "saveReceipt":
-      sendAttributeTemplate();
+      sendAttributeTemplate(request.data);
       closeReceipt();
       break;
     
@@ -577,6 +613,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			closeReceipt();
 			break;
 		
+    case "deleteReceiptItem":
+      flagGeneratedItem(request.data);
+      break;
+    
 		default:
 			// message from addReceipt, requesting data from current tab
 			if (request.greeting.indexOf("pull-") != -1 && port != null)
