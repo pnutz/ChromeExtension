@@ -109,10 +109,6 @@ ReceiptItem.prototype.render = function() {
                  "name": "quantity", 
                  "type": "text",
                  "value": this.quantity}).appendTo("#" + quantityId + "-div");
-  /*$("<label/>", {"for": receiptItemId + "-is-credit", text: "Is Credit?"}).appendTo("#" + listItemId);
-  $("<input/>", {"id": receiptItemId + "-is-credit",
-                 "name": "is_credit",
-                 "type": "checkbox"}).appendTo("#" + listItemId);*/
 
   // Register event handler for when the cost changes
   $(".input-quantity, .cost-input").keyup(function(event){
@@ -193,7 +189,6 @@ function getReceiptItemsJSON()
 		receiptItems[index]["itemtype"] = item.find("div.item-name>input[name='itemtype']").val();
     receiptItems[index]["cost"] = item.find("div.item-cost>input[name='cost']").val();
     receiptItems[index]["quantity"] = item.find("div.item-quantity>input[name='quantity']").val();
-    //receiptItems[index]["is_credit"] = item.find("input[name='is_credit']").is(":checked") ? 1 : 0;
     receiptItems[index]["_destroy"] = item.find("input[name='_destroy']").val();;
 	}
   return receiptItems;
@@ -325,16 +320,11 @@ $(document).ready(function () {
        },
        vendor_name: {
          required: true
-       }/*,
-			 // changed webapp to allow for receipts with no folder, so doesn't need to be required
-       folder_id: {
-         required: true,
-         notEqual: "0"
-       },*/
-       /*purchase_type_id: {
-         required: true
        },
        currency_id: {
+         required: true
+       }
+       /*purchase_type_id: {
          required: true
        }*/
      },
@@ -391,10 +381,10 @@ $(document).ready(function () {
         {
           $("#" + activeElement).val(background.window[msg.request]);
           background.window[msg.request] = null;
-          // need to know what activeElement is on eventPage
+          $("#receipt-form-total").val(sumReceiptItemCosts());
         }
       }
-      // message from aServer
+      // message from aServerju
       else {
         console.log("Message data: " + msg.attribute);
         if (msg.attribute !== "item") {
@@ -430,46 +420,6 @@ $(document).ready(function () {
 	// pull data sent from site if it has not been pulled (event occurs after setting current date)
 	chrome.runtime.getBackgroundPage(function (loadedBackground) {
 		background = loadedBackground;
-		/*
-    // OLD METHOD OF SETTING FORM DATA
-		$("#receipt-form-title").val(background.title);
-		if (background.date !== null)
-		{
-			$("#receipt-form-date").val(background.date);
-		}
-		else
-		{
-			// set current date
-			var today = new Date();
-			$("#receipt-form-date").val("" + ("0" + (today.getMonth() + 1).toString()).slice(-2) + "/" + ("0" + today.getDate()).slice(-2) + "/" + today.getFullYear());
-		}
-		$("#receipt-form-vendor").val(background.vendor);
-		$("#receipt-form-total").val(background.total);
-		$("#receipt-form-transaction").val(background.transaction);
-		backgroundCurrencies = background.currencies;
-		var bgReceiptItems = background.receipt_items;
-		if (bgReceiptItems != null)
-		{
-			var length = bgReceiptItems.length;
-			if (length > 0)
-			{
-				for (var itemCount = 0; itemCount < length; itemCount++) {
-					new ReceiptItem(bgReceiptItems[itemCount].name, bgReceiptItems[itemCount].cost, bgReceiptItems[itemCount].quantity).render();
-				}
-				
-				$("#receipt-form-total").prop("disabled", "true");
-				$("#receipt-form-total").val(sumReceiptItemCosts());
-			}
-		}
-		
-		background.title = null;
-		background.date = null;
-		background.vendor = null;
-		background.total = null;
-		background.currencies = null;
-		background.transaction = null;
-		background.receipt_items = null;
-    */
 	});
 	
   // set current date
