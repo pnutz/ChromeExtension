@@ -12,6 +12,176 @@ $(document).ready(function() {
 		console.log("document ready");
 	}
 	
+	// only run function when user prompts to start, so links keep working
+	$(document).click(function(event) {
+		lastClicked = $(event.target);
+		if (htmlGet != "pull-off")
+		{
+			var element = $(event.target);
+      var element_text = element.text().trim();
+			console.log("Element Clicked: " + element_text);
+      
+      var linkSelected;
+      if (element[0].tagName === "BUTTON" || element[0].tagName === "A") {
+        linkSelected = true;
+      } else {
+        linkSelected = false;
+      }
+      
+      // check a few parent levels up for a link or button
+      var parentElement = element;
+      if (parentElement !== null) {
+        for (var index = 0; index < 3; index++) {
+          if (parentElement.parent() != null && linkSelected == false) {
+            parentElement = parentElement.parent();
+            if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
+              linkSelected = true;
+              console.log("here");
+            }
+          } else {
+            break;
+          }
+        }
+      }
+      
+			// only send message if nothing selected
+			if (linkSelected == true || window.getSelection().toString() === "" || element[0].tagName === "BODY")
+			{
+				element[0].className += CLASS_NAME;
+				
+        var message_domain;
+        if (document.domain == null || document.domain == "") {
+          message_domain = "DOMAIN";
+        } else {
+          message_domain = document.domain;
+        }
+        
+				var msg_data = {
+					response: htmlGet.substring(5),
+					selection: element_text,
+					data: element[0].outerHTML,
+					html: document.body.outerHTML,
+					url: location.href,
+					domain: message_domain
+				};
+				
+        // iframe, send it to main page content script
+        if (self !== top) {
+          window.parent.postMessage(JSON.stringify(msg_data), '*');
+        } else {
+          incomingPort.postMessage(msg_data);
+        }
+				
+				element[0].className = element[0].className.replace(CLASS_NAME, "");
+			}
+			return false;
+		}
+	});
+	
+	// detect mousedown element
+	$(document).mousedown(function(event) {
+		mouseDownElement = $(event.target);
+  });
+	
+	// get selected text on mouseup (and element)
+	$(document).mouseup(function(event) {
+		
+		var textSelection = window.getSelection().toString();
+
+    // check a few parent levels up for a link or button
+    var parentElement = mouseDownElement;
+    if (parentElement !== null) {
+      for (var index = 0; index < 3; index++) {
+        if (parentElement.parent() != null) {
+          parentElement = parentElement.parent();
+          if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
+            console.log("here");
+            return false;
+          }
+        } else {
+          break;
+        }
+      }
+    }
+    
+		// only send message if text is selected or user did not click link
+		if (textSelection != "" && mouseDownElement !== null && mouseDownElement[0].tagName !== "A"
+          && mouseDownElement[0].tagName !== "BUTTON" && mouseDownElement[0].tagName !== "BODY")
+		{
+			if (htmlGet != "pull-off")
+			{
+				console.log("Mouse-Up: " + textSelection);
+				
+				var range = window.getSelection().getRangeAt(0);
+				var startContainer = range.startContainer;
+				var endContainer = range.endContainer;
+				var startOffset = range.startOffset;
+				var endOffset = range.endOffset;
+				console.log(range);
+				// startContainer insertion will alter endOffset so we do endContainer first
+				if (endContainer.nodeType === Node.TEXT_NODE) {
+					endContainer.insertData(endOffset, TEXT_ID);
+				} else {
+					endContainer.appendChild(document.createTextNode(TEXT_ID));
+				}
+				if (startContainer.nodeType === Node.TEXT_NODE) {
+					startContainer.insertData(startOffset, TEXT_ID);
+				} else {
+					startContainer.insertBefore(document.createTextNode(TEXT_ID), startContainer.firstChild);
+				}
+
+				var commonAncestorContainer = range.commonAncestorContainer;
+				// Node.TEXT_NODE is 3 for <#text> XML nodes
+				while (commonAncestorContainer.nodeType === Node.TEXT_NODE) {
+					commonAncestorContainer = commonAncestorContainer.parentElement;
+				}
+				
+				commonAncestorContainer.className += CLASS_NAME;
+				
+        var message_domain;
+        if (document.domain == null || document.domain == "") {
+          message_domain = "DOMAIN";
+        } else {
+          message_domain = document.domain;
+        }
+        
+				var msg_data = {
+					response: htmlGet.substring(5),
+					selection: textSelection,
+					data: commonAncestorContainer.outerHTML,
+					html: document.body.outerHTML,
+					url: location.href,
+					domain: message_domain
+				};
+				
+				console.log(msg_data);
+        // iframe, send it to main page content script
+        if (self !== top) {
+          window.parent.postMessage(JSON.stringify(msg_data), '*');
+        } else {
+          incomingPort.postMessage(msg_data);
+        }
+				
+				commonAncestorContainer.className = commonAncestorContainer.className.replace(CLASS_NAME, "");
+				
+				// startContainer deletion first so we can use existing endOffset
+				if (startContainer.nodeType === Node.TEXT_NODE) {
+					startContainer.deleteData(startOffset, TEXT_ID.length);
+				} else {
+					var removeNode = startContainer.childNodes[0];
+					startContainer.removeChild(removeNode);
+				}
+				if (endContainer.nodeType === Node.TEXT_NODE) {
+					endContainer.deleteData(endOffset, TEXT_ID.length);
+				} else {
+					var removeNode = endContainer.childNodes[endContainer.childNodes.length - 1];
+					endContainer.removeChild(removeNode);
+				}
+			}
+		}
+	});
+  
+  	
 	// "paypal" "pay with paypal" "bestbuy" don't work
 	/*var postButtons = $("form[method='post']").find(":input[type='submit']");
 	var length = postButtons.length;
@@ -92,186 +262,7 @@ $(document).ready(function() {
 			//return lastClicked & $(this)
 		}
 	});
-	
-	// display notification if new purchase on amazon
-	if (location.href.indexOf("https://www.amazon.ca/gp/buy/thankyou/handlers/display.html") != -1) {
-		amazon = true;
-		createNotification();
 	}*/
-	
-	// only run function when user prompts to start, so links keep working
-	$(document).click(function(event) {
-		lastClicked = $(event.target);
-		//console.log("click " + Math.floor((event.timeStamp/10000 - Math.floor(event.timeStamp/10000))*100) + " " + lastClicked.prop("tagName") + " " + lastClicked.text());
-		if (htmlGet != "pull-off")
-		{
-			var element = $(event.target);
-			console.log("Element Clicked: " + element.text().trim());
-      
-      var linkSelected;
-      if (element[0].tagName === "BUTTON" || element[0].tagName === "A") {
-        linkSelected = true;
-      } else {
-        linkSelected = false;
-      }
-      
-      // check a few parent levels up for a link or button
-      var parentElement = element;
-      if (parentElement !== null) {
-        for (var index = 0; index < 3; index++) {
-          if (parentElement.parent() != null && linkSelected == false) {
-            parentElement = parentElement.parent();
-            if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
-              linkSelected = true;
-              console.log("here");
-            }
-          } else {
-            break;
-          }
-        }
-      }
-      
-			// only send message if nothing selected
-			if (linkSelected == true || window.getSelection().toString() === "" || element[0].tagName === "BODY")
-			{
-				element[0].className += CLASS_NAME;
-				
-        var message_domain;
-        if (document.domain == null || document.domain == "") {
-          message_domain = "DOMAIN";
-        } else {
-          message_domain = document.domain;
-        }
-        
-				var msg_data = {
-					response: htmlGet.substring(5),
-					selection: null,
-					data: element[0].outerHTML,
-					html: document.body.outerHTML,
-					text: document.body.innerText,
-					url: location.href,
-					domain: message_domain
-				};
-				
-        // iframe, send it to main page content script
-        if (self !== top) {
-          window.parent.postMessage(JSON.stringify(msg_data), '*');
-        } else {
-          incomingPort.postMessage(msg_data);
-        }
-				
-				
-				element[0].className = element[0].className.replace(CLASS_NAME, "");
-			}
-			return false;
-		}
-	});
-	
-	// detect mousedown element
-	$(document).mousedown(function(event) {
-		//console.log("mousedown " + Math.floor((event.timeStamp/10000 - Math.floor(event.timeStamp/10000))*100));
-		mouseDownElement = $(event.target);
-});
-	
-	// get selected text on mouseup (and element)
-	$(document).mouseup(function(event) {
-		//console.log("mouseup " + Math.floor((event.timeStamp/10000 - Math.floor(event.timeStamp/10000))*100));
-		
-		var textSelection = window.getSelection().toString();
-
-    // check a few parent levels up for a link or button
-    var parentElement = mouseDownElement;
-    if (parentElement !== null) {
-      for (var index = 0; index < 3; index++) {
-        if (parentElement.parent() != null) {
-          parentElement = parentElement.parent();
-          if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
-            console.log("here");
-            return false;
-          }
-        } else {
-          break;
-        }
-      }
-    }
-    
-		// only send message if text is selected or user did not click link
-		if (textSelection != "" && mouseDownElement !== null && mouseDownElement[0].tagName !== "A"
-          && mouseDownElement[0].tagName !== "BUTTON" && mouseDownElement[0].tagName !== "BODY")
-		{
-			if (htmlGet != "pull-off")
-			{
-				console.log("Mouse-Up: " + textSelection);
-				
-				var range = window.getSelection().getRangeAt(0);
-				var startContainer = range.startContainer;
-				var endContainer = range.endContainer;
-				var startOffset = range.startOffset;
-				var endOffset = range.endOffset;
-				console.log(range);
-				// startContainer insertion will alter endOffset so we do endContainer first
-				if (endContainer.nodeType === Node.TEXT_NODE) {
-					endContainer.insertData(endOffset, TEXT_ID);
-				} else {
-					endContainer.appendChild(document.createTextNode(TEXT_ID));
-				}
-				if (startContainer.nodeType === Node.TEXT_NODE) {
-					startContainer.insertData(startOffset, TEXT_ID);
-				} else {
-					startContainer.insertBefore(document.createTextNode(TEXT_ID), startContainer.firstChild);
-				}
-
-				var commonAncestorContainer = range.commonAncestorContainer;
-				// Node.TEXT_NODE is 3 for <#text> XML nodes
-				while (commonAncestorContainer.nodeType === Node.TEXT_NODE) {
-					commonAncestorContainer = commonAncestorContainer.parentElement;
-				}
-				
-				commonAncestorContainer.className += CLASS_NAME;
-				
-        var message_domain;
-        if (document.domain == null || document.domain == "") {
-          message_domain = "DOMAIN";
-        } else {
-          message_domain = document.domain;
-        }
-        
-				var msg_data = {
-					response: htmlGet.substring(5),
-					selection: textSelection,
-					data: commonAncestorContainer.outerHTML,
-					html: document.body.outerHTML,
-					text: document.body.innerText,
-					url: location.href,
-					domain: message_domain
-				};
-				
-				console.log(msg_data);
-        // iframe, send it to main page content script
-        if (self !== top) {
-          window.parent.postMessage(JSON.stringify(msg_data), '*');
-        } else {
-          incomingPort.postMessage(msg_data);
-        }
-				
-				commonAncestorContainer.className = commonAncestorContainer.className.replace(CLASS_NAME, "");
-				
-				// startContainer deletion first so we can use existing endOffset
-				if (startContainer.nodeType === Node.TEXT_NODE) {
-					startContainer.deleteData(startOffset, TEXT_ID.length);
-				} else {
-					var removeNode = startContainer.childNodes[0];
-					startContainer.removeChild(removeNode);
-				}
-				if (endContainer.nodeType === Node.TEXT_NODE) {
-					endContainer.deleteData(endOffset, TEXT_ID.length);
-				} else {
-					var removeNode = endContainer.childNodes[endContainer.childNodes.length - 1];
-					endContainer.removeChild(removeNode);
-				}
-			}
-		}
-	});
 });
 
 function createNotification() {

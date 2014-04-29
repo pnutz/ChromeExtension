@@ -38,6 +38,8 @@ notificationStatus = notificationStatusArray[0],
 notificationTimeout,
 TIMEOUT = 10000,
 
+CONSEC_PERCENT = 0.5,
+
 temp_domain = "",
 attributes = {},
 generated = {},
@@ -46,7 +48,7 @@ aServerHost = "http://localhost:8888";
 var facebookAPI = new FaceBookAPI();
 
 // store json message with the latest data for each attribute
-function appendAttributeData(receipt_attr, selection, data, html, text, url, domain) {
+function appendAttributeData(receipt_attr, selection, data, html, url, domain) {
   /* format
     attributes {  name: {},
                   date: {},
@@ -63,7 +65,6 @@ function appendAttributeData(receipt_attr, selection, data, html, text, url, dom
                       }
                   }
   */
-
   // non-receipt-item attributes
   if (receipt_attr.indexOf("-") == -1) {
     attributes[receipt_attr] = {
@@ -71,7 +72,6 @@ function appendAttributeData(receipt_attr, selection, data, html, text, url, dom
       selection: selection,
       element: data,
       html: html,
-      text: text,
       url: url,
       domain: domain
     };
@@ -92,7 +92,6 @@ function appendAttributeData(receipt_attr, selection, data, html, text, url, dom
       selection: selection,
       element: data,
       html: html,
-      text: text,
       url: url,
       domain: domain
     };
@@ -188,7 +187,71 @@ function sendDomain(html, url, domain) {
 function flagGeneratedItem(item_id) {
   if (generated.items != null && generated.items.hasOwnProperty(item_id) && generated.templates.items.hasOwnProperty(item_id)) {
     generated.templates.items[item_id].deleted = true;
+    console.log("Deleted Receipt Item " + item_id);
     console.log(generated);
+  }
+}
+
+// modification to template
+
+// 1) if add text
+// check if text added is next to selected text on html
+// after special text symbol
+// - get template text
+// - get added on left/right text from template text
+// - check if left/right of symbol match left/right text - if it does, add text success
+// - if no special text symbol, it is an element clicked, calculate from TwoReceipt class
+//    - need to find text in html & see if left/right match
+//    - need to generate dom to get text, or have entire text stored... but just removed that
+//    no special symbol, no way of knowing where it is anyway
+//    maybe i should add special symbol anyways?
+//    
+
+// 2) if trim text (indexOf selection)
+//
+
+// 3) if add and trim text
+//
+
+// 4) use characterMatch()
+
+// character by character comparison of 2 strings, to find if submitted_string is within template_string
+// returns true if 1st string is still considered a substring of 2nd string (requires consecutive characters matching)
+function characterMatch(submitted_string, template_string) {
+  var j = 0,
+  consecutive_match = false,
+  num_consec_matches = 0;
+  
+  // iterate through submitted_string
+  for(var i = 0; i < submitted_string.length; i++) {
+    var character_match = false;
+    // keep iterating through template_string until match is found or end of string
+    while(j < template_string.length && !character_match) {
+      character_match = (template_string.charAt(j) == submitted_string.charAt(i));
+      j++;
+      
+      if (consec_match) {
+        if (character_match) {
+          num_consec_matches++;
+        } else {
+          consec_match = false;
+        }
+      }
+    }
+    consec_match = true;
+  }
+  
+  // match, but too few consecutive matches
+  if (character_match && num_consec_matches / submitted_string.length > CONSEC_PERCENT) {
+    return false;
+  }
+  // match
+  else if (character_match) {
+    return true;
+  }
+  // no match
+  else {
+    return false;
   }
 }
 
@@ -233,36 +296,19 @@ function receiptSetup(first) {
     var pageHTML = msg.html;
 		pageHTML = html_sanitize(pageHTML, urlX, idX);
     
+    // message node js server html & domain data
 		if (msg.response == "initializeData") {
-      // message node js server html & domain data
       sendDomain(pageHTML, msg.url, msg.domain);
     } else {
       var element = msg.data;
       element = html_sanitize(element, urlX, idX);
 
-   		var parser = new DOMParser();
-      var doc = parser.parseFromString(element, "text/html");
-      
-      // iframe message, url/domain may not match
-      
-      var sendData;
-      if (msg.selection === null) {
-        sendData = doc.body.innerText;
-      } else {
-        sendData = msg.selection;
-      }
-      console.log("Received msg: " + sendData + " from port: " + port.name);
-
       // message attribute field text to receipt popup
-      window[sendData] = sendData;
-      receiptPort.postMessage({"request": sendData});
+      window[msg.selection] = msg.selection;
+      receiptPort.postMessage({"request": msg.selection});
       
       // message node js server attribute data
-      if (msg.selection == null) {
-        appendAttributeData(msg.response, "", element, pageHTML, msg.text, msg.url, msg.domain);
-      } else if (msg.selection.trim() !== "") {
-        appendAttributeData(msg.response, msg.selection, element, pageHTML, msg.text, msg.url, msg.domain);
-      }
+      appendAttributeData(msg.response, msg.selection, element, pageHTML, msg.url, msg.domain);
     }
 	});
 	
@@ -297,7 +343,6 @@ function setNotificationStatus(index) {
 // track latest active tab and store it if it isn't a chrome-extension OR addreceipt popup
 chrome.tabs.onActivated.addListener(function(activeInfo) {
 	chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
-		//console.log("onActivated - " + tab[0].id);
 		// if active tab isn't addreceipt popup - ASYNCHRONOUS, so newReceipt may not be set
 		if (!tab[0].url.match(/chrome-extension:\/\//) || !tab[0].url.match(/addreceipt.html/)) {
 			currentTabId = activeInfo.tabId;

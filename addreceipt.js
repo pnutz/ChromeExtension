@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-var receiptItemCount = 1,
+var receiptItemCount = 0,
 removedItemCount = 0,
 background,
 backgroundPort,
@@ -384,7 +384,7 @@ $(document).ready(function () {
           $("#receipt-form-total").val(sumReceiptItemCosts());
         }
       }
-      // message from aServerju
+      // message from aServer
       else {
         console.log("Message data: " + msg.attribute);
         if (msg.attribute !== "item") {
