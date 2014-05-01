@@ -19,7 +19,9 @@ document.addEventListener('DOMContentLoaded', function()
   // Setup reload link click action
   $("#reload-page").click(function()
   {
-    localStorage.removeItem("authToken");
+    delete localStorage["authToken"];
+    delete localStorage["fbAccessToken"];
+    delete localStorage["userEmail"];
     location.reload(true);
   });
 
@@ -68,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function()
   $("#login-div").hide();
   $("#main-div").hide();
   //If we have an auth Token, use it to login
-  if (localStorage["authToken"]) 
+  if ("authToken" in localStorage) 
   {
     var folderUrl = appendCred(getCtrlUrlJson("folders"));
     // Grab folders from server to check authentication
@@ -78,10 +80,37 @@ document.addEventListener('DOMContentLoaded', function()
       $("#main-div-user-email").text("Logged in as: " + localStorage["userEmail"]);
     })
     .fail(function(){
-      $("#login-div").show();
+      // Remove the auth token and reload so we can try and get a new one 
+      location.reload(true);
+      delete localStorage["authToken"];
       console.log("Failed to retrieve folders on login.");
     });
-      }
+  }
+  else if ("fbAccessToken" in localStorage && "userEmail" in localStorage)
+  {
+    console.log("authenticating with fb access token");
+    var authData = {"email" : localStorage["userEmail"],
+                 "fbAccessToken" : localStorage["fbAccessToken"]}
+    // Request token from server
+    request = $.ajax({
+      url: loginServer,
+      type: 'POST',
+      data: authData,
+      dataType: 'json'
+    }).done(function(data){
+      console.log("Dude token is " + data.token);
+      localStorage["authToken"] = data["token"];
+      console.log("got token" + localStorage["authToken"]);
+      location.reload(true);
+			// store userID in localStorage
+			localStorage["userID"] = data["user"];
+    }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
+  }
   else //else prompt for credentials
   {
     $("#login-div").show();

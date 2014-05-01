@@ -1,10 +1,11 @@
 
 var k_loginSuccessUrl = "https://www.facebook.com/connect/login_success.html";
-var k_appId = "847371951945853";
+var k_appId = "315377018611731";
 var k_loginRedirectUrl = "https://www.facebook.com/dialog/oauth?" +
                        "client_id=" + k_appId + 
                        "&response_type=token&scope=email" + 
                        "&redirect_uri=" + k_loginSuccessUrl;
+var k_graphApiUrl = "https://graph.facebook.com/";
 
 function FaceBookAPI()
 {
@@ -29,6 +30,7 @@ FaceBookAPI.prototype.StartLoginFlow = function ()
 
 FaceBookAPI.prototype.GetAccessTokenFromLoginTab = function (tabId, url)
 {
+  var bHasToken = false;
   console.log("got url " + url);
   console.log(this.bIsLoggingIn);
   console.log("tabId" + tabId + "our tabid = " + this.tabId);
@@ -53,6 +55,23 @@ FaceBookAPI.prototype.GetAccessTokenFromLoginTab = function (tabId, url)
     localStorage["fbAccessToken"] = accessToken[1];
     this.bIsLoggingIn = false;
     this.tabId = -1;
+
+    // Check fb token by grabbing email from facebook
+    request = $.ajax({
+      url: k_graphApiUrl + "me",
+      type: 'GET',
+      data: {"access_token" : localStorage[this.localStorageStr]},
+      dataType: 'json'
+    }).done(function(data){
+      // store email in localStorage
+      console.log(data);
+      localStorage["userEmail"] = data.email;
+    }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
   }
 };
 
