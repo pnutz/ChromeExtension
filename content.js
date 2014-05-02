@@ -3,8 +3,8 @@ var htmlGet = "pull-off";
 var incomingPort;
 var lastClicked;
 var mouseDownElement;
-var TEXT_ID = "-!|_|!-";
-var CLASS_NAME = " TwoReceipt";
+var TEXT_ID = "-!_!-";
+var CLASS_NAME = "TwoReceipt";
  
 $(document).ready(function() {
 	if (self === top)
@@ -36,7 +36,6 @@ $(document).ready(function() {
             parentElement = parentElement.parent();
             if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
               linkSelected = true;
-              console.log("here");
             }
           } else {
             break;
@@ -47,7 +46,7 @@ $(document).ready(function() {
 			// only send message if nothing selected
 			if (linkSelected == true || window.getSelection().toString() === "" || element[0].tagName === "BODY")
 			{
-				element[0].className += CLASS_NAME;
+				element[0].className += " " + CLASS_NAME;
 				
         var message_domain;
         if (document.domain == null || document.domain == "") {
@@ -56,9 +55,14 @@ $(document).ready(function() {
           message_domain = document.domain;
         }
         
+        var first_text_id = document.createTextNode(TEXT_ID);
+        var second_text_id = document.createTextNode(TEXT_ID);
+        $("." + CLASS_NAME).prepend(first_text_id);
+        $("." + CLASS_NAME).append(second_text_id);
+        
 				var msg_data = {
 					response: htmlGet.substring(5),
-					selection: element_text,
+					selection: element_text.replace(/\n/g, ""),
 					data: element[0].outerHTML,
 					html: document.body.outerHTML,
 					url: location.href,
@@ -72,7 +76,10 @@ $(document).ready(function() {
           incomingPort.postMessage(msg_data);
         }
 				
-				element[0].className = element[0].className.replace(CLASS_NAME, "");
+        first_text_id.parentNode.removeChild(first_text_id);
+        second_text_id.parentNode.removeChild(second_text_id);
+        
+				element[0].className = element[0].className.replace(" " + CLASS_NAME, "");
 			}
 			return false;
 		}
@@ -95,7 +102,6 @@ $(document).ready(function() {
         if (parentElement.parent() != null) {
           parentElement = parentElement.parent();
           if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
-            console.log("here");
             return false;
           }
         } else {
@@ -106,10 +112,8 @@ $(document).ready(function() {
     
 		// only send message if text is selected or user did not click link
 		if (textSelection != "" && mouseDownElement !== null && mouseDownElement[0].tagName !== "A"
-          && mouseDownElement[0].tagName !== "BUTTON" && mouseDownElement[0].tagName !== "BODY")
-		{
-			if (htmlGet != "pull-off")
-			{
+          && mouseDownElement[0].tagName !== "BUTTON" && mouseDownElement[0].tagName !== "BODY") {
+			if (htmlGet != "pull-off") {
 				console.log("Mouse-Up: " + textSelection);
 				
 				var range = window.getSelection().getRangeAt(0);
@@ -136,7 +140,7 @@ $(document).ready(function() {
 					commonAncestorContainer = commonAncestorContainer.parentElement;
 				}
 				
-				commonAncestorContainer.className += CLASS_NAME;
+				commonAncestorContainer.className += " " + CLASS_NAME;
 				
         var message_domain;
         if (document.domain == null || document.domain == "") {
@@ -147,7 +151,7 @@ $(document).ready(function() {
         
 				var msg_data = {
 					response: htmlGet.substring(5),
-					selection: textSelection,
+					selection: textSelection.replace(/\n/g, ""),
 					data: commonAncestorContainer.outerHTML,
 					html: document.body.outerHTML,
 					url: location.href,
@@ -162,7 +166,7 @@ $(document).ready(function() {
           incomingPort.postMessage(msg_data);
         }
 				
-				commonAncestorContainer.className = commonAncestorContainer.className.replace(CLASS_NAME, "");
+				commonAncestorContainer.className = commonAncestorContainer.className.replace(" " + CLASS_NAME, "");
 				
 				// startContainer deletion first so we can use existing endOffset
 				if (startContainer.nodeType === Node.TEXT_NODE) {
