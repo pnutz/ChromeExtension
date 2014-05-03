@@ -282,47 +282,60 @@ jQuery.fn.htmlClean = function() {
 }
 
 function calculateAddedText(template, saved_string) {
-  var template_html = $.parseHTML("<body>" + template.html + "</body>");
-  // BODY NOT ADDING
-  console.log(template_html);
+// new idea - don't try to reproduce the text
+// take existing text and TEXT_ID, try to match only symbols outside them, then move TEXT_ID and TwoReceipt class
+
+// matching symbols, whitespace is allowed
+// example: t h i s could be this
+
+// logic - 1st, find left_text and right_text added onto saved_string
+            // what if there are multiple instances of saved_string? what is the correct left_text/right_text
+            // store all possible left/right and try for matches
+            // this could be expensive. what if its a single character?...
+
+  // find TEXT_ID index left and right (end of the right text)
+  // start left, do character-by-character comparisons with match to match all characters
+  // if they any mis-match or no more characters to iterate, return null
+  // if successfully match all characters, add TEXT_ID to immediate left
+  
+  // during iteration, we want to work with most-child element so we can add TEXT_ID directly
+  // look for jquery siblings first (.next/.prev -> children far left/right), then .parent().children(far left/right)
+  // iterate through children until text node
+  
+  // finding out element
+  // one way - add TEXT_ID to either side. if parent contains two TEXT_ID, it is the correct element
+  // how to add TEXT_ID? iterate through elements
+  // remove TEXT_IDs between the two
+
+  // parseHTML does not track body or html tags, so used div
+  var template_html = $.parseHTML("<div>" + template.html + "</div>");
   var $cleaned = $(template_html);
-  console.log($cleaned);
+  // set $doc for html-based calculations, since $cleaned won't represent the doc correctly
   var $doc = $cleaned;
   $cleaned.htmlClean();
-  console.log($cleaned);
-  
-  // NEED TO KNOW .EQ(0) ALTERNATIVE TO GET PARENT, if body works, good to go
-  console.log($doc.eq(0).html());
-  // ensure outerHTML (or .html()) includes all elements (and not body?) like the old template
   
   var break_tags = $cleaned.find("br");
-  console.log(break_tags);
+  //break_tags.after("&nbsp;");
   // remove break tag(s) and replace with text single space
   for (var tag_index = 0; tag_index < break_tags.length; tag_index++) {
     var break_tag = break_tags.eq(tag_index);
-    console.log(break_tag);
-    if (break_tag[0].nextSibling == null || (break_tag[0].nextSibling != null && break_tag[0].nextSibling.tagName != "BR")) {
-      // NEED TO GET THIS WORKING
-      //break_tag.appendAfter("&nbsp;");
-    }
+    /*if (break_tag[0].nextSibling == null || (break_tag[0].nextSibling != null && break_tag[0].nextSibling.tagName != "BR")) {
+      //break_tag.after("&nbsp;");
+    }*/
     // remove break_tag
     break_tag.remove();
   }
   console.log($cleaned);
-  break_tags = $cleaned.find("br");
-  console.log(break_tags);
   
-  var element = $cleaned.find(".TwoReceipt");
-  var iter_element = element.first();
-  var element_text = iter_element.text().replace(new RegExp(TEXT_ID, "g"), "");
-  console.log(element_text);
+  var element = $cleaned.find(".TwoReceipt").first();
+  var element_text = element.text().replace(new RegExp(TEXT_ID, "g"), "");
   // select root element
-  // .eq(0) doesnt work
   var used_text = $cleaned.eq(0).text();
   console.log(used_text);
-  
   var first_text_id = used_text.indexOf(TEXT_ID), second_text_id = used_text.indexOf(TEXT_ID, first_text_id + 1);
-  used_text = used_text.replace(new RegExp(TEXT_ID, "g"), "");
+  console.log(first_text_id);
+  console.log(second_text_id);
+  used_text = used_text.replace(/\n/g, " ").replace(new RegExp(TEXT_ID, "g"), "");
   
   // find out if left/right/left&right text added to template.selection (in saved_string)
   var left_index = 0, right_index = 0;
@@ -336,77 +349,112 @@ function calculateAddedText(template, saved_string) {
   if (inner_index + template.selection.length < saved_string.length) {
     right_index = saved_string.length - (inner_index + template.selection.length);
   }
+  console.log(right_index);
   
   // find index of TEXT_ID and calculate with the added length text
   if (first_text_id != -1 && second_text_id != -1) {
+    console.log(used_text);
     used_text = used_text.substring(first_text_id - left_index, second_text_id + right_index - TEXT_ID.length);
     console.log("used_text: " + used_text);
+    console.log(used_text.length);
   } else {
     return null;
   }
   
+  console.log("saved_string: " + saved_string);
+  console.log(saved_string.length);
+  
   // if added & original text are found in document by same element
   if (used_text.indexOf(saved_string) != -1) {
+    var old_doc_element = $doc.find(".TwoReceipt").first();
+    var new_doc_element = old_doc_element;
+    
     // set TwoReceipt class for doc html
     var string_index = element_text.indexOf(saved_string);
     while (string_index != -1) {
-      iter_element = iter_element.parent();
+      if (element.parent() == null) {
+        return null;
+      } else {
+        element = element.parent();
+        new_doc_element = new_doc_element.parent();
+      }
       // reset element_text to parent element text without TEXT_ID
-      element_text = iter_element.textContent.replace(new RegExp(TEXT_ID, "g"), "");
+      element_text = element.text().replace(new RegExp(TEXT_ID, "g"), "");
       string_index = element_text.indexOf(saved_string);
     }
     
-    if (iter_element != element[0]) {
-      element[0].className = element[0].className.replace(" " + CLASS_NAME, "");
-      iter_element.className += " " + CLASS_NAME;
-    }
-    //document.createTextNode(TEXT_ID);
+    old_doc_element[0].className = old_doc_element[0].className.replace(" " + CLASS_NAME, "");
+    new_doc_element.className += " " + CLASS_NAME;
     
-    // iterate character by character of element text
-    // xml?
+    // difference between cleaned and doc are cleaned has blank text nodes removed
+    // look only at matching characters, character by character matching
+    insertTextId("left", used_text.substring(0, left_index), old_doc_element);
+    insertTextId("right", used_text.substring(used_text.length - right_index), old_doc_element);
     
-    
-    // find index of saved_string in used_text, remember TEXT_ID was removed so add-on TEXT_ID length and remove 2 from end
-    // string_index is start of string in element_text
-    // 
-    // string_index + saved_string.length + TEXT_ID.length
-    // var 
-    
-    //$document.body.innerHTML = document.body.innerHTML.replace(new RegExp(TEXT_ID, "g"), "");
-    
-    /*console.log("iter_element1:");
-    console.log(iter_element);
-    console.log(iter_element.children);
-    console.log(iter_element.children());*/
+    // remove all TEXT_IDs that aren't far left/right (old TEXT_IDs)
     
     
-    // at ___ index within element
-    // count down characters
-    // set text or add text node for child
+    /*used_text is: This is the end there is
     
-    // remove old TEXT_ID and add new TEXT_ID to doc text
-    // string_index + saved_string.length
-    
-    // issue child nodes can nest pretty deep before 
-    // find child element that holds start, insert there
-    // find child element that holds end, insert there
-    // possibly not a child element, but current element
-    
-    // insert text node
-    // need to know offset of element
-    // cannot work in innerHTML, since element tags exist here
-    
-    // need text in reference to TEXT_ID
-    // index + text length
-        
+    This is <TEXT_ID>the end there is<TEXT_ID> no solution
+    <TEXT_ID>This is the end there is<TEXT_ID> no solution
+    go left from original TEXT_ID by left_index
+    go right from original TEXT_ID by right_index
+    problem is: where in element to insert
+    we know iter_element contains all text - nextSibling, previousSibling
+    - look through children
+    find index of start of old string and end of old string
+    remove TEXT_IDs between the new TEXT_IDs*/
+   
     // modify template values
     template.selection = saved_string;
-    template.element = iter_element.outerHTML;
-    template.html = doc.body.outerHTML;
-    
+    template.element = new_doc_element.html();
+    template.html = $doc.eq(0).html();
+    console.log(template);
     return template;
   } else {
     console.log("returning null");
+    return null;
+  }
+}
+
+function insertTextId(direction, string_match, element) {
+  // iterate through string_match from right to left
+  if (direction == "left") {
+    var element_text = element.text();
+    var index = element_text.indexOf(TEXT_ID) - 1;
+    if (index < 0) {
+      return null;
+    }
+    
+    var match_index = string_match.length - 1;
+    // loop goes until all string_match characters have matched against element_text
+    while (match_index >= 0) {
+      if (string_match.charAt(match_index) == element_text.charAt(start_index)) {
+        match_index--;
+      }
+      index--;
+      // do not change element if this is final match
+      if (match_index != -1 && index < 0) {
+        while (element.prev() == null) {
+          element = element.parent();
+        }
+        element = element.prev();
+        while (element.children().length != 0) {
+          var children = element.children();
+          element = element.children(children.length - 1);
+        }
+        // try the end of a new element - check sibling
+        // iterate through children of parent sibling until child is found
+      }
+    }
+    // insert TEXT_ID to the left of last matched character
+    
+  }
+  // iterate through string_match from left to right
+  else if (direction == "right") {
+    
+  } else {
     return null;
   }
 }
