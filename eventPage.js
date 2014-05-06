@@ -267,7 +267,7 @@ function attributeComparison(template, saved_string) {
 }
 
 // clean white-space text nodes between elements from html
-jQuery.fn.htmlClean = function() {
+/*jQuery.fn.htmlClean = function() {
   this.contents().filter(function() {
     if (this.nodeType != 3) {
       $(this).htmlClean();
@@ -279,207 +279,326 @@ jQuery.fn.htmlClean = function() {
     }
   }).remove();
   return this;
-}
+}*/
 
 function calculateAddedText(template, saved_string) {
-// new idea - don't try to reproduce the text
-// take existing text and TEXT_ID, try to match only symbols outside them, then move TEXT_ID and TwoReceipt class
-
-// matching symbols, whitespace is allowed
-// example: t h i s could be this
-
-// logic - 1st, find left_text and right_text added onto saved_string
-            // what if there are multiple instances of saved_string? what is the correct left_text/right_text
-            // store all possible left/right and try for matches
-            // this could be expensive. what if its a single character?...
-
-  // find TEXT_ID index left and right (end of the right text)
-  // start left, do character-by-character comparisons with match to match all characters
-  // if they any mis-match or no more characters to iterate, return null
-  // if successfully match all characters, add TEXT_ID to immediate left
+  console.log("saved string: " + saved_string);
+  console.log("template selection: " + template.selection);
   
-  // during iteration, we want to work with most-child element so we can add TEXT_ID directly
-  // look for jquery siblings first (.next/.prev -> children far left/right), then .parent().children(far left/right)
-  // iterate through children until text node
+  // calculate left_text & right_text from text added-on to saved_string
+  var first_index = saved_string.indexOf(template.selection);
+  var second_index = first_index + template.selection.length;
+  var left_text = saved_string.substring(0, first_index);
+  var right_text = saved_string.substring(second_index);
+  console.log("left_text: " + left_text);
+  console.log("right_text: " + right_text);
   
-  // finding out element
-  // one way - add TEXT_ID to either side. if parent contains two TEXT_ID, it is the correct element
-  // how to add TEXT_ID? iterate through elements
-  // remove TEXT_IDs between the two
-
   // parseHTML does not track body or html tags, so used div
-  var template_html = $.parseHTML("<div>" + template.html + "</div>");
-  var $cleaned = $(template_html);
-  // set $doc for html-based calculations, since $cleaned won't represent the doc correctly
-  var $doc = $cleaned;
-  $cleaned.htmlClean();
+  var html = $.parseHTML("<div>" + template.html + "</div>");
+  var $doc = $(html);
   
-  var break_tags = $cleaned.find("br");
-  //break_tags.after("&nbsp;");
-  // remove break tag(s) and replace with text single space
-  for (var tag_index = 0; tag_index < break_tags.length; tag_index++) {
-    var break_tag = break_tags.eq(tag_index);
-    /*if (break_tag[0].nextSibling == null || (break_tag[0].nextSibling != null && break_tag[0].nextSibling.tagName != "BR")) {
-      //break_tag.after("&nbsp;");
-    }*/
-    // remove break_tag
-    break_tag.remove();
-  }
-  console.log($cleaned);
+  var element = $doc.find(".TwoReceipt").first();
+  var element_text = element.text();
   
-  var element = $cleaned.find(".TwoReceipt").first();
-  var element_text = element.text().replace(new RegExp(TEXT_ID, "g"), "");
-  // select root element
-  var used_text = $cleaned.eq(0).text();
-  console.log(used_text);
-  var first_text_id = used_text.indexOf(TEXT_ID), second_text_id = used_text.indexOf(TEXT_ID, first_text_id + 1);
-  console.log(first_text_id);
-  console.log(second_text_id);
-  used_text = used_text.replace(/\n/g, " ").replace(new RegExp(TEXT_ID, "g"), "");
-  
-  // find out if left/right/left&right text added to template.selection (in saved_string)
-  var left_index = 0, right_index = 0;
-  var inner_index = saved_string.indexOf(template.selection);
-  console.log("inner_index: " + inner_index);
-  // there is left added text
-  if (inner_index > 0) {
-    left_index = inner_index;
-  }
-  // there is right added text
-  if (inner_index + template.selection.length < saved_string.length) {
-    right_index = saved_string.length - (inner_index + template.selection.length);
-  }
-  console.log(right_index);
-  
-  // find index of TEXT_ID and calculate with the added length text
-  if (first_text_id != -1 && second_text_id != -1) {
-    console.log(used_text);
-    used_text = used_text.substring(first_text_id - left_index, second_text_id + right_index - TEXT_ID.length);
-    console.log("used_text: " + used_text);
-    console.log(used_text.length);
-  } else {
-    return null;
-  }
-  
-  console.log("saved_string: " + saved_string);
-  console.log(saved_string.length);
-  
-  // if added & original text are found in document by same element
-  if (used_text.indexOf(saved_string) != -1) {
-    var old_doc_element = $doc.find(".TwoReceipt").first();
-    var new_doc_element = old_doc_element;
-    
-    // set TwoReceipt class for doc html
-    var string_index = element_text.indexOf(saved_string);
-    while (string_index != -1) {
-      if (element.parent() == null) {
-        return null;
-      } else {
-        element = element.parent();
-        new_doc_element = new_doc_element.parent();
+  first_index = element_text.indexOf(TEXT_ID);
+  second_index = element_text.indexOf(TEXT_ID, first_index + 1) + TEXT_ID.length;
+
+  // compare characters left of TEXT_ID
+  if (left_text.length > 0) {
+    var left_node, left_node_text;
+    // TEXT_ID is at the beginning of the element, switch elements
+    if (first_index < 0) {
+      left_node = findNextNode("left", element[0]);
+      left_node_text = left_node.nodeValue;
+      first_index = left_node_text.length - 1;
+    } else {      
+      left_node = findTextNodeInElement("left", element[0]);
+      left_node_text = left_node.nodeValue;
+      first_index = left_node_text.indexOf(TEXT_ID);
+      // TEXT_ID does not exist, take end of string (+1)
+      if (first_index == -1) {
+        first_index = left_node_text.length;
       }
-      // reset element_text to parent element text without TEXT_ID
-      element_text = element.text().replace(new RegExp(TEXT_ID, "g"), "");
-      string_index = element_text.indexOf(saved_string);
+    }
+    var left_character = left_node_text.charAt(first_index);
+    
+    for (var count = left_text.length - 1; count >= 0; count--) {
+      // ignore user-entered space
+      if (!isBlank(left_text.charAt(count))) {
+        first_index--;
+        
+        // character at beginning of element, switch elements
+        if (first_index < 0) {
+          left_node = findNextNode("left", left_node);
+          left_node_text = left_node.nodeValue;
+          first_index = left_node_text.length - 1;
+        }
+        left_character = left_node_text.charAt(first_index);
+        
+        while (left_character != left_text.charAt(count)) {
+          // return null if a non-blank character is mis-matched
+          if (!isBlank(left_character)) {
+            console.log("left: returning null " + left_character + "-" + left_text.charAt(count));
+            return null;
+          } else {
+            console.log("left: " + left_character + "-" + left_text.charAt(count));
+          }
+          
+          first_index--;
+          
+          // character at beginning of element, switch elements
+          if (first_index < 0) {
+            left_node = findNextNode("left", left_node);
+            left_node_text = left_node.nodeValue;
+            first_index = left_node_text.length - 1;
+          }
+          left_character = left_node_text.charAt(first_index);
+        }
+      }
     }
     
-    old_doc_element[0].className = old_doc_element[0].className.replace(" " + CLASS_NAME, "");
-    new_doc_element.className += " " + CLASS_NAME;
+    // insert TEXT_ID to the left of first_index
+    if (first_index < 0) {
+      left_node.nodeValue = TEXT_ID + left_node.nodeValue;
+    } else {
+      left_node.nodeValue = left_node.nodeValue.substring(0, first_index) + TEXT_ID + left_node.nodeValue.substring(first_index);
+    }
     
-    // difference between cleaned and doc are cleaned has blank text nodes removed
-    // look only at matching characters, character by character matching
-    insertTextId("left", used_text.substring(0, left_index), old_doc_element);
-    insertTextId("right", used_text.substring(used_text.length - right_index), old_doc_element);
-    
-    // remove all TEXT_IDs that aren't far left/right (old TEXT_IDs)
-    
-    
-    /*used_text is: This is the end there is
-    
-    This is <TEXT_ID>the end there is<TEXT_ID> no solution
-    <TEXT_ID>This is the end there is<TEXT_ID> no solution
-    go left from original TEXT_ID by left_index
-    go right from original TEXT_ID by right_index
-    problem is: where in element to insert
-    we know iter_element contains all text - nextSibling, previousSibling
-    - look through children
-    find index of start of old string and end of old string
-    remove TEXT_IDs between the new TEXT_IDs*/
-   
-    // modify template values
-    template.selection = saved_string;
-    template.element = new_doc_element.html();
-    template.html = $doc.eq(0).html();
-    console.log(template);
-    return template;
-  } else {
-    console.log("returning null");
-    return null;
+    // remove 2nd TEXT_ID from html (replaced by 1st)
+    html = $doc.eq(0).html();
+    var temp_index = -1;
+    for (var count = 0; count < 2; count++) {
+      temp_index = html.indexOf(TEXT_ID, temp_index + 1);
+      // remove nested instances
+      if (count != 0) {
+        html = html.substring(0, temp_index) + html.substring(temp_index + TEXT_ID.length);
+      }
+    }
+    // update html without invalid TEXT_IDs
+    $doc.eq(0).html(html);
   }
+  
+  // compare characters right of TEXT_ID
+  if (right_text.length > 0) {
+    // if left case was applied, right side needs $doc to be reset or won't work, because of html modification
+    $doc = $($.parseHTML("<div>" + html + "</div>"));
+    element = $doc.find(".TwoReceipt").first();
+  
+    var right_node, right_node_text;
+    // TEXT_ID is at the end of the element, switch_elements
+    if (second_index == element_text.length) {
+      right_node = findNextNode("right", element[0]);
+      right_node_text = right_node.nodeValue;
+      second_index = 0;
+    } else {
+      right_node = findTextNodeInElement("right", element[0]);
+      right_node_text = right_node.nodeValue;
+      // TEXT_ID does not exist, take start of string (-1)
+      second_index = right_node_text.lastIndexOf(TEXT_ID) + TEXT_ID.length - 1;
+    }
+    var right_character = right_node_text.charAt(second_index);
+    
+    // go from left to right
+    for (var count = 0; count < right_text.length; count++) {
+      // ignore user-entered space
+      if (!isBlank(right_text.charAt(count))) {
+        second_index++;
+        
+        // character at end of element, switch elements
+        if (second_index == right_node_text.length) {
+          right_node = findNextNode("right", right_node);
+          right_node_text = right_node.nodeValue;
+          second_index = 0;
+        }
+        right_character = right_node_text.charAt(second_index);
+      
+        while (right_character != right_text.charAt(count)) {
+          // return null if a non-blank character is mis-matched
+          if (!isBlank(right_character)) {
+            console.log("right: returning null " + right_character + "-" + right_text.charAt(count));
+            return null;
+          } else {
+            console.log("right: " + right_character + "-" + right_text.charAt(count));
+          }
+          
+          second_index++;
+          
+          // character at end of element, switch elements
+          if (second_index == right_node_text.length) {
+            right_node = findNextNode("right", right_node);
+            right_node_text = right_node.nodeValue;
+            second_index = 0;
+          }
+          right_character = right_node_text.charAt(second_index);
+        }
+      }
+    }
+    
+    second_index++;
+    
+    // insert TEXT_ID to the right of second_index
+    if (second_index >= right_node_text.length) {
+      right_node.nodeValue = right_node.nodeValue + TEXT_ID + "";
+    } else {
+      right_node.nodeValue = right_node.nodeValue.substring(0, second_index) + TEXT_ID + right_node.nodeValue.substring(second_index);
+    }
+    
+    // remove 2nd TEXT_ID from html (replaced by 3rd)
+    html = $doc.eq(0).html();
+    var temp_index = -1;
+    for (var count = 0; count < 2; count++) {
+      temp_index = html.indexOf(TEXT_ID, temp_index + 1);
+      // remove nested instances
+      if (count != 0) {
+        html = html.substring(0, temp_index) + html.substring(temp_index + TEXT_ID.length);
+      }
+    }
+    // update html without invalid TEXT_IDs
+    $doc.eq(0).html(html);
+  }
+  
+  // set TwoReceipt class for doc html (first element that contains both TEXT_ID instances
+  var element = $doc.find(".TwoReceipt").first();
+  first_index = element.text().indexOf(TEXT_ID);
+  second_index = element.text().indexOf(TEXT_ID, first_index + 1);
+  while (first_index == -1 || second_index == -1) {
+    if (element.parent().length == 0) {
+      return null;
+    } else {
+      element = element.parent();
+    }
+    first_index = element.text().indexOf(TEXT_ID);
+    second_index = element.text().indexOf(TEXT_ID, first_index + 1);
+  }
+  
+  var original_element = $doc.find(".TwoReceipt").first();
+  original_element.removeClass(CLASS_NAME);
+  element.addClass(CLASS_NAME);
+  
+  // modify template values
+  template.selection = saved_string;
+  template.element = element[0].outerHTML;
+  template.html = $doc.eq(0).html();
+  console.log(template);
+  return template;
 }
 
-function insertTextId(direction, string_match, element) {
-  // iterate through string_match from right to left
+// returns (child) node immediately to the left/right of param node
+function findNextNode(direction, node) {
   if (direction == "left") {
-    var element_text = element.text();
-    var index = element_text.indexOf(TEXT_ID) - 1;
-    if (index < 0) {
-      return null;
-    }
-    
-    var match_index = string_match.length - 1;
-    // loop goes until all string_match characters have matched against element_text
-    while (match_index >= 0) {
-      if (string_match.charAt(match_index) == element_text.charAt(start_index)) {
-        match_index--;
+    do {
+      // move to previousSiblings until they exist
+      while (node.previousSibling == null) {
+        if (node.parentNode != null) {
+          node = node.parentNode;
+        } else {
+          console.log("No parent node for " + direction);
+          return null;
+        }
       }
-      index--;
-      // do not change element if this is final match
-      if (match_index != -1 && index < 0) {
-        while (element.prev() == null) {
-          element = element.parent();
-        }
-        element = element.prev();
-        while (element.children().length != 0) {
-          var children = element.children();
-          element = element.children(children.length - 1);
-        }
-        // try the end of a new element - check sibling
-        // iterate through children of parent sibling until child is found
+      console.log("prev sibling");
+      node = node.previousSibling;
+      
+      // traverse children till deepest child node
+      while (node.childNodes.length > 0) {
+        node = node.childNodes[node.childNodes.length - 1];
       }
     }
-    // insert TEXT_ID to the left of last matched character
-    
-  }
-  // iterate through string_match from left to right
-  else if (direction == "right") {
-    
+    // looking for non-blank text node
+    while (node.nodeType != Node.TEXT_NODE || (node.nodeType == Node.TEXT_NODE && isBlank(node.nodeValue)))
   } else {
-    return null;
+    do {
+      // move to nextSiblings until they exist
+      while (node.nextSibling == null) {
+        if (node.parentNode != null) {
+          node = node.parentNode;
+        } else {
+          console.log("No parent node for " + direction);
+          return null;
+        }
+      }
+      console.log("next sibling");
+      node = node.nextSibling;
+      
+      // traverse children till deepest child node
+      while (node.childNodes.length > 0) {
+        node = node.childNodes[0];
+      }
+    }
+    // looking for non-blank text node
+    while (node.nodeType != Node.TEXT_NODE || (node.nodeType == Node.TEXT_NODE && isBlank(node.nodeValue)))
+  }
+  return node;
+}
+
+function findTextNodeInElement(direction, element) {
+  if (direction == "left") {
+    // find node for element
+    var node = element.childNodes[0];
+    while (node.childNodes.length > 0) {
+      node = node.childNodes[0];
+    }
+    
+    // iterate right through element until node contains TEXT_ID
+    var previous_node, const_index;
+    if (node.nodeValue == null) {
+      const_index = -1;
+    } else {
+      const_index = node.nodeValue.indexOf(TEXT_ID);
+    }
+    while (const_index == -1) {
+      previous_node = node;
+      node = findNextNode("right", node);
+      if (node.nodeValue == null) {
+        const_index = -1;
+      } else {
+        const_index = node.nodeValue.indexOf(TEXT_ID);
+      }
+    }
+    
+    // if TEXT_ID is at the start of the node, take previous_node
+    if (const_index == 0) {
+      return previous_node;
+    } else {
+      return node;
+    }
+  } else {
+    // find node for element
+    var node = element.childNodes[element.childNodes.length - 1];
+    while (node.childNodes.length > 0) {
+      node = node.childNodes[node.childNodes.length - 1];
+    }
+    
+    // iterate left through element until node contains TEXT_ID
+    var previous_node, const_index;
+    if (node.nodeValue == null) {
+      const_index = -1;
+    } else {
+      const_index = node.nodeValue.indexOf(TEXT_ID);
+    }
+    while (const_index == -1) {
+      previous_node = node;
+      node = findNextNode("left", node);
+      if (node.nodeValue == null) {
+        const_index = -1;
+      } else {
+        const_index = node.nodeValue.indexOf(TEXT_ID);
+      }
+    }
+    
+    // if TEXT_ID is at the end of the node, take previous_node
+    if (const_index == node.nodeValue.length - TEXT_ID.length) {
+      return previous_node;
+    } else {
+      return node;
+    }
   }
 }
 
 function calculateTrimmedText(template, saved_string) {
-  var parser = new DOMParser();
-  var doc = parser.parseFromString(template.html, "text/html");
-  console.log(doc);
-  
-  
   
   return template;
 }
-
-// 1) if add text
-// check if text added is next to selected text on html
-// after special text symbol
-// - get template text
-// - get added on left/right text from template text
-// - check if left/right of symbol match left/right text - if it does, add text success
-// - if no special text symbol, it is an element clicked, calculate from TwoReceipt class
-//    - need to find text in html & see if left/right match
-//    - need to generate dom to get text, or have entire text stored... but just removed that
-
-//    if add text is minor and doesn't match site, keep template as is?
 
 // template fixing:
 // selection - text selected
@@ -491,9 +610,6 @@ function calculateTrimmedText(template, saved_string) {
 // compare text, length shorter but still selected from 
 // not deleted
 // check if target element is a child - if it is, change element
-
-// checkTemplateAdd
-// compare text, length longer and template text still in (this is only good for adding without trimming)
 
 // template add/trim
 // text should still exist in doc, with some text in the selection
@@ -534,6 +650,16 @@ function characterMatch(submitted_string, template_string) {
   }
   // no match
   else {
+    return false;
+  }
+}
+
+// returns true if string is blank
+function isBlank(text) {
+  // remove whitespace (\n, \t, etc)
+  if (text.trim() === "") {
+    return true;
+  } else {
     return false;
   }
 }
