@@ -266,24 +266,8 @@ function attributeComparison(template, saved_string) {
   return template;
 }
 
-// clean white-space text nodes between elements from html
-/*jQuery.fn.htmlClean = function() {
-  this.contents().filter(function() {
-    if (this.nodeType != 3) {
-      $(this).htmlClean();
-      return false;
-    }
-    else {
-      this.textContent = $.trim(this.textContent);
-      return !/\S/.test(this.nodeValue);
-    }
-  }).remove();
-  return this;
-}*/
-
+// modifies template if text added to saved_string is found in template html, returns null if not
 function calculateAddedText(template, saved_string) {
-  console.log("saved string: " + saved_string);
-  console.log("template selection: " + template.selection);
   
   // calculate left_text & right_text from text added-on to saved_string
   var first_index = saved_string.indexOf(template.selection);
@@ -294,33 +278,35 @@ function calculateAddedText(template, saved_string) {
   console.log("right_text: " + right_text);
   
   // parseHTML does not track body or html tags, so used div
-  var html = $.parseHTML("<div>" + template.html + "</div>");
-  var $doc = $(html);
+  var html = "<div>" + template.html + "</div>";
+  var $doc, element;
   
-  var element = $doc.find(".TwoReceipt").first();
-  var element_text = element.text();
-  
-  first_index = element_text.indexOf(TEXT_ID);
-  second_index = element_text.indexOf(TEXT_ID, first_index + 1) + TEXT_ID.length;
-
   // compare characters left of TEXT_ID
   if (left_text.length > 0) {
+    $doc = $($.parseHTML(html));
+    element = $doc.find(".TwoReceipt").first();
+    
+    first_index = element.text().indexOf(TEXT_ID);
+  
     var left_node, left_node_text;
+    // first_index selects one character past the one we are calculating with
     // TEXT_ID is at the beginning of the element, switch elements
-    if (first_index < 0) {
+    if (first_index == 0) {
       left_node = findNextNode("left", element[0]);
       left_node_text = left_node.nodeValue;
-      first_index = left_node_text.length - 1;
+      first_index = left_node_text.length;
     } else {      
       left_node = findTextNodeInElement("left", element[0]);
-      left_node_text = left_node.nodeValue;
-      first_index = left_node_text.indexOf(TEXT_ID);
-      // TEXT_ID does not exist, take end of string (+1)
-      if (first_index == -1) {
+      // pick node to the left of left_node if TEXT_ID is at the start
+      if (left_node.nodeValue.indexOf(TEXT_ID) == 0) {
+        left_node = findNextNode("left", left_node);
+        left_node_text = left_node.nodeValue;
         first_index = left_node_text.length;
+      } else {
+        left_node_text = left_node.nodeValue;
+        first_index = left_node_text.indexOf(TEXT_ID);
       }
     }
-    var left_character = left_node_text.charAt(first_index);
     
     for (var count = left_text.length - 1; count >= 0; count--) {
       // ignore user-entered space
@@ -381,22 +367,30 @@ function calculateAddedText(template, saved_string) {
   // compare characters right of TEXT_ID
   if (right_text.length > 0) {
     // if left case was applied, right side needs $doc to be reset or won't work, because of html modification
-    $doc = $($.parseHTML("<div>" + html + "</div>"));
+    $doc = $doc = $($.parseHTML(html));
     element = $doc.find(".TwoReceipt").first();
+    
+    second_index = element.text().lastIndexOf(TEXT_ID) + TEXT_ID.length;
   
     var right_node, right_node_text;
+    // second_index selects one character behind the one we are calculating with
     // TEXT_ID is at the end of the element, switch_elements
-    if (second_index == element_text.length) {
+    if (second_index == element.text().length) {
       right_node = findNextNode("right", element[0]);
       right_node_text = right_node.nodeValue;
-      second_index = 0;
+      second_index = -1;
     } else {
       right_node = findTextNodeInElement("right", element[0]);
-      right_node_text = right_node.nodeValue;
-      // TEXT_ID does not exist, take start of string (-1)
-      second_index = right_node_text.lastIndexOf(TEXT_ID) + TEXT_ID.length - 1;
+      // pick node to the right of right_node if TEXT_ID is at the end
+      if (right_node.nodeValue.lastIndexOf(TEXT_ID) == right_node.nodeValue.length - TEXT_ID.length) {
+        right_node = findNextNode("right", right_node);
+        right_node_text = right_node.nodeValue;
+        second_index = -1;
+      } else {
+        right_node_text = right_node.nodeValue;
+        second_index = right_node.nodeValue.lastIndexOf(TEXT_ID) + TEXT_ID.length - 1;
+      }
     }
-    var right_character = right_node_text.charAt(second_index);
     
     // go from left to right
     for (var count = 0; count < right_text.length; count++) {
@@ -457,8 +451,9 @@ function calculateAddedText(template, saved_string) {
     $doc.eq(0).html(html);
   }
   
-  // set TwoReceipt class for doc html (first element that contains both TEXT_ID instances
-  var element = $doc.find(".TwoReceipt").first();
+  // set TwoReceipt class for doc html (first element that contains both TEXT_ID instances)
+  element = $doc.find(".TwoReceipt").first();
+  var original_element = element;
   first_index = element.text().indexOf(TEXT_ID);
   second_index = element.text().indexOf(TEXT_ID, first_index + 1);
   while (first_index == -1 || second_index == -1) {
@@ -471,7 +466,6 @@ function calculateAddedText(template, saved_string) {
     second_index = element.text().indexOf(TEXT_ID, first_index + 1);
   }
   
-  var original_element = $doc.find(".TwoReceipt").first();
   original_element.removeClass(CLASS_NAME);
   element.addClass(CLASS_NAME);
   
@@ -483,7 +477,7 @@ function calculateAddedText(template, saved_string) {
   return template;
 }
 
-// returns (child) node immediately to the left/right of param node
+// returns (child) node immediately to the [direction] of param node
 function findNextNode(direction, node) {
   if (direction == "left") {
     do {
@@ -531,6 +525,7 @@ function findNextNode(direction, node) {
   return node;
 }
 
+// returns (child) node farthest [direction] in element that contains TEXT_ID
 function findTextNodeInElement(direction, element) {
   if (direction == "left") {
     // find node for element
@@ -547,7 +542,7 @@ function findTextNodeInElement(direction, element) {
       const_index = node.nodeValue.indexOf(TEXT_ID);
     }
     while (const_index == -1) {
-      previous_node = node;
+      //previous_node = node;
       node = findNextNode("right", node);
       if (node.nodeValue == null) {
         const_index = -1;
@@ -557,11 +552,11 @@ function findTextNodeInElement(direction, element) {
     }
     
     // if TEXT_ID is at the start of the node, take previous_node
-    if (const_index == 0) {
+    /*if (const_index == 0) {
       return previous_node;
-    } else {
+    } else {*/
       return node;
-    }
+    //}
   } else {
     // find node for element
     var node = element.childNodes[element.childNodes.length - 1];
@@ -577,7 +572,7 @@ function findTextNodeInElement(direction, element) {
       const_index = node.nodeValue.indexOf(TEXT_ID);
     }
     while (const_index == -1) {
-      previous_node = node;
+      //previous_node = node;
       node = findNextNode("left", node);
       if (node.nodeValue == null) {
         const_index = -1;
@@ -587,29 +582,205 @@ function findTextNodeInElement(direction, element) {
     }
     
     // if TEXT_ID is at the end of the node, take previous_node
-    if (const_index == node.nodeValue.length - TEXT_ID.length) {
+    /*if (const_index == node.nodeValue.length - TEXT_ID.length) {
       return previous_node;
-    } else {
+    } else {*/
       return node;
-    }
+    //}
   }
 }
 
+// returns modified template
 function calculateTrimmedText(template, saved_string) {
+
+  // calculate left_text & right_text of text trimmed from template selection
+  var first_index = template.selection.indexOf(saved_string);
+  var second_index = first_index + saved_string.length;
+  var left_text = template.selection.substring(0, first_index);
+  var right_text = template.selection.substring(second_index);
+  console.log("left_text: " + left_text);
+  console.log("right_text: " + right_text);
   
+  // parseHTML does not track body or html tags, so used div
+  var html = "<div>" + template.html + "</div>";
+  var $doc, element;
+
+  // compare characters trimmed from left TEXT_ID
+  if (left_text.length > 0) {
+    $doc = $($.parseHTML(html));
+    element = $doc.find(".TwoReceipt").first();
+    first_index = element.text().indexOf(TEXT_ID);
+    
+    var left_node = findTextNodeInElement("left", element[0]);
+    var left_node_text;
+    // first_index selects one character before the one we are calculating with
+    // if TEXT_ID is at the end of the node, take node to the right
+    if (left_node.nodeValue.indexOf(TEXT_ID) == left_node.nodeValue.length - TEXT_ID.length) {
+      left_node = findNextNode("right", left_node);
+      left_node_text = left_node.nodeValue;
+      first_index = -1;
+    } else {
+      left_node_text = left_node.nodeValue;
+      first_index = left_node_text.indexOf(TEXT_ID) + TEXT_ID.length - 1;
+    }
+    
+    // go from left to right
+    for (var count = 0; count < left_text.length; count++) {
+      // ignore user-entered space
+      if (!isBlank(left_text.charAt(count))) {
+        first_index++;
+        
+        // character at end of element, switch elements
+        if (first_index == left_node_text.length) {
+          left_node = findNextNode("right", left_node);
+          left_node_text = left_node.nodeValue;
+          first_index = 0;
+        }
+        left_character = left_node_text.charAt(first_index);
+        
+        while (left_character != left_text.charAt(count)) {
+          // return null if a non-blank character is mis-matched
+          if (!isBlank(left_character)) {
+            console.log("left: returning null " + left_character + "-" + left_text.charAt(count));
+            return null;
+          } else {
+            console.log("left: " + left_character + "-" + left_text.charAt(count));
+          }
+          
+          first_index++;
+          
+          // character at end of element, switch elements
+          if (first_index == left_node_text.length) {
+            left_node = findNextNode("right", left_node);
+            left_node_text = left_node.nodeValue;
+            first_index = 0;
+          }
+          left_character = left_node_text.charAt(first_index);
+        }
+      }
+    }
+    
+    // insert TEXT_ID to the right of first_index
+    first_index++;
+    if (first_index == left_node_text.length) {
+      left_node.nodeValue = TEXT_ID + left_node.nodeValue;
+    } else {
+      left_node.nodeValue = left_node.nodeValue.substring(0, first_index) + TEXT_ID + left_node.nodeValue.substring(first_index);
+    }
+    
+    // remove first TEXT_ID from html
+    html = $doc.eq(0).html();
+    var temp_index = html.indexOf(TEXT_ID);
+    html = html.substring(0, temp_index) + html.substring(temp_index + TEXT_ID.length);
+    // update html without invalid TEXT_IDs
+    $doc.eq(0).html(html);
+  }
+  
+  // compare characters trimmed from right TEXT_ID
+  if (right_text.length > 0) {
+    // if left case was applied, right side needs $doc to be reset or won't work, because of html modification
+    $doc = $($.parseHTML(html));
+    element = $doc.find(".TwoReceipt").first();
+    second_index = element.text().indexOf(TEXT_ID, first_index + 1) + TEXT_ID.length;
+  
+    var right_node = findTextNodeInElement("right", element[0]);
+    var right_node_text;
+    // second_index selects one character past the one we are calculating with
+    // if TEXT_ID is at the beginning of the node, take node to the left
+    if (right_node.nodeValue.lastIndexOf(TEXT_ID) == 0) {
+      right_node = findNextNode("left", right_node);
+      right_node_text = right_node.nodeValue;
+      second_index = right_node_text.length;
+    } else {
+      right_node_text = right_node.nodeValue;
+      second_index = right_node_text.lastIndexOf(TEXT_ID);
+    }
+    
+    // go from right to left
+    for (var count = right_text.length - 1; count >= 0; count--) {
+      // ignore user-entered space
+      if (!isBlank(right_text.charAt(count))) {
+        second_index--;
+        
+        // character at beginning of element, switch elements
+        if (second_index < 0) {
+          right_node = findNextNode("left", right_node);
+          right_node_text = right_node.nodeValue;
+          second_index = right_node_text.length - 1;
+        }
+        right_character = right_node_text.charAt(second_index);
+      
+        while (right_character != right_text.charAt(count)) {
+          // return null if a non-blank character is mis-matched
+          if (!isBlank(right_character)) {
+            console.log("right: returning null " + right_character + "-" + right_text.charAt(count));
+            return null;
+          } else {
+            console.log("right: " + right_character + "-" + right_text.charAt(count));
+          }
+          
+          second_index--;
+          
+          // character at beginning of element, switch elements
+          if (second_index < 0) {
+            right_node = findNextNode("left", right_node);
+            right_node_text = right_node.nodeValue;
+            second_index = right_node_text.length - 1;
+          }
+          right_character = right_node_text.charAt(second_index);
+        }
+      }
+    }
+    
+    // insert TEXT_ID to the left of second_index
+    if (second_index == 0) {
+      right_node.nodeValue = TEXT_ID + right_node.nodeValue;
+    } else {
+      right_node.nodeValue = right_node.nodeValue.substring(0, second_index) + TEXT_ID + right_node.nodeValue.substring(second_index);
+    }
+    
+    // remove last TEXT_ID from html
+    html = $doc.eq(0).html();
+    var temp_index = html.lastIndexOf(TEXT_ID);
+    html = html.substring(0, temp_index) + html.substring(temp_index + TEXT_ID.length);
+    // update html without invalid TEXT_IDs
+    $doc.eq(0).html(html);
+  }
+  
+  // set TwoReceipt class for doc html (first element that contains both TEXT_ID instances)
+  element = $doc.find(".TwoReceipt").first();
+  original_element = element;
+  while (element.children().length != 0 && element.text().indexOf(TEXT_ID) != -1) {
+    for (var index = 0; index < element.children().length; index++) {
+      if (element.children(index).indexOf(TEXT_ID) != -1) {
+        element = element.children(index);
+        break;
+      }
+    }
+  }
+  
+  first_index = element.text().indexOf(TEXT_ID);
+  second_index = element.text().indexOf(TEXT_ID, first_index + 1);
+  while (first_index == -1 || second_index == -1) {
+    if (element.parent().length == 0) {
+      return null;
+    } else {
+      element = element.parent();
+    }
+    first_index = element.text().indexOf(TEXT_ID);
+    second_index = element.text().indexOf(TEXT_ID, first_index + 1);
+  }
+  
+  original_element.removeClass(CLASS_NAME);
+  element.addClass(CLASS_NAME);
+  
+  // modify template values
+  template.selection = saved_string;
+  template.element = element[0].outerHTML;
+  template.html = $doc.eq(0).html();
+  console.log(template);
   return template;
 }
-
-// template fixing:
-// selection - text selected
-// element - outerHTML of element
-// modify html, set text to be surrounded by special symbols if not exactly element text, remove special symbol that is moved
-// set class to TwoReceipt if element changes to parent, remove class from current element (use this to get element outerHTML)
-
-// checkTemplateTrim
-// compare text, length shorter but still selected from 
-// not deleted
-// check if target element is a child - if it is, change element
 
 // template add/trim
 // text should still exist in doc, with some text in the selection
