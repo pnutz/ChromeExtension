@@ -58,7 +58,7 @@ function ReceiptItem(name, quantity, cost) {
   if (quantity != null) {
     this.quantity = quantity;
   } else {
-    this.quantity = 1;
+    this.quantity = "";
   }
   
   if (cost != null) {
@@ -458,7 +458,7 @@ $(document).ready(function () {
       delete formData["folder_id"];
     }
     
-    var receiptData = {"receipt" : formData};			
+    var receiptData = {"receipt" : formData};
     receiptData["receipt"]["receipt_items_attributes"] = getReceiptItemsJSON();
     
 		// are you sure dialog should not appear

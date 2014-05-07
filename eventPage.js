@@ -1,15 +1,3 @@
-// form data
-/*var title = null,
-date = null,
-vendor = null,
-total = null,
-currencies = null,
-transaction = null,
-receipt_items = null,
-name,
-cost,
-quantity,*/
- 
 // addReceipt popup sets to tabId when it opens, null when closed
 var newReceipt = null,
 port,
@@ -39,6 +27,8 @@ notificationTimeout,
 TIMEOUT = 10000,
 
 CONSEC_PERCENT = 0.5,
+TEXT_ID = "-!_!-",
+CLASS_NAME = "TwoReceipt",
 
 temp_domain = "",
 attributes = {},
@@ -81,13 +71,13 @@ function appendAttributeData(receipt_attr, selection, data, html, url, domain) {
     var attr = receipt_attr.substring(index + 1);
     var item_num = receipt_attr.substring(0, index);
     // initialize items key
-    if (attributes["items"] == null) {
-      attributes["items"] = {};
+    if (attributes.items == null) {
+      attributes.items = {};
     }
-    if (attributes["items"][item_num] == null) {
-      attributes["items"][item_num] = {};
+    if (attributes.items[item_num] == null) {
+      attributes.items[item_num] = {};
     }
-    attributes["items"][item_num][attr] = {
+    attributes.items[item_num][attr] = {
       attribute: attr,
       selection: selection,
       element: data,
@@ -116,6 +106,9 @@ function sendAttributeTemplate(saved_data) {
     saved_data.items[key].name = saved_data.items[key].itemtype;
     delete saved_data.items[key].itemtype;
   });
+  
+  // compare attributes data with saved_data
+  validateAttributeTemplates(saved_data);
   
 	var host = aServerHost + "/template";
 	var message = {
@@ -166,7 +159,7 @@ function sendDomain(html, url, domain) {
         generated.items = {};
         generated.templates.items = {};
         var item_index = 0;
-        // receipt items start at 1
+        // receipt items start at 1tg
         $.each(value, function(key2, item_attributes) {
           generated.items[item_index] = item_attributes;
           generated.templates.items[item_index] = response[0].templates.items[key2];
@@ -184,36 +177,442 @@ function sendDomain(html, url, domain) {
 	});
 }
 
-function flagGeneratedItem(item_id) {
+function processDeletedItem(item_id) {
+  // flags generated item as deleted
   if (generated.items != null && generated.items.hasOwnProperty(item_id) && generated.templates.items.hasOwnProperty(item_id)) {
     generated.templates.items[item_id].deleted = true;
-    console.log("Deleted Receipt Item " + item_id);
+    console.log("Deleted Generated Receipt Item " + item_id);
     console.log(generated);
+  }
+  
+  // remove any new templates for deleted receipt item
+  if (attributes.items != null && attributes.items.hasOwnProperty(item_id)) {
+    delete attributes.items[item_id];
+    console.log("Deleted Template for Receipt Item " + item_id);
+    console.log(attributes);
   }
 }
 
-// modification to template
+function validateAttributeTemplates(saved_data) {
+  console.log("validateAttributeTemplates");
+  console.log(saved_data);
+  console.log(attributes);
+  // loop through template attributes
+  $.each(attributes, function(key, value) {
+    if (saved_data.hasOwnProperty(key)) {
+      if (key == "items") {
+        // loop through receipt items
+        $.each(value, function(item_key, item_value) {
+          if (saved_data.items.hasOwnProperty(item_key)) {
+            // loop through item attributes
+            $.each(item_value, function(attr_key, attr_value) {
+              if (saved_data.items[item_key].hasOwnProperty(attr_key) && attr_value.selection != saved_data.items[item_key][attr_key]) {
+                var template = attributeComparison(attr_value, saved_data.items[item_key][attr_key]);
+                if (template == null) {
+                  // only one receipt item with one attribute
+                  if (Object.keys(attributes.items).length == 1 && Object.keys(attributes.items[item_key]).length == 1) {
+                    delete attributes.items;
+                  }
+                  // only one attribute
+                  else if (Object.keys(attributes.items[item_key]).length == 1) {
+                    delete attributes.items[item_key];
+                  } else {
+                    delete attributes.items[item_key][attr_key];
+                  }
+                } else {
+                  attributes.items[item_key][attr_key] = template;
+                }
+              }
+            });
+          }
+        });
+      } else if (value.selection != saved_data[key]) {
+        var template = attributeComparison(value, saved_data[key]);
+        if (template == null) {
+          delete attributes[key];
+        } else {
+          attributes[key] = template;
+        }
+      }
+    }
+  });
+  console.log("method complete");
+  console.log(attributes);
+}
 
-// 1) if add text
-// check if text added is next to selected text on html
-// after special text symbol
-// - get template text
-// - get added on left/right text from template text
-// - check if left/right of symbol match left/right text - if it does, add text success
-// - if no special text symbol, it is an element clicked, calculate from TwoReceipt class
-//    - need to find text in html & see if left/right match
-//    - need to generate dom to get text, or have entire text stored... but just removed that
-//    no special symbol, no way of knowing where it is anyway
-//    maybe i should add special symbol anyways?
-//    
+// compute what type of change was done to template_string and return (altered) template
+// returns null if template should be deleted
+function attributeComparison(template, saved_string) {
+  console.log("attributeComparison");
+  var template_string = template.selection;
+  
+  // added text
+  // remove new-lines from template_string
+  console.log("saved string: " + saved_string);
+  console.log("template string: " + template_string);
+  if (saved_string.indexOf(template_string) != -1) {
+    console.log("added text");
+    template = calculateAddedText(template, saved_string);
+  }
+  // trimmed text
+  else if (template_string.indexOf(saved_string) != -1) {
+    console.log("trimmed text");
+    template = calculateTrimmedText(template, saved_string);
+  }
+  // add+trim text/removed text/drastic change
+  else {
+    // template = null;
+  }
+  return template;
+}
 
-// 2) if trim text (indexOf selection)
-//
+// clean white-space text nodes between elements from html
+/*jQuery.fn.htmlClean = function() {
+  this.contents().filter(function() {
+    if (this.nodeType != 3) {
+      $(this).htmlClean();
+      return false;
+    }
+    else {
+      this.textContent = $.trim(this.textContent);
+      return !/\S/.test(this.nodeValue);
+    }
+  }).remove();
+  return this;
+}*/
 
-// 3) if add and trim text
-//
+function calculateAddedText(template, saved_string) {
+  console.log("saved string: " + saved_string);
+  console.log("template selection: " + template.selection);
+  
+  // calculate left_text & right_text from text added-on to saved_string
+  var first_index = saved_string.indexOf(template.selection);
+  var second_index = first_index + template.selection.length;
+  var left_text = saved_string.substring(0, first_index);
+  var right_text = saved_string.substring(second_index);
+  console.log("left_text: " + left_text);
+  console.log("right_text: " + right_text);
+  
+  // parseHTML does not track body or html tags, so used div
+  var html = $.parseHTML("<div>" + template.html + "</div>");
+  var $doc = $(html);
+  
+  var element = $doc.find(".TwoReceipt").first();
+  var element_text = element.text();
+  
+  first_index = element_text.indexOf(TEXT_ID);
+  second_index = element_text.indexOf(TEXT_ID, first_index + 1) + TEXT_ID.length;
 
-// 4) use characterMatch()
+  // compare characters left of TEXT_ID
+  if (left_text.length > 0) {
+    var left_node, left_node_text;
+    // TEXT_ID is at the beginning of the element, switch elements
+    if (first_index < 0) {
+      left_node = findNextNode("left", element[0]);
+      left_node_text = left_node.nodeValue;
+      first_index = left_node_text.length - 1;
+    } else {      
+      left_node = findTextNodeInElement("left", element[0]);
+      left_node_text = left_node.nodeValue;
+      first_index = left_node_text.indexOf(TEXT_ID);
+      // TEXT_ID does not exist, take end of string (+1)
+      if (first_index == -1) {
+        first_index = left_node_text.length;
+      }
+    }
+    var left_character = left_node_text.charAt(first_index);
+    
+    for (var count = left_text.length - 1; count >= 0; count--) {
+      // ignore user-entered space
+      if (!isBlank(left_text.charAt(count))) {
+        first_index--;
+        
+        // character at beginning of element, switch elements
+        if (first_index < 0) {
+          left_node = findNextNode("left", left_node);
+          left_node_text = left_node.nodeValue;
+          first_index = left_node_text.length - 1;
+        }
+        left_character = left_node_text.charAt(first_index);
+        
+        while (left_character != left_text.charAt(count)) {
+          // return null if a non-blank character is mis-matched
+          if (!isBlank(left_character)) {
+            console.log("left: returning null " + left_character + "-" + left_text.charAt(count));
+            return null;
+          } else {
+            console.log("left: " + left_character + "-" + left_text.charAt(count));
+          }
+          
+          first_index--;
+          
+          // character at beginning of element, switch elements
+          if (first_index < 0) {
+            left_node = findNextNode("left", left_node);
+            left_node_text = left_node.nodeValue;
+            first_index = left_node_text.length - 1;
+          }
+          left_character = left_node_text.charAt(first_index);
+        }
+      }
+    }
+    
+    // insert TEXT_ID to the left of first_index
+    if (first_index < 0) {
+      left_node.nodeValue = TEXT_ID + left_node.nodeValue;
+    } else {
+      left_node.nodeValue = left_node.nodeValue.substring(0, first_index) + TEXT_ID + left_node.nodeValue.substring(first_index);
+    }
+    
+    // remove 2nd TEXT_ID from html (replaced by 1st)
+    html = $doc.eq(0).html();
+    var temp_index = -1;
+    for (var count = 0; count < 2; count++) {
+      temp_index = html.indexOf(TEXT_ID, temp_index + 1);
+      // remove nested instances
+      if (count != 0) {
+        html = html.substring(0, temp_index) + html.substring(temp_index + TEXT_ID.length);
+      }
+    }
+    // update html without invalid TEXT_IDs
+    $doc.eq(0).html(html);
+  }
+  
+  // compare characters right of TEXT_ID
+  if (right_text.length > 0) {
+    // if left case was applied, right side needs $doc to be reset or won't work, because of html modification
+    $doc = $($.parseHTML("<div>" + html + "</div>"));
+    element = $doc.find(".TwoReceipt").first();
+  
+    var right_node, right_node_text;
+    // TEXT_ID is at the end of the element, switch_elements
+    if (second_index == element_text.length) {
+      right_node = findNextNode("right", element[0]);
+      right_node_text = right_node.nodeValue;
+      second_index = 0;
+    } else {
+      right_node = findTextNodeInElement("right", element[0]);
+      right_node_text = right_node.nodeValue;
+      // TEXT_ID does not exist, take start of string (-1)
+      second_index = right_node_text.lastIndexOf(TEXT_ID) + TEXT_ID.length - 1;
+    }
+    var right_character = right_node_text.charAt(second_index);
+    
+    // go from left to right
+    for (var count = 0; count < right_text.length; count++) {
+      // ignore user-entered space
+      if (!isBlank(right_text.charAt(count))) {
+        second_index++;
+        
+        // character at end of element, switch elements
+        if (second_index == right_node_text.length) {
+          right_node = findNextNode("right", right_node);
+          right_node_text = right_node.nodeValue;
+          second_index = 0;
+        }
+        right_character = right_node_text.charAt(second_index);
+      
+        while (right_character != right_text.charAt(count)) {
+          // return null if a non-blank character is mis-matched
+          if (!isBlank(right_character)) {
+            console.log("right: returning null " + right_character + "-" + right_text.charAt(count));
+            return null;
+          } else {
+            console.log("right: " + right_character + "-" + right_text.charAt(count));
+          }
+          
+          second_index++;
+          
+          // character at end of element, switch elements
+          if (second_index == right_node_text.length) {
+            right_node = findNextNode("right", right_node);
+            right_node_text = right_node.nodeValue;
+            second_index = 0;
+          }
+          right_character = right_node_text.charAt(second_index);
+        }
+      }
+    }
+    
+    second_index++;
+    
+    // insert TEXT_ID to the right of second_index
+    if (second_index >= right_node_text.length) {
+      right_node.nodeValue = right_node.nodeValue + TEXT_ID + "";
+    } else {
+      right_node.nodeValue = right_node.nodeValue.substring(0, second_index) + TEXT_ID + right_node.nodeValue.substring(second_index);
+    }
+    
+    // remove 2nd TEXT_ID from html (replaced by 3rd)
+    html = $doc.eq(0).html();
+    var temp_index = -1;
+    for (var count = 0; count < 2; count++) {
+      temp_index = html.indexOf(TEXT_ID, temp_index + 1);
+      // remove nested instances
+      if (count != 0) {
+        html = html.substring(0, temp_index) + html.substring(temp_index + TEXT_ID.length);
+      }
+    }
+    // update html without invalid TEXT_IDs
+    $doc.eq(0).html(html);
+  }
+  
+  // set TwoReceipt class for doc html (first element that contains both TEXT_ID instances
+  var element = $doc.find(".TwoReceipt").first();
+  first_index = element.text().indexOf(TEXT_ID);
+  second_index = element.text().indexOf(TEXT_ID, first_index + 1);
+  while (first_index == -1 || second_index == -1) {
+    if (element.parent().length == 0) {
+      return null;
+    } else {
+      element = element.parent();
+    }
+    first_index = element.text().indexOf(TEXT_ID);
+    second_index = element.text().indexOf(TEXT_ID, first_index + 1);
+  }
+  
+  var original_element = $doc.find(".TwoReceipt").first();
+  original_element.removeClass(CLASS_NAME);
+  element.addClass(CLASS_NAME);
+  
+  // modify template values
+  template.selection = saved_string;
+  template.element = element[0].outerHTML;
+  template.html = $doc.eq(0).html();
+  console.log(template);
+  return template;
+}
+
+// returns (child) node immediately to the left/right of param node
+function findNextNode(direction, node) {
+  if (direction == "left") {
+    do {
+      // move to previousSiblings until they exist
+      while (node.previousSibling == null) {
+        if (node.parentNode != null) {
+          node = node.parentNode;
+        } else {
+          console.log("No parent node for " + direction);
+          return null;
+        }
+      }
+      console.log("prev sibling");
+      node = node.previousSibling;
+      
+      // traverse children till deepest child node
+      while (node.childNodes.length > 0) {
+        node = node.childNodes[node.childNodes.length - 1];
+      }
+    }
+    // looking for non-blank text node
+    while (node.nodeType != Node.TEXT_NODE || (node.nodeType == Node.TEXT_NODE && isBlank(node.nodeValue)))
+  } else {
+    do {
+      // move to nextSiblings until they exist
+      while (node.nextSibling == null) {
+        if (node.parentNode != null) {
+          node = node.parentNode;
+        } else {
+          console.log("No parent node for " + direction);
+          return null;
+        }
+      }
+      console.log("next sibling");
+      node = node.nextSibling;
+      
+      // traverse children till deepest child node
+      while (node.childNodes.length > 0) {
+        node = node.childNodes[0];
+      }
+    }
+    // looking for non-blank text node
+    while (node.nodeType != Node.TEXT_NODE || (node.nodeType == Node.TEXT_NODE && isBlank(node.nodeValue)))
+  }
+  return node;
+}
+
+function findTextNodeInElement(direction, element) {
+  if (direction == "left") {
+    // find node for element
+    var node = element.childNodes[0];
+    while (node.childNodes.length > 0) {
+      node = node.childNodes[0];
+    }
+    
+    // iterate right through element until node contains TEXT_ID
+    var previous_node, const_index;
+    if (node.nodeValue == null) {
+      const_index = -1;
+    } else {
+      const_index = node.nodeValue.indexOf(TEXT_ID);
+    }
+    while (const_index == -1) {
+      previous_node = node;
+      node = findNextNode("right", node);
+      if (node.nodeValue == null) {
+        const_index = -1;
+      } else {
+        const_index = node.nodeValue.indexOf(TEXT_ID);
+      }
+    }
+    
+    // if TEXT_ID is at the start of the node, take previous_node
+    if (const_index == 0) {
+      return previous_node;
+    } else {
+      return node;
+    }
+  } else {
+    // find node for element
+    var node = element.childNodes[element.childNodes.length - 1];
+    while (node.childNodes.length > 0) {
+      node = node.childNodes[node.childNodes.length - 1];
+    }
+    
+    // iterate left through element until node contains TEXT_ID
+    var previous_node, const_index;
+    if (node.nodeValue == null) {
+      const_index = -1;
+    } else {
+      const_index = node.nodeValue.indexOf(TEXT_ID);
+    }
+    while (const_index == -1) {
+      previous_node = node;
+      node = findNextNode("left", node);
+      if (node.nodeValue == null) {
+        const_index = -1;
+      } else {
+        const_index = node.nodeValue.indexOf(TEXT_ID);
+      }
+    }
+    
+    // if TEXT_ID is at the end of the node, take previous_node
+    if (const_index == node.nodeValue.length - TEXT_ID.length) {
+      return previous_node;
+    } else {
+      return node;
+    }
+  }
+}
+
+function calculateTrimmedText(template, saved_string) {
+  
+  return template;
+}
+
+// template fixing:
+// selection - text selected
+// element - outerHTML of element
+// modify html, set text to be surrounded by special symbols if not exactly element text, remove special symbol that is moved
+// set class to TwoReceipt if element changes to parent, remove class from current element (use this to get element outerHTML)
+
+// checkTemplateTrim
+// compare text, length shorter but still selected from 
+// not deleted
+// check if target element is a child - if it is, change element
+
+// template add/trim
+// text should still exist in doc, with some text in the selection
 
 // character by character comparison of 2 strings, to find if submitted_string is within template_string
 // returns true if 1st string is still considered a substring of 2nd string (requires consecutive characters matching)
@@ -251,6 +650,16 @@ function characterMatch(submitted_string, template_string) {
   }
   // no match
   else {
+    return false;
+  }
+}
+
+// returns true if string is blank
+function isBlank(text) {
+  // remove whitespace (\n, \t, etc)
+  if (text.trim() === "") {
+    return true;
+  } else {
     return false;
   }
 }
@@ -642,7 +1051,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			break;
 		
     case "deleteReceiptItem":
-      flagGeneratedItem(request.data);
+      processDeletedItem(request.data);
       break;
     
 		default:
