@@ -167,7 +167,7 @@ var PopUp =
       {
         request.abort();
       }
-
+      
       //Form the url parameters
       var $form = $("#login-form");
       //Get form inputs to disable
@@ -180,7 +180,7 @@ var PopUp =
 
       //Request token from server
       request = $.ajax({
-        url: this.controllers.GetUrl("tokens") + ".json",
+        url: self.controllers.GetUrl("tokens") + ".json",
         type: 'POST',
         data: tokenAuth,
         dataType: 'json'

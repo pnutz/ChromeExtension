@@ -259,9 +259,21 @@ function attributeComparison(template, saved_string) {
     console.log("trimmed text");
     template = calculateTrimmedText(template, saved_string);
   }
-  // add+trim text/removed text/drastic change
+  // add+trim text/removed text
+  else if (saved_string.length < template_string.length) {
+    //var temp_template = calculate
+    
+    /*if (temp_template == null) {
+      
+    }*/
+    
+    console.log("removed text");
+    template = calculateRemovedText(template, saved_string);
+  }
+  // add+trim text/drastic change
   else {
-    // template = null;
+    //template = calculate
+    //template = null;
   }
   return template;
 }
@@ -278,11 +290,11 @@ function calculateAddedText(template, saved_string) {
   console.log("right_text: " + right_text);
   
   // parseHTML does not track body or html tags, so used div
-  var html = "<div>" + template.html + "</div>";
-  var $doc, element;
+  var html, $doc, element;
   
   // compare characters left of TEXT_ID
   if (left_text.length > 0) {
+    html = "<div>" + template.html + "</div>";
     $doc = $($.parseHTML(html));
     element = $doc.find(".TwoReceipt").first();
     
@@ -367,6 +379,11 @@ function calculateAddedText(template, saved_string) {
   // compare characters right of TEXT_ID
   if (right_text.length > 0) {
     // if left case was applied, right side needs $doc to be reset or won't work, because of html modification
+    if (html == null) {
+      html = "<div>" + template.html + "</div>";
+    } else {
+      html = "<div>" + html + "</div>";
+    }
     $doc = $doc = $($.parseHTML(html));
     element = $doc.find(".TwoReceipt").first();
     
@@ -550,13 +567,7 @@ function findTextNodeInElement(direction, element) {
         const_index = node.nodeValue.indexOf(TEXT_ID);
       }
     }
-    
-    // if TEXT_ID is at the start of the node, take previous_node
-    /*if (const_index == 0) {
-      return previous_node;
-    } else {*/
-      return node;
-    //}
+    return node;
   } else {
     // find node for element
     var node = element.childNodes[element.childNodes.length - 1];
@@ -580,13 +591,7 @@ function findTextNodeInElement(direction, element) {
         const_index = node.nodeValue.indexOf(TEXT_ID);
       }
     }
-    
-    // if TEXT_ID is at the end of the node, take previous_node
-    /*if (const_index == node.nodeValue.length - TEXT_ID.length) {
-      return previous_node;
-    } else {*/
-      return node;
-    //}
+    return node;
   }
 }
 
@@ -602,11 +607,11 @@ function calculateTrimmedText(template, saved_string) {
   console.log("right_text: " + right_text);
   
   // parseHTML does not track body or html tags, so used div
-  var html = "<div>" + template.html + "</div>";
-  var $doc, element;
+  var html, $doc, element;
 
   // compare characters trimmed from left TEXT_ID
   if (left_text.length > 0) {
+    html = "<div>" + template.html + "</div>";
     $doc = $($.parseHTML(html));
     element = $doc.find(".TwoReceipt").first();
     first_index = element.text().indexOf(TEXT_ID);
@@ -679,6 +684,11 @@ function calculateTrimmedText(template, saved_string) {
   // compare characters trimmed from right TEXT_ID
   if (right_text.length > 0) {
     // if left case was applied, right side needs $doc to be reset or won't work, because of html modification
+    if (html == null) {
+      html = "<div>" + template.html + "</div>";
+    } else {
+      html = "<div>" + html + "</div>";
+    }
     $doc = $($.parseHTML(html));
     element = $doc.find(".TwoReceipt").first();
     second_index = element.text().indexOf(TEXT_ID, first_index + 1) + TEXT_ID.length;
@@ -750,12 +760,23 @@ function calculateTrimmedText(template, saved_string) {
   // set TwoReceipt class for doc html (first element that contains both TEXT_ID instances)
   element = $doc.find(".TwoReceipt").first();
   original_element = element;
-  while (element.children().length != 0 && element.text().indexOf(TEXT_ID) != -1) {
+  // loop through element children until there are no more children to loop through
+  while (element.children().length != 0) {
+    var valid_child = false;
     for (var index = 0; index < element.children().length; index++) {
-      if (element.children(index).indexOf(TEXT_ID) != -1) {
+      first_index = element.children(index).text().indexOf(TEXT_ID);
+      second_index = element.children(index).text().indexOf(TEXT_ID, first_index + 1);
+      // if element child contains both TEXT_IDs
+      if (first_index != -1 && second_index != -1) {
+        valid_child = true;
         element = element.children(index);
         break;
       }
+    }
+    console.log(element.text());
+    // none of the element children contain TEXT_ID
+    if (!valid_child) {
+      break;
     }
   }
   
@@ -782,45 +803,71 @@ function calculateTrimmedText(template, saved_string) {
   return template;
 }
 
-// template add/trim
-// text should still exist in doc, with some text in the selection
+// returns template if text is removed from the inside, otherwise returns null
+function calculateRemovedText(template, saved_string) {
+  
+  if (characterMatch(saved_string, template.selection)) {
+    return template;
+  } else {
+    return null;
+  }
+}
 
 // character by character comparison of 2 strings, to find if submitted_string is within template_string
 // returns true if 1st string is still considered a substring of 2nd string (requires consecutive characters matching)
 function characterMatch(submitted_string, template_string) {
   var j = 0,
   consecutive_match = false,
-  num_consec_matches = 0;
+  num_consec_matches = 0,
+  submitted_character, template_character;
   
   // iterate through submitted_string
   for(var i = 0; i < submitted_string.length; i++) {
-    var character_match = false;
-    // keep iterating through template_string until match is found or end of string
-    while(j < template_string.length && !character_match) {
-      character_match = (template_string.charAt(j) == submitted_string.charAt(i));
-      j++;
-      
-      if (consec_match) {
-        if (character_match) {
-          num_consec_matches++;
+    submitted_character = submitted_string.charAt(i);
+    // do not compare blank characters
+    if (!isBlank(submitted_character)) {
+      var character_match = false;
+      // keep iterating through template_string until match is found or end of string
+      while (j < template_string.length && !character_match) {
+        template_character = template_string.charAt(j);
+        // do not compare blank characters
+        if (!isBlank(template_character)) {
+          character_match = (template_character == submitted_character);
+          console.log(character_match + " " + template_character + " " + submitted_character);
+          j++;
+          
+          // add to num consec if already consecutive
+          if (consecutive_match) {
+            if (character_match) {
+              num_consec_matches++;
+            } else {
+              consecutive_match = false;
+            }
+          }
+          // start tracking consecutive_match if character matches
+          else if (character_match) {
+            consecutive_match = true;
+          }
         } else {
-          consec_match = false;
+          j++;
         }
       }
     }
-    consec_match = true;
   }
   
   // match, but too few consecutive matches
-  if (character_match && num_consec_matches / submitted_string.length > CONSEC_PERCENT) {
+  if (character_match && num_consec_matches / submitted_string.length < CONSEC_PERCENT) {
+    console.log("too few consecutive matches");
     return false;
   }
   // match
   else if (character_match) {
+    console.log("characters matched");
     return true;
   }
   // no match
   else {
+    console.log("characters not matched");
     return false;
   }
 }
