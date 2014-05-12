@@ -286,18 +286,21 @@ function createNotification() {
 	// append iframe notification within div to body
 	var div = document.createElement("div");
 	div.id = "notificationdiv";
-	div.setAttribute("style", "top: 0px; left: 0px; height: 1px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
+	div.setAttribute("style", "top: 0px; left: 0px; height: 200px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
 	var iframe = document.createElement("iframe");
 	iframe.id = "twoReceiptIFrame";
 	iframe.className = "twoReceiptIFrame";
 	iframe.scrolling = "no";
 	iframe.style.width = "100%";
-	iframe.setAttribute("style", 'height: 27px; border: 0px;');
+	iframe.setAttribute("style", 'height: 200px; border: 0px;');
 	iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
 	div.appendChild(iframe);
+
+  // before appending, hide the div
+  $(div).hide();
 	document.documentElement.appendChild(div);
-	
 	document.documentElement.style.paddingTop = "27px";
+  $(div).toggle("slide");
 }
 
 // long-lived connection from background
@@ -341,9 +344,10 @@ chrome.runtime.onConnect.addListener(function(port) {
 
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
+	  console.log("running listener function");
 		// do not load for iframe
 		if (self == top)
-		{
+    {
 			console.log("received onMessage connection instead of port connect");
 			if (request.greeting == "getHTML")
 			{

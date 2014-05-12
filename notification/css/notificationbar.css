@@ -1,0 +1,10 @@
+/* Overrides */
+.handsontable td {
+  word-wrap: break-word;  /* word wrapping*/
+}
+
+/*Regular notification css */
+#receipt-container-upper
+{
+  padding: 15px;
+}

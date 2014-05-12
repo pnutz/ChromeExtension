@@ -1,32 +1,22 @@
+var colHeaders =
+      ["Receipt Item", "Quantity", "Cost"];
 var data = [ 
-      ["Receipt Item", "Quantity", "Cost"],
       ["Item1", 1, 423.43],
       ["Item2", 2, 435]
     ];
 
 document.addEventListener('DOMContentLoaded', function() {
-	// notification yes
-	$("#yes").click(function()
-	{
-		window.parent.postMessage("yes", '*');
-	});
-
-	// notification no
-	$("#no").click(function()
-	{
-		window.parent.postMessage("no", '*');
-	});
-	
-	$("#x").click(function()
-	{
-		window.parent.postMessage("x", '*');
-	});
-
+  var tableWidth = $("#receipt-items-container").width();
+  var tableThird = tableWidth/3;
   $("#receipt-items").handsontable({
     data : data,
     startRows : 4,
     startCols : 4,
-    stretchH : 'all',
-    width : $("#receipt-items-container").width() 
+    stretchH : 'last', //Setting this to 'all' causes resizing issues
+    colWidths : [250, 250, 250],
+    width : tableWidth,
+    colHeaders : colHeaders,
+    rowHeaders : true,
+    manualColumnResize : true
   });
 });
