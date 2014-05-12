@@ -12,6 +12,8 @@ $(document).ready(function() {
 		console.log("document ready");
 	}
 	
+  findMatches("Amazon");
+  
 	// only run function when user prompts to start, so links keep working
 	$(document).click(function(event) {
 		lastClicked = $(event.target);
@@ -32,7 +34,7 @@ $(document).ready(function() {
       var parentElement = element;
       if (parentElement !== null) {
         for (var index = 0; index < 3; index++) {
-          if (parentElement.parent() != null && linkSelected == false) {
+          if (parentElement.parent().length != 0 && linkSelected == false) {
             parentElement = parentElement.parent();
             if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
               linkSelected = true;
@@ -99,7 +101,7 @@ $(document).ready(function() {
     var parentElement = mouseDownElement;
     if (parentElement !== null) {
       for (var index = 0; index < 3; index++) {
-        if (parentElement.parent() != null) {
+        if (parentElement.parent().length != 0) {
           parentElement = parentElement.parent();
           if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
             return false;
@@ -362,43 +364,133 @@ chrome.runtime.onMessage.addListener(
 		{
 			console.log("IFRAME (nothing run) - received onMessage connection instead of port connect");
 		}
-	});
+});
 	
-	window.addEventListener("message", function(event) {
-		if (event.origin.indexOf("chrome-extension://") != -1)
-		{
-			console.log(event.data);
-			var notdiv = document.getElementById("notificationdiv");
-			notdiv.parentNode.removeChild(notdiv);
-			
-			document.documentElement.style.paddingTop = "0px";
-						
-			if (event.data == "yes")
-			{
+window.addEventListener("message", function(event) {
+  if (event.origin.indexOf("chrome-extension://") != -1)
+  {
+    console.log(event.data);
+    var notdiv = document.getElementById("notificationdiv");
+    notdiv.parentNode.removeChild(notdiv);
+    
+    document.documentElement.style.paddingTop = "0px";
+          
+    if (event.data == "yes")
+    {
 
-			}
-			else if (event.data == "no")
-			{
-				
-			}
-			else if (event.data == "x")
-			{
-				
-			}
-			else
-			{
-				// message from iframe, element clicked
-				if (htmlGet != "pull-off" && self !== top)
-				{
-					console.log(event.data);
-					window.parent.postMessage(event.data, '*');
-				}
-				// format of htmlGet = pull-date, pull-transaction, etc. send response if not off
-				else if (htmlGet.indexOf("pull-") != -1 && htmlGet.indexOf("off") == -1)
-				{
-					var msg_data = JSON.parse(event.data);
-					incomingPort.postMessage(msg_data);
-				}
-			}
-		}
-	});
+    }
+    else if (event.data == "no")
+    {
+      
+    }
+    else if (event.data == "x")
+    {
+      
+    }
+    else
+    {
+      // message from iframe, element clicked
+      if (htmlGet != "pull-off" && self !== top)
+      {
+        console.log(event.data);
+        window.parent.postMessage(event.data, '*');
+      }
+      // format of htmlGet = pull-date, pull-transaction, etc. send response if not off
+      else if (htmlGet.indexOf("pull-") != -1 && htmlGet.indexOf("off") == -1)
+      {
+        var msg_data = JSON.parse(event.data);
+        incomingPort.postMessage(msg_data);
+      }
+    }
+  }
+});
+
+// return a list of deepest elements containing exact matches to input_string
+function findMatches(input_string) {
+  var matches_found = [];
+  var items = $(":contains('" + input_string + "')");
+  console.log(items);
+  
+  // result is true if other elements in the array are nested within element
+  for (var index = 0; index < items.length; index++) {
+    var result = false;
+    for (var next_index = index + 1; next_index < items.length; next_index++) {
+      var result = $.contains(items.eq(index)[0], items.eq(next_index)[0]);
+      if (result) {
+        break;
+      }
+    }
+    
+    // keep element that does not contain other elements
+    if (!result) {
+      items.eq(index).css("text-decoration", "underline");
+      console.log(items.eq(index).text());
+      matches_found.push(items.eq(index));
+    }
+  }
+  console.log(matches_found);
+  
+  return matches_found;
+}
+
+// source: http://stackoverflow.com/questions/19259029/using-jquery-is-there-a-way-to-find-the-farthest-deepest-or-most-nested-child
+$.fn.findDeepest = function() {
+    var results = [];
+    this.each(function() {
+        var deepLevel = 0;
+        var deepNode = this;
+        treeWalkFast(this, function(node, level) {
+            if (level > deepLevel) {
+                deepLevel = level;
+                deepNode = node;
+            }
+        });
+        results.push(deepNode);
+    });
+    return this.pushStack(results);
+};
+
+var treeWalkFast = (function() {
+    // create closure for constants
+    var skipTags = {"SCRIPT": true, "IFRAME": true, "OBJECT": true, "EMBED": true};
+    return function(parent, fn, allNodes) {
+        var node = parent.firstChild, nextNode;
+        var level = 1;
+        while (node && node != parent) {
+            if (allNodes || node.nodeType === 1) {
+                if (fn(node, level) === false) {
+                    return(false);
+                }
+            }
+            // if it's an element &&
+            //    has children &&
+            //    has a tagname && is not in the skipTags list
+            //  then, we can enumerate children
+            if (node.nodeType === 1 && node.firstChild && !(node.tagName && skipTags[node.tagName])) {                
+                node = node.firstChild;
+                ++level;
+            } else if (node.nextSibling) {
+                node = node.nextSibling;
+            } else {
+                // no child and no nextsibling
+                // find parent that has a nextSibling
+                --level;
+                while ((node = node.parentNode) != parent) {
+                    if (node.nextSibling) {
+                        node = node.nextSibling;
+                        break;
+                    }
+                    --level;
+                }
+            }
+        }
+    }
+})();
+
+/*var deeps = $(".start").findDeepest();
+
+deeps.each(function(i,v){
+    $("#results").append(
+        $("<li>").html($(v).prop("tagName") + " " + $(v).html())
+    );
+});*/
