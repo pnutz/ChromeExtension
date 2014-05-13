@@ -18,7 +18,7 @@ $(document).ready(function() {
   document.getElementsByTagName("head")[0].appendChild(style);
   
   //findMatches("Amazon");
-  searchAndHighlight("Amazon", 'body', 'highlighted', true)
+  searchAndHighlight("amazon", 'body', 'highlighted', true)
   console.log($(".highlighted"));
   
 	// only run function when user prompts to start, so links keep working
@@ -412,13 +412,56 @@ window.addEventListener("message", function(event) {
   }
 });
 
+// source: http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript/3561711#3561711
+// escape special characters in regex
+RegExp.escape = function(s) {
+    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+};
+
 // source: http://teeohhem.com/2011/02/20/search-for-and-highlight-text-on-a-page-with-jquery/
+
+// html element will be child-most - iterate direction
+
+// rules: 
+// elements hold locations of possible selections
+// template on-submit?
+// keep elements for selected text - use for template on-submit
+  // defining custom html tag - html5 only? http://www.html5rocks.com/en/tutorials/webcomponents/customelements/
+// - start & number, end & number
+// - if no longer selected - start & field, end & field
+// mark highlights text (can be over multiple elements)
+// when un-select text field, remove marks
+// does mark work on non-html5 pages
+// on highlight - remove all other mark elements and create new one & on submit
+
+// on-submit
+// generate templates & remove element place-holders
+// pass main page data over (html, domain, url)
+// will html have TEXT_ID and class? - class can be TwoReceipt-attribute (modify aServer accordingly)
+// TEXT_ID cannot have
+// custom element markers - ORDER & LEVEL messed up, also needs to be the only marker at the time?
+// when searching element markers, instead of searching for TEXT_ID, we know exactly where the text starts and ends
+// remove the elements in aServer before saving template, so template is accurate
+
+// functions:
+// 1) searchText - returns a reference list of all elements that contain text of element
+// 2) findRelevantMatches - appends temp elements at all probable text options and returns a reference list of all temp elements storing text options
+                        // - always include the exact match to text that user has entered
+// 3) highlightSelection - highlights selected text
+// 4) unhighlightSelection - removes all highlight tags
+// 5) setFieldText - sets elements to surround selected text for field (replacing relevant match temp element)
+                // - possible for user to set text that isnt found on html, no template
+// 6) clearTextOptions - empties searched list and removes all temp elements
+// 7) setTemplates - send data for individual templates back to eventPage
+// 8) cleanHtml - run on submit, unhighlightSelection(), clearTextOptions(), setTemplates()
+// 9) sendPageData - sends html, domain, url to eventPage
+
 function searchAndHighlight(searchTerm, selector, highlightClass, removePreviousHighlights) {
-  if(searchTerm) {
+  if (searchTerm) {
     //var wholeWordOnly = new RegExp("\\g"+searchTerm+"\\g","ig"); //matches whole word only
     //var anyCharacter = new RegExp("\\g["+searchTerm+"]\\g","ig"); //matches any word with any of search chars characters
     var selector = selector || "body",                             //use body as selector if none provided
-      searchTermRegEx = new RegExp("("+searchTerm+")","gi"),
+      searchTermRegEx = new RegExp("("+RegExp.escape(searchTerm)+")","gi"),
       matches = 0,
       helper = {};
     helper.doHighlight = function(node, searchTerm){
@@ -437,19 +480,9 @@ function searchAndHighlight(searchTerm, selector, highlightClass, removePrevious
         });
       }
     };
+    // this is fine if 2 classes are added - 1 for highlight, 1 to define text field/searchTerm
     if(removePreviousHighlights) {
       $('.'+highlightClass).removeClass(highlightClass);     //Remove old search highlights
-      // need to remove existing span element
-      // add two classes, one for highlight, one for searchTerm
-      // span is easiest way to get exact text!
-      // how to get this to work with templates? - ruins element searching ORDER & LEVEL
-      // need to remove span elements with 1 of the 2 classes
-      // template?
-      // to calculate text, insert TEXT_ID & set class
-      // since html is defined to 1 page, can we send all the changes attached to same page
-      // classes can be unique to text field, but TEXT_ID cannot
-      // creation of new elements will negatively alter template searching
-      // 
     }
 
     $.each($(selector).children(), function(index,val){
@@ -468,6 +501,51 @@ function searchAndHighlight(searchTerm, selector, highlightClass, removePrevious
         }
     });
 });*/
+
+// source: http://ask.metafilter.com/35120/Regex-Text-from-HTML-no-attributes
+/*function cleanWhitespace( element ) {
+  // If no element is provided, do the whole HTML document
+  element = element || document;
+  // Use the first child as a starting point
+  var cur = element.firstChild;
+
+  // Go until there are no more child nodes
+  while ( cur != null ) {
+
+    // If the node is a text node, and it contains nothing but whitespace
+    if ( cur.nodeType == 3 && ! /\S/.test(cur.nodeValue) ) {
+      // Remove the text node
+      element.removeChild( cur );
+
+    // Otherwise, if it’s an element
+    } else if ( cur.nodeType == 1 ) {
+      // Recurse down through the document
+      cleanWhitespace( cur );
+    }
+
+    cur = cur.nextSibling; // Move through the child nodes
+  }
+}
+
+The second generic function is text. This function retreives the text contents of an element. Calling text(Element) will return a string containing the combined text contents of the element and all child elements that it contains.
+function text(e) {
+  var t = "";
+
+  // If an element was passed, get it’s children, 
+  // otherwise assume it’s an array
+  e = e.childNodes || e;
+
+  // Look through all child nodes
+  for ( var j = 0; j < e.length; j++ ) {
+    // If it’s not an element, append its text value
+    // Otherwise, recurse through all the element’s children 
+    t += e[j].nodeType != 1 ? e[j].nodeValue : text(e[j].childNodes);
+  }
+
+  // Return the matched text
+  return t;
+}*/
+
 
 // return a list of deepest elements containing exact matches to input_string
 /*function findMatches(input_string) {
