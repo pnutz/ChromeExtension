@@ -17,9 +17,19 @@ $(document).ready(function() {
   style.innerHTML = ".highlighted { background-color: yellow; }";
   document.getElementsByTagName("head")[0].appendChild(style);
   
-  //findMatches("Amazon");
-  searchAndHighlight("amazon", 'body', 'highlighted', true)
-  console.log($(".highlighted"));
+  var children = $("body")[0].childNodes;
+  console.log(children);
+  
+  clean(document.body);
+  var document_text = getDocumentText();
+  //console.log(document_text);
+  var count = occurrences(document_text, "amazon");
+  //console.log(count);
+  if (count > 0) {
+    var matches = searchTextNodes("amazon", "body", "vendor");
+    console.log(matches);
+    console.log($("vendor"));
+  }
   
 	// only run function when user prompts to start, so links keep working
 	$(document).click(function(event) {
@@ -442,9 +452,12 @@ RegExp.escape = function(s) {
 // custom element markers - ORDER & LEVEL messed up, also needs to be the only marker at the time?
 // when searching element markers, instead of searching for TEXT_ID, we know exactly where the text starts and ends
 // remove the elements in aServer before saving template, so template is accurate
+// how will i find the selected text? i know the element html that contains the start/end elements
+// main html will have this removed
 
 // functions:
-// 1) searchText - returns a reference list of all elements that contain text of element
+// 1) searchText - returns a reference list of all elements that contain text of element (nodes?)
+                // - needs to take into account text that traverses multiple nodes
 // 2) findRelevantMatches - appends temp elements at all probable text options and returns a reference list of all temp elements storing text options
                         // - always include the exact match to text that user has entered
 // 3) highlightSelection - highlights selected text
@@ -453,8 +466,80 @@ RegExp.escape = function(s) {
                 // - possible for user to set text that isnt found on html, no template
 // 6) clearTextOptions - empties searched list and removes all temp elements
 // 7) setTemplates - send data for individual templates back to eventPage
-// 8) cleanHtml - run on submit, unhighlightSelection(), clearTextOptions(), setTemplates()
-// 9) sendPageData - sends html, domain, url to eventPage
+// 8) sendPageData - run on submit, unhighlightSelection(), clearTextOptions(), sendTemplates(), sends html, domain, url to eventPage
+
+// multiple instances in same text node, does not change count
+// <field> element does not count as an element
+function searchTextNodes(searchTerm, selector, field) {
+  if (searchTerm) {
+    var selector = selector || "body",
+      searchTermRegEx = new RegExp("("+RegExp.escape(searchTerm)+")","gi"),
+      matches = [],
+      helper = {},
+      count = 0;
+
+    // iterates through all nodes in dom, checking text nodes for search matches and surrounding them by elements
+    helper.matchText = function(node, searchTerm) {
+      if (node.nodeType === 3) {
+        if (node.nodeValue.match(searchTermRegEx)) {
+          var node_html = node.nodeValue.replace(searchTermRegEx, "<" + field + " class=\'start-" + count + "\'></" + field + ">$1<" + field + " class=\'end-" + count + "\'/></" + field + ">");
+          // prepend data with TEXT_ID to find it in parent innerHTML easily
+          node.nodeValue = TEXT_ID + node_html;
+          console.log(node.nodeValue);
+          // get length of data
+          // replace innerHTML data of length with node_html (will generate field elements)
+          
+          // set <field class='start-count'> elements before and after each instance of searchTerm
+          var num_occurrences = occurrences(node.nodeValue, searchTerm);
+          while (num_occurrences > 0) {
+            // change each individual occurrence
+            // if innerHTML for parent contains
+            count++;
+            num_occurrences--;
+          }
+          
+          // set parent innerHTML
+          var parent = node.parentNode;
+          console.log(parent);
+          
+          var start_of_node = parent.innerHTML.indexOf(TEXT_ID);
+          console.log(parent.innerHTML);
+          console.log(node_html);
+          // formatting node_html in parent.innerHTML messes up characters < >
+          
+          console.log(node_html.length + TEXT_ID.length);
+          console.log(parent.innerHTML.length);
+          console.log(parent.innerHTML.length - node_html.length - TEXT_ID.length);
+          
+          console.log("start");
+          console.log(parent.innerHTML.substring(0, start_of_node));
+          console.log("end");
+          console.log(parent.innerHTML.substring(start_of_node + TEXT_ID.length + node_html.length));
+          parent.innerHTML = parent.innerHTML.substring(0, start_of_node)
+                            + node_html
+                            + parent.innerHTML.substring(start_of_node + TEXT_ID.length + node_html.length + 1);
+
+          console.log(parent);
+          matches.push(node);
+        }
+      }
+      else if (node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
+        $.each(node.childNodes, function(i,v) {
+          helper.matchText(node.childNodes[i], searchTerm);
+        });
+      }
+    };
+    
+    // iterate through all children of body element
+    var children = $(selector)[0].childNodes;
+    $.each(children, function(index,val) {
+      helper.matchText(children[index], searchTerm);
+    });
+    return matches;
+  } else {
+    return false;
+  }
+}
 
 function searchAndHighlight(searchTerm, selector, highlightClass, removePreviousHighlights) {
   if (searchTerm) {
@@ -462,16 +547,18 @@ function searchAndHighlight(searchTerm, selector, highlightClass, removePrevious
     //var anyCharacter = new RegExp("\\g["+searchTerm+"]\\g","ig"); //matches any word with any of search chars characters
     var selector = selector || "body",                             //use body as selector if none provided
       searchTermRegEx = new RegExp("("+RegExp.escape(searchTerm)+")","gi"),
-      matches = 0,
+      matches = [],
       helper = {};
+
+    // iterates through all nodes in dom, checking text nodes for search matches
     helper.doHighlight = function(node, searchTerm){
       if(node.nodeType === 3) {
         if(node.nodeValue.match(searchTermRegEx)){
-          matches++;
           var tempNode = document.createElement('span');
-          tempNode.innerHTML = node.nodeValue.replace(searchTermRegEx, "<span class='"+highlightClass+"'>$1</span>");
+          tempNode.innerHTML = node.nodeValue.replace(searchTermRegEx, "<test class='hihi'></test><span class='"+highlightClass+"'>$1</span>");
           node.parentNode.insertBefore(tempNode, node);
           node.parentNode.removeChild(node);
+          matches.push(tempNode);
         }
       }
       else if(node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
@@ -485,154 +572,83 @@ function searchAndHighlight(searchTerm, selector, highlightClass, removePrevious
       $('.'+highlightClass).removeClass(highlightClass);     //Remove old search highlights
     }
 
-    $.each($(selector).children(), function(index,val){
-      helper.doHighlight(this, searchTerm);
+    // iterate through all children of body element
+    var children = $(selector)[0].childNodes;
+    $.each(children, function(index,val){
+      helper.doHighlight(children[index], searchTerm);
     });
     return matches;
   }
   return false;
 }
 
-// example of use
-/*$(document).ready(function() {
-    $('#search-button').on("click",function() {
-        if(!searchAndHighlight($('#search-term').val(), "#bodyContainer", '.highlighted')) {
-            alert("No results found");
-        }
-    });
-});*/
-
-// source: http://ask.metafilter.com/35120/Regex-Text-from-HTML-no-attributes
-/*function cleanWhitespace( element ) {
-  // If no element is provided, do the whole HTML document
-  element = element || document;
-  // Use the first child as a starting point
-  var cur = element.firstChild;
-
-  // Go until there are no more child nodes
-  while ( cur != null ) {
-
-    // If the node is a text node, and it contains nothing but whitespace
-    if ( cur.nodeType == 3 && ! /\S/.test(cur.nodeValue) ) {
-      // Remove the text node
-      element.removeChild( cur );
-
-    // Otherwise, if it’s an element
-    } else if ( cur.nodeType == 1 ) {
-      // Recurse down through the document
-      cleanWhitespace( cur );
+// source: http://www.sitepoint.com/removing-useless-nodes-from-the-dom/
+function clean(node)
+{
+  for(var n = 0; n < node.childNodes.length; n++)
+  {
+    var child = node.childNodes[n];
+    if
+    (
+      child.nodeType === 8 ||
+      (child.nodeType === 3 && !/\S/.test(child.nodeValue))
+    )
+    {
+      node.removeChild(child);
+      n--;
     }
-
-    cur = cur.nextSibling; // Move through the child nodes
+    else if(child.nodeType === 1)
+    {
+      clean(child);
+    }
   }
 }
 
-The second generic function is text. This function retreives the text contents of an element. Calling text(Element) will return a string containing the combined text contents of the element and all child elements that it contains.
-function text(e) {
-  var t = "";
-
-  // If an element was passed, get it’s children, 
-  // otherwise assume it’s an array
-  e = e.childNodes || e;
-
-  // Look through all child nodes
-  for ( var j = 0; j < e.length; j++ ) {
-    // If it’s not an element, append its text value
-    // Otherwise, recurse through all the element’s children 
-    t += e[j].nodeType != 1 ? e[j].nodeValue : text(e[j].childNodes);
-  }
-
-  // Return the matched text
-  return t;
-}*/
-
-
-// return a list of deepest elements containing exact matches to input_string
-/*function findMatches(input_string) {
-  var matches_found = [];
-  var items = $(":contains('" + input_string + "')");
-  console.log(items);
-  
-  // result is true if other elements in the array are nested within element
-  for (var index = 0; index < items.length; index++) {
-    var result = false;
-    for (var next_index = index + 1; next_index < items.length; next_index++) {
-      var result = $.contains(items.eq(index)[0], items.eq(next_index)[0]);
-      if (result) {
-        break;
-      }
-    }
+// retrieves the text contents of an element
+function getDocumentText(e) {
+  var selector = e || "body",
+      text = "",
+      helper = {};
     
-    // keep element that does not contain other elements
-    if (!result) {
-      items.eq(index).css("text-decoration", "underline");
-      console.log(items.eq(index).text());
-      matches_found.push(items.eq(index));
-    }
-  }
-  console.log(matches_found);
-  
-  return matches_found;
+    helper.addText = function(node){
+      if(node.nodeType === 3) {
+        text += " " + node.nodeValue.trim();
+      }
+      else if(node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
+        $.each(node.childNodes, function(i,v){
+          helper.addText(node.childNodes[i]);
+        });
+      }
+    };
+
+    // iterate through all children of body element
+    var children = $(selector)[0].childNodes;
+    $.each(children, function(index,val){
+      helper.addText(children[index]);
+    });
+    return text;
 }
 
-// source: http://stackoverflow.com/questions/19259029/using-jquery-is-there-a-way-to-find-the-farthest-deepest-or-most-nested-child
-$.fn.findDeepest = function() {
-    var results = [];
-    this.each(function() {
-        var deepLevel = 0;
-        var deepNode = this;
-        treeWalkFast(this, function(node, level) {
-            if (level > deepLevel) {
-                deepLevel = level;
-                deepNode = node;
-            }
-        });
-        results.push(deepNode);
-    });
-    return this.pushStack(results);
-};
+// source: http://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string
+/** Function count the occurrences of substring in a string; not case sensitive
+ * @param {String} string   Required. The string;
+ * @param {String} subString    Required. The string to search for;
+ * @param {Boolean} allowOverlapping    Optional. Default: false;
+ */
+function occurrences(string, subString, allowOverlapping){
 
-var treeWalkFast = (function() {
-    // create closure for constants
-    var skipTags = {"SCRIPT": true, "IFRAME": true, "OBJECT": true, "EMBED": true};
-    return function(parent, fn, allNodes) {
-        var node = parent.firstChild, nextNode;
-        var level = 1;
-        while (node && node != parent) {
-            if (allNodes || node.nodeType === 1) {
-                if (fn(node, level) === false) {
-                    return(false);
-                }
-            }
-            // if it's an element &&
-            //    has children &&
-            //    has a tagname && is not in the skipTags list
-            //  then, we can enumerate children
-            if (node.nodeType === 1 && node.firstChild && !(node.tagName && skipTags[node.tagName])) {                
-                node = node.firstChild;
-                ++level;
-            } else if (node.nextSibling) {
-                node = node.nextSibling;
-            } else {
-                // no child and no nextsibling
-                // find parent that has a nextSibling
-                --level;
-                while ((node = node.parentNode) != parent) {
-                    if (node.nextSibling) {
-                        node = node.nextSibling;
-                        break;
-                    }
-                    --level;
-                }
-            }
-        }
+    string+="", subString+="";
+    string = string.toLowerCase();
+    subString = subString.toLowerCase();
+    
+    if(subString.length<=0) return string.length+1;
+
+    var n=0, pos=0;
+    var step=(allowOverlapping)?(1):(subString.length);
+
+    while(true){
+        pos=string.indexOf(subString,pos);
+        if(pos>=0){ n++; pos+=step; } else break;
     }
-})();*/
-
-/*var deeps = $(".start").findDeepest();
-
-deeps.each(function(i,v){
-    $("#results").append(
-        $("<li>").html($(v).prop("tagName") + " " + $(v).html())
-    );
-});*/
+    return(n);
+}
