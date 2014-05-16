@@ -20,15 +20,19 @@ $(document).ready(function() {
   var children = $("body")[0].childNodes;
   console.log(children);
   
+  //searchAndHighlight("Amazon", "body", "highlighted");
+  
   clean(document.body);
   var document_text = getDocumentText();
-  //console.log(document_text);
-  var count = occurrences(document_text, "amazon");
-  //console.log(count);
+  console.log(document_text);
+  
+  // find how many instances of searchTerm exist in document
+  var count = occurrences(document_text, "amazon", true);
   if (count > 0) {
-    var matches = searchTextNodes("amazon", "body", "vendor");
-    console.log(matches);
-    console.log($("vendor"));
+    var matches = searchText("amazon", "vendor", count);
+    //matches = searchTextNodes("amazon", "body", "vendor");
+    //console.log(matches);
+    //console.log($("vendor"));
   }
   
 	// only run function when user prompts to start, so links keep working
@@ -465,11 +469,110 @@ RegExp.escape = function(s) {
 // 5) setFieldText - sets elements to surround selected text for field (replacing relevant match temp element)
                 // - possible for user to set text that isnt found on html, no template
 // 6) clearTextOptions - empties searched list and removes all temp elements
+                // should i maintain temp elements for each text field? to retain last search
 // 7) setTemplates - send data for individual templates back to eventPage
 // 8) sendPageData - run on submit, unhighlightSelection(), clearTextOptions(), sendTemplates(), sends html, domain, url to eventPage
 
-// multiple instances in same text node, does not change count
-// <field> element does not count as an element
+// what i want to do: find all text & append unique tags before/after all text
+// generate relevant match options around text (and append unique tags for each)
+// set element parent (marked) for highlighting if user selects
+
+// find all instances of searchTerm in the document and create field element before and after text locations
+// returns a list of generated start tags that contain the searchTerm
+function searchText(searchTerm, field, count) {
+  var text_nodes = [],
+      text = "",
+      lower_text = "",
+      lower_search = searchTerm.toLowerCase(),
+      helper = {},
+      // holds last valid index
+      current_index = -1;
+    
+    helper.addText = function(node) {
+      if (node.nodeType === 3) {
+        var node_value = node.nodeValue.trim();
+        text += " " + node_value;
+        lower_text += " " + node_value.toLowerCase();
+        text_nodes.push(node);
+
+        // if searchTerm is found, current text node is the end node for one count
+        var index = lower_text.indexOf(lower_search, current_index + 1);
+        
+        // START IS INCORRECT, CHARACTERS FROM END?!
+        
+        // stores the number of characters the start of searchTerm is from the end of text
+        var characters_from_end = text.length - index;
+        
+        // loop through text node in case there is more than one searchTerm instance in text
+        while (index != -1) {
+          current_index = index;
+          count--;
+          // remember how many text nodes before current node we are pulling from text_nodes
+          var text_nodes_back_index = text_nodes.length - 2;
+          var node_text = node_value;
+          
+          // set node_text to contain prevSibling text nodes until the current searchTerm matches 
+          while (node_text.length < characters_from_end) {
+            node_text = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + node_text;
+            text_nodes_back_index--;
+          }
+          
+          // find index searchTerm starts on in text node (or prevSibling)
+          var start_index = node_text.toLowerCase().indexOf(lower_search);
+          if (start_index != -1) {
+            // add start tag before searchTerm in text node
+            insertElementInText(start_index - 1, text_nodes[text_nodes_back_index], field, "start");
+            
+            // find index searchTerm ends on in text node
+            var end_index = node_value.length - characters_from_end + searchTerm.length;
+            // add end tag after searchTerm in text node
+            insertElementInText(end_index, node, field, "end");
+          } else {
+            console.log(node_text);
+            console.log(searchTerm);
+          }
+          
+          index = lower_text.indexOf(lower_search, current_index + 1);
+          characters_from_end = text.length - index;
+        }
+      }
+      else if (node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
+        $.each(node.childNodes, function(i,v){
+          helper.addText(node.childNodes[i]);
+        });
+      }
+    };
+
+    // iterate through all children of body element
+    var children = $("body")[0].childNodes;
+    $.each(children, function(index,val) {
+      if (count == 0) {
+        console.log("Completed calculations for all matched searchTerms");
+        return false;
+      }
+      helper.addText(children[index]);
+    });
+    // return text;
+}
+
+function insertElementInText(index, text_node, element_tag, class_name) {
+  console.log("insert element");
+  var node_text = text_node.nodeValue.trim();
+  console.log(node_text);
+  console.log(text_node);
+  text_node.nodeValue = text_node.nodeValue.substring(0, index) + TEXT_ID + text_node.nodeValue.substring(index);
+  
+  // WHY IS THERE NO PARENT NODE?
+  var parent = text_node.parentNode;
+  index = parent.innerHTML.indexOf(TEXT_ID);
+  parent.innerHTML = parent.innerHTML.substring(0, index) +
+                      "<" + element_tag + " class='" + class_name + "'></" + element_tag + ">" +
+                      parent.innerHTML.substring(index + TEXT_ID.length);
+  console.log(parent);
+  console.log($(element_tag));
+}
+
+// this is currently a test method that proves appending <field> to text node works
 function searchTextNodes(searchTerm, selector, field) {
   if (searchTerm) {
     var selector = selector || "body",
@@ -479,46 +582,41 @@ function searchTextNodes(searchTerm, selector, field) {
       count = 0;
 
     // iterates through all nodes in dom, checking text nodes for search matches and surrounding them by elements
+    // issue is special symbols appended to text
     helper.matchText = function(node, searchTerm) {
       if (node.nodeType === 3) {
         if (node.nodeValue.match(searchTermRegEx)) {
-          var node_html = node.nodeValue.replace(searchTermRegEx, "<" + field + " class=\'start-" + count + "\'></" + field + ">$1<" + field + " class=\'end-" + count + "\'/></" + field + ">");
+          // insert field start and end around matched text
+          var node_html = node.nodeValue.replace(searchTermRegEx, "<" + field + " class='start-" + count + "'></" + field + ">$1<" + field + " class='end-" + count + "'></" + field + ">");
+          console.log(node_html);
+          
+          // the innerHTML of parent converts special characters into html entities. node_html_entities matches what is generated
+          var node_html_entities = node_html.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim();
+          console.log(node_html_entities);
+          
           // prepend data with TEXT_ID to find it in parent innerHTML easily
           node.nodeValue = TEXT_ID + node_html;
           console.log(node.nodeValue);
-          // get length of data
-          // replace innerHTML data of length with node_html (will generate field elements)
           
-          // set <field class='start-count'> elements before and after each instance of searchTerm
-          var num_occurrences = occurrences(node.nodeValue, searchTerm);
+          // set correct count for <field> tag if there are multiple instances of searchTerm in text node
+          /*var num_occurrences = occurrences(node.nodeValue, searchTerm);
           while (num_occurrences > 0) {
             // change each individual occurrence
             // if innerHTML for parent contains
-            count++;
             num_occurrences--;
-          }
+          }*/
+          count++;
           
           // set parent innerHTML
           var parent = node.parentNode;
           console.log(parent);
           
           var start_of_node = parent.innerHTML.indexOf(TEXT_ID);
+          var start_of_end = parent.innerHTML.indexOf(node_html_entities) + node_html_entities.length;
           console.log(parent.innerHTML);
-          console.log(node_html);
-          // formatting node_html in parent.innerHTML messes up characters < >
-          
-          console.log(node_html.length + TEXT_ID.length);
-          console.log(parent.innerHTML.length);
-          console.log(parent.innerHTML.length - node_html.length - TEXT_ID.length);
-          
-          console.log("start");
-          console.log(parent.innerHTML.substring(0, start_of_node));
-          console.log("end");
-          console.log(parent.innerHTML.substring(start_of_node + TEXT_ID.length + node_html.length));
           parent.innerHTML = parent.innerHTML.substring(0, start_of_node)
                             + node_html
-                            + parent.innerHTML.substring(start_of_node + TEXT_ID.length + node_html.length + 1);
-
+                            + parent.innerHTML.substring(start_of_end);
           console.log(parent);
           matches.push(node);
         }
@@ -583,22 +681,13 @@ function searchAndHighlight(searchTerm, selector, highlightClass, removePrevious
 }
 
 // source: http://www.sitepoint.com/removing-useless-nodes-from-the-dom/
-function clean(node)
-{
-  for(var n = 0; n < node.childNodes.length; n++)
-  {
+function clean(node) {
+  for (var n = 0; n < node.childNodes.length; n++) {
     var child = node.childNodes[n];
-    if
-    (
-      child.nodeType === 8 ||
-      (child.nodeType === 3 && !/\S/.test(child.nodeValue))
-    )
-    {
+    if (child.nodeType === 8 || (child.nodeType === 3 && !/\S/.test(child.nodeValue))) {
       node.removeChild(child);
       n--;
-    }
-    else if(child.nodeType === 1)
-    {
+    } else if(child.nodeType === 1) {
       clean(child);
     }
   }
@@ -610,11 +699,11 @@ function getDocumentText(e) {
       text = "",
       helper = {};
     
-    helper.addText = function(node){
-      if(node.nodeType === 3) {
+    helper.addText = function(node) {
+      if (node.nodeType === 3) {
         text += " " + node.nodeValue.trim();
       }
-      else if(node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
+      else if (node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
         $.each(node.childNodes, function(i,v){
           helper.addText(node.childNodes[i]);
         });
@@ -623,7 +712,7 @@ function getDocumentText(e) {
 
     // iterate through all children of body element
     var children = $(selector)[0].childNodes;
-    $.each(children, function(index,val){
+    $.each(children, function(index,val) {
       helper.addText(children[index]);
     });
     return text;
