@@ -1,10 +1,10 @@
-var amazon = false;
-var htmlGet = "pull-off";
-var incomingPort;
-var lastClicked;
-var mouseDownElement;
-var TEXT_ID = "-!_!-";
-var CLASS_NAME = "TwoReceipt";
+var htmlGet = "pull-off",
+incomingPort,
+lastClicked,
+mouseDownElement,
+TEXT_ID = "-!_!-",
+CLASS_NAME = "TwoReceipt",
+searchTerms = {};
  
 $(document).ready(function() {
 	if (self === top)
@@ -29,10 +29,7 @@ $(document).ready(function() {
   // find how many instances of searchTerm exist in document
   var count = occurrences(document_text, "amazon", true);
   if (count > 0) {
-    var matches = searchText("amazon", "vendor", count);
-    //matches = searchTextNodes("amazon", "body", "vendor");
-    //console.log(matches);
-    //console.log($("vendor"));
+    searchTerms["vendor"] = searchText("amazon", "vendor", count);
   }
   
 	// only run function when user prompts to start, so links keep working
@@ -486,7 +483,11 @@ function searchText(searchTerm, field, count) {
       lower_search = searchTerm.toLowerCase(),
       helper = {},
       // holds last valid index
-      current_index = -1;
+      current_index = -1,
+      search_elements = {};
+
+      // TEST CODE
+      count = 1;
     
     helper.addText = function(node) {
       if (node.nodeType === 3) {
@@ -498,10 +499,9 @@ function searchText(searchTerm, field, count) {
         // if searchTerm is found, current text node is the end node for one count
         var index = lower_text.indexOf(lower_search, current_index + 1);
         
-        // START IS INCORRECT, CHARACTERS FROM END?!
-        
         // stores the number of characters the start of searchTerm is from the end of text
         var characters_from_end = text.length - index;
+        console.log("characters from end: " + characters_from_end);
         
         // loop through text node in case there is more than one searchTerm instance in text
         while (index != -1) {
@@ -510,23 +510,92 @@ function searchText(searchTerm, field, count) {
           // remember how many text nodes before current node we are pulling from text_nodes
           var text_nodes_back_index = text_nodes.length - 2;
           var node_text = node_value;
+          var start_node;
           
           // set node_text to contain prevSibling text nodes until the current searchTerm matches 
           while (node_text.length < characters_from_end) {
+            console.log("node_text.length: " + node_text.length + " < " + characters_from_end);
+            console.log("old node text: " + node_text);
             node_text = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + node_text;
             text_nodes_back_index--;
           }
-          
+          start_node = text_nodes[text_nodes_back_index + 1];
+          console.log("final node_text: " + node_text);
+
           // find index searchTerm starts on in text node (or prevSibling)
           var start_index = node_text.toLowerCase().indexOf(lower_search);
+          console.log("start index: " + start_index);
           if (start_index != -1) {
-            // add start tag before searchTerm in text node
-            insertElementInText(start_index - 1, text_nodes[text_nodes_back_index], field, "start");
+            // set parent as first element parent of text_node
+            var parent = node.parentNode;
+            while (parent.nodeType !== 1) {
+              parent = node.parentNode;
+            }
+            
+            // currently know # characters from end to start of searchText. want to find if parent holds start_node
+            // also want to modify characters_from_end to be accurate
+            // 
+            
+            // loop through parent's child_nodes backwards
+            var element_end_text = "";
+            for (var child_index = parent.childNodes.length - 1; child_index >= 0; child_index--) {
+              if (parent.childNodes[child_index].nodeType === 3) {
+                // if start node is found (can be current node)
+                if (parent.childNodes[child_index] === start_node) {
+                
+                }
+                // if current node is found, stop adding element_end_text
+                else if (parent.childNodes[child_index] === node) {
+                  
+                } else {
+                  element_end_text += parent.childNodes[child_index].nodeValue.trim();
+                }
+              }
+            }
+            
+            
+            // start_node is current node
+            if (text_nodes_back_index < text_nodes.length - 2) {
+              //parent = insertElementInText(start_index - 1, text_nodes[text_nodes_back_index], field, "start");
+            } else {
+              //parent = insertElementInText(start_index - 1, node, field, "start");
+            }
             
             // find index searchTerm ends on in text node
             var end_index = node_value.length - characters_from_end + searchTerm.length;
+            console.log("end index: " + end_index);
+            console.log(node_value);
             // add end tag after searchTerm in text node
-            insertElementInText(end_index, node, field, "end");
+            //insertElementInText(end_index, node, field, "end", parent);
+            
+            // know if element is shared parent element - text node parent to element
+            // get parent of one element until it contains other text node text.
+            // use characters from end? - but finding parent element from text node could add new characters to the end
+            // cannot use element.text(). will not match to my node_text
+            // find parent - iterate through text node children to see if it contains
+                // - element spans over this
+                // - [node][node]![node]![node]
+                // ! node is selected node, searchText is in 1st node
+                
+                // logic - add from start to end of doc these text nodes and maintain the text
+                // indexOf each new addition, without checking previously found character index
+                // when match is found, find characters_from_end and starting text node
+                
+                // node.parentNode = element - loop through element.childNodes backwards, storing text_nodes text - until it is equal to current node
+                                              // loops through bare minimum, but stores a new text variable
+                                              // ends when start node is found
+                                              
+                                              // loop through element.childNodes forwards, until it is current node - add on additional & add to characters_from_end the length
+                                              // means loops through nodes we've already passed through
+                    // find index of node within element (for text nodes)
+                    // use index to add on from the right - increase characters_from_end accordingly -- this step... 
+                        // 
+                    // iterate left until searchTerm is found, same as normal. get start_index and end_index
+                    // set class
+            // start_index - 1
+            // className - 
+            
+            // clean function - iterate through all k-v stores for attribute and remove class/data attr
           } else {
             console.log(node_text);
             console.log(searchTerm);
@@ -552,24 +621,66 @@ function searchText(searchTerm, field, count) {
       }
       helper.addText(children[index]);
     });
-    // return text;
+    
+    return search_elements;
 }
 
-function insertElementInText(index, text_node, element_tag, class_name) {
+function insertElementInText(index, text_node, element_tag, class_name, parent) {
   console.log("insert element");
   var node_text = text_node.nodeValue.trim();
   console.log(node_text);
   console.log(text_node);
   text_node.nodeValue = text_node.nodeValue.substring(0, index) + TEXT_ID + text_node.nodeValue.substring(index);
   
-  // WHY IS THERE NO PARENT NODE?
-  var parent = text_node.parentNode;
+  // this text_node is no longer the same node as the one in parent node, so changes to it aren't applied to actual dom
+  // this also means text_nodes array is incorrect...
+  
+  // [thisthis|this]this - node1, node2
+  // after 1st <vend>thisthis|this<vend>this
+  // new - ele1, node1, node2, ele2, node3
+  // this[this|thisthis]
+  // <vend>this<vend2>this|this<vend>this<vend2>
+  // new - ele1, node1, ele2, node2, node3, ele3, node4, ele4
+  
+  // return either parent or node
+  
+  // instead of inserting elements between text nodes, just set parent element attribute with information regarding
+  // ex. index of start/end text
+  
+  // highlight - span/mark surrounding text
+  // possible issue: will removing span/mark ruin the dom??
+  
+  // list of options - 
+        // issue 1: what if text changes
+            // what could cause this to happen? lots of triggers on-page - unlikely
+            // even if text isnt altered, if unselected text is altered, then indices are ruined
+        // issue 2: what if multiple attributes held for an element (multiple instances of text?, start of some text, end of other texts?)
+  
+  // option: k-v store to know what class is used for options??
+  // receipt attribute: { index-in-list: { start: index, end: index, class } }
+    // class can be shared if same element.. different start/end!
+  // pass k-v store back from searchText - difference between search terms found and related options found
+  // need to update k-v store whenever user types a character
+  // can iterate through text nodes to find index
+  // ex. need to differentiate different option elements (numbers...) - easily removable - or all same class
+  
+  // need to pass k-v onto aServer, unideal so don't do final results like this. just add class
+  // meanwhile, class for receipt attribute - (assuming space between text nodes and trim)
+  // data-start:/data-end: custom attribute HTML5 - jquery $(".vendor").data("start")
+  
+  if (!parent) {
+    parent = text_node.parentNode;
+  }
+  console.log(parent);
   index = parent.innerHTML.indexOf(TEXT_ID);
+  console.log("parent index: " + index);
   parent.innerHTML = parent.innerHTML.substring(0, index) +
                       "<" + element_tag + " class='" + class_name + "'></" + element_tag + ">" +
                       parent.innerHTML.substring(index + TEXT_ID.length);
   console.log(parent);
   console.log($(element_tag));
+  
+  return parent;
 }
 
 // this is currently a test method that proves appending <field> to text node works
