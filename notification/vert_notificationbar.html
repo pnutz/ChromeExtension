@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="notificationbar.js"></script>
+		<script src="../jquery-2.0.3.min.js"></script>
+		<script src="dist/jquery.handsontable.full.js"></script>
+		<link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" media="screen" href="dist/jquery.handsontable.full.css">
+		<link rel="stylesheet" type="text/css" href="css/notificationbar.css">
+	</head>
+	<body id="readytoremove-hor">
+    <div id="receipt-container-upper" class="form-horizontal">
+        <div class="form-group">
+          <label for="receipt-vendor" class="col-xs-2 col-md-2">Vendor</label>
+          <div class=" col-xs-10 col-md-10" >
+            <input id="receipt-vendor" class="form-control" type="text" name="receipt-vendor" placeholder="Vendor">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="receipt-profile" class="col-xs-2 col-md-2">Profile</label>
+          <div class="col-xs-10 col-md-10" >
+            <div>
+              <select id="receipt-profile" type="text" name="receipt-profile" class="form-control" >
+                <option>Profile 1</option>
+                <option>Profile 2</option>
+                <option>Profile 3</option>
+                <option>Profile 4</option>
+                <option>Profile 5</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="receipt-category" class="col-xs-2 col-md-2">Category</label>
+          <div class="col-xs-10 col-md-10" >
+            <div>
+              <select id="receipt-category" type="text" name="receipt-category" class="form-control">
+                <option>Category 1</option>
+                <option>Category 2</option>
+                <option>Category 3</option>
+                <option>Category 4</option>
+                <option>Category 5</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="receipt-vendor-address" class="col-xs-2 col-md-2">Address</label>
+          <div class="col-xs-10 col-md-10">
+            <input id="receipt-vendor-address" type="text" class="form-control" name="receipt-vendor-address" placeholder="Vendor Address">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="receipt-invoice" class="col-xs-2 col-md-2">Invoice</label>
+          <div class="col-xs-10 col-md-10">
+            <input id="receipt-invoice" type="text" class="form-control" name="receipt-invoice" placeholder="Invoice #">
+          </div>
+        </div>
+        <div class="form-group col-xs-12 col-md-12">
+          <label for="receipt-items-container" >Receipt Items</label>
+          <div id="receipt-items-container" >
+            <div id="receipt-items"></div>
+          </div>
+        </div>
+      <div class="form-group">
+        <label for="receipt-taxes" class="col-xs-2 col-md-2">Taxes</label>
+        <div class="col-xs-10 col-md-10">
+          <input id="receipt-taxes" type="text" class="form-control" name="receipt-taxes">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="receipt-subtotal" class="col-xs-2 col-md-2">SubTotal</label>
+        <div class="col-xs-10 col-md-10">
+          <input id="receipt-subtotal" type="text" class="form-control" name="receipt-subtotal">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="receipt-total" class="col-xs-2 col-md-2">Total</label>
+        <div class="col-xs-10 col-md-10">
+          <input id="receipt-total" type="text" class="form-control" name="receipt-total">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="receipt-notes" class="col-xs-2 col-md-2">Notes</label>
+        <div class="col-xs-10 col-md-10">
+          <textarea id="receipt-notes" class="form-control">
+          </textarea>
+        </div>
+      </div>
+      <input id="receipt-submit" class="form-control" type="submit" name="receipt-submit">
+    </div>
+	</body>
+</html>
