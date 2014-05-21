@@ -5,7 +5,7 @@ mouseDownElement,
 TEXT_ID = "-!_!-",
 CLASS_NAME = "TwoReceipt",
 searchTerms = {};
- 
+
 $(document).ready(function() {
 	if (self === top)
 	{
@@ -30,6 +30,8 @@ $(document).ready(function() {
   var count = occurrences(document_text, "amazon", true);
   if (count > 0) {
     searchTerms["vendor"] = searchText("amazon", "vendor", count);
+    console.log(searchTerms["vendor"]);
+    findExistingMatch("vendor", 0);
   }
   
 	// only run function when user prompts to start, so links keep working
@@ -323,7 +325,7 @@ function createNotification() {
 // long-lived connection from background
 chrome.runtime.onConnect.addListener(function(port) {
 	// connect if not an iframe
-	if (self == top)
+	if (self === top)
 	{
 		console.log("Connected to port: " + port.name);
 		console.assert(port.name == "newReceipt");
@@ -365,7 +367,7 @@ chrome.runtime.onMessage.addListener(
 		if (self == top)
 		{
 			console.log("received onMessage connection instead of port connect");
-			if (request.greeting == "getHTML")
+			if (request.greeting === "getHTML")
 			{
 				sendResponse({
 					data: document.body.outerHTML,
@@ -373,7 +375,7 @@ chrome.runtime.onMessage.addListener(
 				});
 			}
 			// this is how lastpass does it, by adding a div and iframe element to the current page
-			else if (request.greeting == "showNotification")
+			else if (request.greeting === "showNotification")
 			{
 				createNotification();
 			}
@@ -385,7 +387,7 @@ chrome.runtime.onMessage.addListener(
 });
 	
 window.addEventListener("message", function(event) {
-  if (event.origin.indexOf("chrome-extension://") != -1)
+  if (event.origin.indexOf("chrome-extension://") !== -1)
   {
     console.log(event.data);
     var notdiv = document.getElementById("notificationdiv");
@@ -393,28 +395,28 @@ window.addEventListener("message", function(event) {
     
     document.documentElement.style.paddingTop = "0px";
           
-    if (event.data == "yes")
+    if (event.data === "yes")
     {
 
     }
-    else if (event.data == "no")
+    else if (event.data === "no")
     {
       
     }
-    else if (event.data == "x")
+    else if (event.data === "x")
     {
       
     }
     else
     {
       // message from iframe, element clicked
-      if (htmlGet != "pull-off" && self !== top)
+      if (htmlGet !== "pull-off" && self !== top)
       {
         console.log(event.data);
         window.parent.postMessage(event.data, '*');
       }
       // format of htmlGet = pull-date, pull-transaction, etc. send response if not off
-      else if (htmlGet.indexOf("pull-") != -1 && htmlGet.indexOf("off") == -1)
+      else if (htmlGet.indexOf("pull-") !== -1 && htmlGet.indexOf("off") === -1)
       {
         var msg_data = JSON.parse(event.data);
         incomingPort.postMessage(msg_data);
@@ -459,6 +461,7 @@ RegExp.escape = function(s) {
 // functions:
 // 1) searchText - returns a reference list of all elements that contain text of element (nodes?)
                 // - needs to take into account text that traverses multiple nodes
+// 2) findExistingMatch - enter field/index of search and find key-value pair & return element
 // 2) findRelevantMatches - appends temp elements at all probable text options and returns a reference list of all temp elements storing text options
                         // - always include the exact match to text that user has entered
 // 3) highlightSelection - highlights selected text
@@ -476,8 +479,9 @@ RegExp.escape = function(s) {
 
 // find all instances of searchTerm in the document and create field element before and after text locations
 // returns a list of generated start tags that contain the searchTerm
-function searchText(searchTerm, field, count) {
+function searchText(searchTerm, field, total) {
   var text_nodes = [],
+      count = 0,
       text = "",
       lower_text = "",
       lower_search = searchTerm.toLowerCase(),
@@ -485,202 +489,166 @@ function searchText(searchTerm, field, count) {
       // holds last valid index
       current_index = -1,
       search_elements = {};
-
-      // TEST CODE
-      count = 1;
     
-    helper.addText = function(node) {
-      if (node.nodeType === 3) {
-        var node_value = node.nodeValue.trim();
-        text += " " + node_value;
-        lower_text += " " + node_value.toLowerCase();
-        text_nodes.push(node);
+  helper.addText = function(node) {
+    if (node.nodeType === 3) {
+      var node_value = node.nodeValue.trim();
+      text += " " + node_value;
+      lower_text += " " + node_value.toLowerCase();
+      text_nodes.push(node);
 
-        // if searchTerm is found, current text node is the end node for one count
-        var index = lower_text.indexOf(lower_search, current_index + 1);
+      // if searchTerm is found, current text node is the end node for one count
+      var index = lower_text.indexOf(lower_search, current_index + 1);
+      
+      // stores the number of characters the start of searchTerm is from the end of text
+      var characters_from_end = text.length - index;
+      console.log("characters from end: " + characters_from_end);
+      
+      // loop through text node in case there is more than one searchTerm instance in text
+      while (index !== -1) {
+        current_index = index;
         
-        // stores the number of characters the start of searchTerm is from the end of text
-        var characters_from_end = text.length - index;
-        console.log("characters from end: " + characters_from_end);
+        // remember how many text nodes before current node we are pulling from text_nodes
+        var text_nodes_back_index = text_nodes.length - 2;
+        // text_selection will contain a combined string of all text nodes where current searchTerm spans over
+        var text_selection = node_value;
+        var start_node;
         
-        // loop through text node in case there is more than one searchTerm instance in text
-        while (index != -1) {
-          current_index = index;
-          count--;
-          // remember how many text nodes before current node we are pulling from text_nodes
-          var text_nodes_back_index = text_nodes.length - 2;
-          var node_text = node_value;
-          var start_node;
+        // set text_selection to contain prevSibling text nodes until the current searchTerm matches 
+        while (text_selection.length < characters_from_end) {
+          console.log("text_selection.length: " + text_selection.length + " < " + characters_from_end);
+          console.log("old text_selection: " + text_selection);
+          text_selection = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + text_selection;
+          text_nodes_back_index--;
+        }
+        // start_node contains beginning of searchTerm and node contains end of searchTerm
+        start_node = text_nodes[text_nodes_back_index + 1];
+        console.log("final text_selection: " + text_selection);
+
+        // find index searchTerm starts on in text node (or prevSibling)
+        var start_index = text_selection.toLowerCase().indexOf(lower_search);
+        if (start_index !== -1) {
+          // set parent as first element parent of text_node
+          var end_parent = node.parentNode;
+          while (end_parent.nodeType !== 1) {
+            end_parent = end_parent.parentNode;
+          }
+          end_parent = $(end_parent);
+          console.log("end parent");
+          console.log($(end_parent));
           
-          // set node_text to contain prevSibling text nodes until the current searchTerm matches 
-          while (node_text.length < characters_from_end) {
-            console.log("node_text.length: " + node_text.length + " < " + characters_from_end);
-            console.log("old node text: " + node_text);
-            node_text = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + node_text;
+          var start_parent = start_node.parentNode;
+          while (start_parent.nodeType !== 1) {
+            start_parent = start_parent.parentNode;
+          }
+          start_parent = $(start_parent);
+          console.log("start parent");
+          console.log(start_parent);
+          
+          // TEST CASES WHERE NOT EQUAL!
+          
+          var target_parent;
+          // start and end parents are the same
+          if (start_parent[0] === end_parent[0]) {
+            target_parent = start_parent;
+          }
+          // start parent is target parent element
+          else if ($.contains(start_parent, end_parent)) {
+            target_parent = start_parent;
+          }
+          // end parent is target parent element
+          else if ($.contains(end_parent, start_parent)) {
+            target_parent = end_parent;
+          }
+          // neither parents contain one another
+          else {
+            // iterate upwards until start_parent contains end_parent
+            while (!$.contains(start_parent, end_parent)) {
+              start_parent = start_parent.parent();
+            }
+            target_parent = start_parent;
+          }
+          console.log("target parent");
+          console.log(target_parent);
+          
+          start_node = text_nodes[text_nodes_back_index];
+          var start_element = $(start_node.parentNode);
+          // continue adding text length to start_index until parent elements are not contained in target_parent
+          while ($.contains(target_parent, start_element) || target_parent[0] === start_element[0]) {
+            start_index += start_node.nodeValue.trim().length + 1;
             text_nodes_back_index--;
-          }
-          start_node = text_nodes[text_nodes_back_index + 1];
-          console.log("final node_text: " + node_text);
-
-          // find index searchTerm starts on in text node (or prevSibling)
-          var start_index = node_text.toLowerCase().indexOf(lower_search);
-          console.log("start index: " + start_index);
-          if (start_index != -1) {
-            // set parent as first element parent of text_node
-            var parent = node.parentNode;
-            while (parent.nodeType !== 1) {
-              parent = node.parentNode;
-            }
-            
-            // currently know # characters from end to start of searchText. want to find if parent holds start_node
-            // also want to modify characters_from_end to be accurate
-            // 
-            
-            // loop through parent's child_nodes backwards
-            var element_end_text = "";
-            for (var child_index = parent.childNodes.length - 1; child_index >= 0; child_index--) {
-              if (parent.childNodes[child_index].nodeType === 3) {
-                // if start node is found (can be current node)
-                if (parent.childNodes[child_index] === start_node) {
-                
-                }
-                // if current node is found, stop adding element_end_text
-                else if (parent.childNodes[child_index] === node) {
-                  
-                } else {
-                  element_end_text += parent.childNodes[child_index].nodeValue.trim();
-                }
-              }
-            }
-            
-            
-            // start_node is current node
-            if (text_nodes_back_index < text_nodes.length - 2) {
-              //parent = insertElementInText(start_index - 1, text_nodes[text_nodes_back_index], field, "start");
-            } else {
-              //parent = insertElementInText(start_index - 1, node, field, "start");
-            }
-            
-            // find index searchTerm ends on in text node
-            var end_index = node_value.length - characters_from_end + searchTerm.length;
-            console.log("end index: " + end_index);
-            console.log(node_value);
-            // add end tag after searchTerm in text node
-            //insertElementInText(end_index, node, field, "end", parent);
-            
-            // know if element is shared parent element - text node parent to element
-            // get parent of one element until it contains other text node text.
-            // use characters from end? - but finding parent element from text node could add new characters to the end
-            // cannot use element.text(). will not match to my node_text
-            // find parent - iterate through text node children to see if it contains
-                // - element spans over this
-                // - [node][node]![node]![node]
-                // ! node is selected node, searchText is in 1st node
-                
-                // logic - add from start to end of doc these text nodes and maintain the text
-                // indexOf each new addition, without checking previously found character index
-                // when match is found, find characters_from_end and starting text node
-                
-                // node.parentNode = element - loop through element.childNodes backwards, storing text_nodes text - until it is equal to current node
-                                              // loops through bare minimum, but stores a new text variable
-                                              // ends when start node is found
-                                              
-                                              // loop through element.childNodes forwards, until it is current node - add on additional & add to characters_from_end the length
-                                              // means loops through nodes we've already passed through
-                    // find index of node within element (for text nodes)
-                    // use index to add on from the right - increase characters_from_end accordingly -- this step... 
-                        // 
-                    // iterate left until searchTerm is found, same as normal. get start_index and end_index
-                    // set class
-            // start_index - 1
-            // className - 
-            
-            // clean function - iterate through all k-v stores for attribute and remove class/data attr
-          } else {
-            console.log(node_text);
-            console.log(searchTerm);
+            start_node = text_nodes[text_nodes_back_index];
+            start_element = $(start_node.parentNode);
           }
           
-          index = lower_text.indexOf(lower_search, current_index + 1);
-          characters_from_end = text.length - index;
+          // find index searchTerm ends on in text node
+          var end_index = start_index + searchTerm.length;
+          console.log("start index: " + start_index);
+          console.log("end index: " + end_index);
+          
+          // if a class for field search already exists, use that instead
+          console.log("data field");
+          console.log(target_parent.data("tworeceiptsearch"));
+          if (target_parent.data("tworeceiptsearch") !== undefined) {
+            search_elements[count] = {
+              start: start_index,
+              end: end_index,
+              data: target_parent.data("tworeceiptsearch")
+            };
+          } else {
+            var data_field = field + "-" + count;
+            search_elements[count] = {
+              start: start_index,
+              end: end_index,
+              data: data_field
+            };
+            target_parent.data("tworeceiptsearch", data_field);
+          }
+          
+          count++;
+          
+          // what if sanitization removes an element that has class?...
+          
+          // clean function - iterate through all k-v stores for attribute and remove class/data attr
+          // .data("tworeceiptsearch")
+        } else {
+          console.log(text_selection);
+          console.log(searchTerm);
+        }
+        
+        index = lower_text.indexOf(lower_search, current_index + 1);
+        characters_from_end = text.length - index;
+        
+        if (count === total) {
+          return false;
         }
       }
-      else if (node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
-        $.each(node.childNodes, function(i,v){
-          helper.addText(node.childNodes[i]);
-        });
-      }
-    };
+    }
+    else if (node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
+      $.each(node.childNodes, function(i,v){
+        helper.addText(node.childNodes[i]);
+      });
+    }
+  };
 
-    // iterate through all children of body element
-    var children = $("body")[0].childNodes;
-    $.each(children, function(index,val) {
-      if (count == 0) {
-        console.log("Completed calculations for all matched searchTerms");
-        return false;
-      }
-      helper.addText(children[index]);
-    });
+  // iterate through all children of body element
+  var children = $("body")[0].childNodes;
+  $.each(children, function(index,val) {
+    if (count === total) {
+      console.log("Completed calculations for all matched searchTerms");
+      return false;
+    }
+    helper.addText(children[index]);
+  });
     
-    return search_elements;
+  return search_elements;
 }
 
-function insertElementInText(index, text_node, element_tag, class_name, parent) {
-  console.log("insert element");
-  var node_text = text_node.nodeValue.trim();
-  console.log(node_text);
-  console.log(text_node);
-  text_node.nodeValue = text_node.nodeValue.substring(0, index) + TEXT_ID + text_node.nodeValue.substring(index);
-  
-  // this text_node is no longer the same node as the one in parent node, so changes to it aren't applied to actual dom
-  // this also means text_nodes array is incorrect...
-  
-  // [thisthis|this]this - node1, node2
-  // after 1st <vend>thisthis|this<vend>this
-  // new - ele1, node1, node2, ele2, node3
-  // this[this|thisthis]
-  // <vend>this<vend2>this|this<vend>this<vend2>
-  // new - ele1, node1, ele2, node2, node3, ele3, node4, ele4
-  
-  // return either parent or node
-  
-  // instead of inserting elements between text nodes, just set parent element attribute with information regarding
-  // ex. index of start/end text
-  
-  // highlight - span/mark surrounding text
-  // possible issue: will removing span/mark ruin the dom??
-  
-  // list of options - 
-        // issue 1: what if text changes
-            // what could cause this to happen? lots of triggers on-page - unlikely
-            // even if text isnt altered, if unselected text is altered, then indices are ruined
-        // issue 2: what if multiple attributes held for an element (multiple instances of text?, start of some text, end of other texts?)
-  
-  // option: k-v store to know what class is used for options??
-  // receipt attribute: { index-in-list: { start: index, end: index, class } }
-    // class can be shared if same element.. different start/end!
-  // pass k-v store back from searchText - difference between search terms found and related options found
-  // need to update k-v store whenever user types a character
-  // can iterate through text nodes to find index
-  // ex. need to differentiate different option elements (numbers...) - easily removable - or all same class
-  
-  // need to pass k-v onto aServer, unideal so don't do final results like this. just add class
-  // meanwhile, class for receipt attribute - (assuming space between text nodes and trim)
-  // data-start:/data-end: custom attribute HTML5 - jquery $(".vendor").data("start")
-  
-  if (!parent) {
-    parent = text_node.parentNode;
-  }
-  console.log(parent);
-  index = parent.innerHTML.indexOf(TEXT_ID);
-  console.log("parent index: " + index);
-  parent.innerHTML = parent.innerHTML.substring(0, index) +
-                      "<" + element_tag + " class='" + class_name + "'></" + element_tag + ">" +
-                      parent.innerHTML.substring(index + TEXT_ID.length);
-  console.log(parent);
-  console.log($(element_tag));
-  
-  return parent;
+function findExistingMatch(field, index) {
+  console.log($("[data-tworeceiptsearch]"));
+  var value = $("[data-tworeceiptsearch='" + searchTerms[field][index].data + "']");
+  console.log(value);
+  return value;
 }
 
 // this is currently a test method that proves appending <field> to text node works
