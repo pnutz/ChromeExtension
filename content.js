@@ -27,14 +27,16 @@ $(document).ready(function() {
   console.log(document_text);
   
   // find how many instances of search_term exist in document
-  var search_word = "digital";
+  var search_word = "amazon";
   var count = occurrences(document_text, search_word, true);
   if (count > 0) {
     search_terms["vendor"] = searchText(search_word, "vendor", count);
     console.log(search_terms["vendor"]);
     console.log(findMatchText("vendor", 0));
     
-    console.log($("[data-tworeceiptsearch]"));
+    console.log($("[data-tworeceiptsearch-vendor]"));
+    //setFieldText($("[data-tworeceiptsearch-vendor=0]"), "vendor", search_terms["vendor"][0].start, search_terms["vendor"][0].end);
+    //removeFieldText("vendor");
   }
   
 	// only run function when user prompts to start, so links keep working
@@ -464,7 +466,6 @@ RegExp.escape = function(s) {
 // 7) setTemplates - send data for individual templates back to eventPage
 // 8) sendPageData - run on submit, unhighlightSelection(), clearTextOptions(), sendTemplates(), sends html, domain, url to eventPage
 
-// what i want to do: find all text & append unique tags before/after all text
 // generate relevant match options around text (and append unique tags for each)
 // set element parent (marked) for highlighting if user selects
 
@@ -617,21 +618,21 @@ function findMatch(node, params) {
       
       // if a class for field search already exists, use that instead
       console.log("data field");
-      console.log(target_parent.attr("data-tworeceiptsearch"));
-      if (target_parent.attr("data-tworeceiptsearch") !== undefined) {
+      var data_field = "data-tworeceiptsearch-" + field;
+      console.log(target_parent.attr(data_field));
+      if (target_parent.attr(data_field) !== undefined) {
         search_elements[count] = {
           start: start_index,
           end: end_index,
-          data: target_parent.attr("data-tworeceiptsearch")
+          data: target_parent.attr(data_field)
         };
       } else {
-        var data_field = field + "-" + count;
         search_elements[count] = {
           start: start_index,
           end: end_index,
-          data: data_field
+          data: count
         };
-        target_parent.attr("data-tworeceiptsearch", data_field);
+        target_parent.attr(data_field, count);
       }
       
       count++;
@@ -682,7 +683,8 @@ function findMatch(node, params) {
 
 // find parent element stored on search_terms
 function findMatchElement(field, index) {
-  return $("[data-tworeceiptsearch='" + search_terms[field][index].data + "']");
+  var data_field = "data-tworeceiptsearch-" + field;
+  return $("[" + data_field + "='" + search_terms[field][index].data + "']");
 }
 
 // find exact matched text stored on search_terms
@@ -712,6 +714,21 @@ function addText(node, params) {
     text += " " + node.nodeValue.trim();
   }
   return { "text": text }
+}
+
+function setFieldText(element, field, start, end) {
+  var data_field = "data-tworeceipt-" + field;
+  element.attr(data_field + "-start", start);
+  element.attr(data_field + "-end", end);
+}
+
+function removeFieldText(field) {
+  var data_field = "data-tworeceipt-" + field + "-start";
+  var element = $("[" + data_field + "]");
+  if (element[0] !== undefined) {
+    element.attr(data_field + "-start", null);
+    element.attr(data_field + "-end", null);
+  }
 }
 
 function iterateText(node, method, method_params) {
