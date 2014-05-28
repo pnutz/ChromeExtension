@@ -1,9 +1,10 @@
-var htmlGet = "pull-off",
-    incomingPort,
+var incomingPort,
     lastClicked,
     mouseDownElement,
-    TEXT_ID = "-!_!-",
-    CLASS_NAME = "TwoReceipt";
+    // don't need attributes field, just need to know if attributes exist for each receipt attribute
+    attributes = {},
+    generated = {},
+    receipt_notification;
 
 $(document).ready(function () {
 	if (self === top) {
@@ -25,12 +26,12 @@ $(document).ready(function () {
     //cleanHighlight();
     //cleanElementData();
     
-    //setFieldText($("[data-tworeceiptsearch-vendor=0]"), "vendor", search_terms["vendor"][0].start, search_terms["vendor"][0].end);
+    setFieldText($("[data-tworeceipt-vendor-search=0]"), "vendor", search_terms["vendor"][0].start, search_terms["vendor"][0].end);
     //removeFieldText("vendor");
   }
   
 	// only run function when user prompts to start, so links keep working
-	$(document).click(function(event) {
+	/*$(document).click(function(event) {
 		lastClicked = $(event.target);
 		if (htmlGet !== "pull-off")	{
 			var element = $(event.target);
@@ -111,6 +112,7 @@ $(document).ready(function () {
 		var textSelection = window.getSelection().toString();
 
     // check a few parent levels up for a link or button
+    // TO DO: find better way to deal with this case
     var parentElement = mouseDownElement;
     if (parentElement !== null) {
       for (var index = 0; index < 3; index++) {
@@ -199,7 +201,7 @@ $(document).ready(function () {
 				}
 			}
 		}
-	});
+	});*/
   
 	// "paypal" "pay with paypal" "bestbuy" don't work
 	/*var postButtons = $("form[method='post']").find(":input[type='submit']");
@@ -321,11 +323,11 @@ function createNotification() {
 // long-lived connection from background
 chrome.runtime.onConnect.addListener(function(port) {
 	// connect if not an iframe
-	if (self === top)
-	{
-		console.log("Connected to port: " + port.name);
-		console.assert(port.name === "newReceipt");
-		incomingPort = port;
+	if (self === top) {
+    console.log("Connected to port: " + port.name);
+    if (port.name === "receiptPort") {
+      incomingPort = port;
+    }
     
     var message_domain;
     if (document.domain === null || document.domain === "") {
@@ -334,54 +336,82 @@ chrome.runtime.onConnect.addListener(function(port) {
       message_domain = document.domain;
     }
     
-		port.onMessage.addListener(function(msg) {
+    // test content script with aServer, falsified attributes
+    attributes = { "vendor": true };
+    // saved_data falsified
+    sendReceipt({ "vendor": "Amazon" });
+    
+    port.onMessage.addListener(function(msg) {
       console.log("Received msg: " + msg.request + " for port: " + port.name);
-      if (msg.request === "initializeData") {
-        var msg_data = {
-					response: msg.request,
-					html: document.body.outerHTML,
-					url: location.href,
-					domain: message_domain
-				};
-				incomingPort.postMessage(msg_data);
-      } else {
-        htmlGet = msg.request;
+      // receive receipt notification-related messages
+      if (port.name === "receiptPort") {
+        // send basic page data so aServer can generate data
+        if (msg.request === "initializeData") {
+          var msg_data = {
+            response: msg.request,
+            html: document.body.outerHTML,
+            url: location.href,
+            domain: message_domain
+          };
+          incomingPort.postMessage(msg_data);
+        }
+        // receive generated data
+        else if (msg.request === "generatedData") {
+          generated = msg.generated;
+          
+          // send generated data to receipt notification
+          receipt_notification.postMessage(generated, "*");
+        }
       }
-		});
-		
-		port.onDisconnect.addListener(function() {
-			console.log("Disconnected port");
-			incomingPort = null;
-			htmlGet = "pull-off";
-		});
-	}
+    });
+    
+    port.onDisconnect.addListener(function() {
+      console.log("Disconnected " + port.name + " port");
+      if (port.name === "receiptPort") {
+        incomingPort = null;
+      }
+    });
+  }
 });
 
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
-    console.log("running listener function");
+    console.log("running listener function for " + request.greeting);
 		// do not load for iframe
 		if (self === top) {
-			console.log("received onMessage connection instead of port connect");
-			if (request.greeting === "getHTML")
-			{
+      // retrieve url & domain
+      if (request.greeting === "checkUrl") {
+        var message_domain;
+        if (document.domain === null || document.domain === "") {
+          message_domain = "DOMAIN";
+        } else {
+          message_domain = document.domain;
+        }
+      
+        var msg_data = {
+          response: request.greeting,
+          url: location.href,
+          domain: message_domain
+        };
+        sendResponse(msg_data);
+      }
+      // get page html
+      else if (request.greeting === "getHTML")	{
 				sendResponse({
 					data: document.body.outerHTML,
 					farewell: "sendHTML"
 				});
 			}
 			// this is how lastpass does it, by adding a div and iframe element to the current page
-			else if (request.greeting === "showNotification")
-			{
+			else if (request.greeting === "showNotification") {
 				createNotification();
 			}
 		}
-		else
-		{
+		else {
 			console.log("IFRAME (nothing run) - received onMessage connection instead of port connect");
 		}
 });
-	
+
 window.addEventListener("message", function(event) {
   if (event.origin.indexOf("chrome-extension://") !== -1)
   {
@@ -391,7 +421,9 @@ window.addEventListener("message", function(event) {
     
     document.documentElement.style.paddingTop = "0px";
     
-    //http://davidwalsh.name/window-postmessage
+    receipt_notification = notdiv.contentWindow;
+    // receipt_notification.postMessage(message, "*");
+    
     // window.parent.postMessage("yes", '*') from notificationbar.js
     // to send to iframe, iframe = document.getElementById('iframe-id').contentWindow
     // iframe.postMessage(message, '*') - * is where domain is defined
@@ -431,32 +463,59 @@ window.addEventListener("message", function(event) {
       can we set things in notificationbar from content.js?
     */
     
-    if (event.data === "yes")
+    // user submitted receipt, send all data to eventPage
+    if (event.data === "")
     {
-
+      // sendReceipt(event.saved_data);
     }
-    else if (event.data === "no")
-    {
-      
+    // user requests search, respond with search data
+    else if (false) {
+    
     }
-    else if (event.data === "x")
-    {
-      
+    // user selected search, highlight selected data
+    else if (false) {
+    
+    }
+    // user deleted a receipt item, mark removed index in generated
+    else if (false) {
+    
     }
     else
     {
       // message from iframe, element clicked
-      if (htmlGet !== "pull-off" && self !== top)
+      if (self !== top)
       {
-        console.log(event.data);
-        window.parent.postMessage(event.data, '*');
-      }
-      // format of htmlGet = pull-date, pull-transaction, etc. send response if not off
-      else if (htmlGet.indexOf("pull-") !== -1 && htmlGet.indexOf("off") === -1)
-      {
-        var msg_data = JSON.parse(event.data);
-        incomingPort.postMessage(msg_data);
+        /*console.log(event.data);
+        window.parent.postMessage(event.data, '*');*/
       }
     }
   }
 });
+
+function sendReceipt(saved_data) {
+  if (incomingPort !== undefined && incomingPort !== null) {
+    // clean html data
+    cleanHighlight();
+    cleanElementData();
+    
+    var message_domain;
+    if (document.domain === null || document.domain === "") {
+      message_domain = "DOMAIN";
+    } else {
+      message_domain = document.domain;
+    }
+    
+    // compose message
+    var message = {
+      request: "saveReceipt",
+      html: document.body.outerHTML,
+      url: location.href,
+      domain: message_domain,
+      attributes: attributes,
+      generated: generated,
+      saved_data: saved_data
+    };
+    console.log(message);
+    incomingPort.postMessage(message);
+  }
+}

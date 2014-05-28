@@ -1,8 +1,9 @@
 // searching methods for content script
 
-var search_terms = { "items": {} };
+var search_terms = { "items": [] };
 
 // logic behind receipt items occurs on message handling in content script.
+// for receipt items, field = field&index, ex. cost0, quantity1
 
 // on-submit
 // generate templates & remove element place-holders
@@ -364,7 +365,7 @@ function highlightText(node, params) {
     }
     
     var temp_node = document.createElement("span");
-    temp_node.setAttribute("name", "two_receipt_highlight");
+    temp_node.setAttribute("name", "tworeceipt_highlight");
     temp_node.innerHTML = left_trim + left_text +
                           "<mark>" + mark_text + "</mark>" +
                           right_text + right_trim;
@@ -377,7 +378,7 @@ function highlightText(node, params) {
 
 // returns highlighted text to its original form
 function cleanHighlight() {
-  var highlight_span = $("[name='two_receipt_highlight']");
+  var highlight_span = $("[name='tworeceipt_highlight']");
   highlight_span.each(function(index) {
     var node = highlight_span[index];
     var params = { "text": "", "trim": false };
@@ -424,7 +425,7 @@ function getDocumentText(element) {
       params = iterateText(children[index], addText, params);
     });
   } else {
-    console.log("element " + field + " does not exist. no text retrieved");
+    console.log("element does not exist. no text retrieved");
   }
   return params.text;
 }
