@@ -131,15 +131,16 @@ var PopUp =
     this.buttons.pullPage.on("click", function() 
     {
       chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
+        console.log("GET HTML");
         chrome.tabs.sendMessage(tab[0].id, {greeting: "getHTML"}, function(response) {
-          if (response.farewell == "sendHTML") {
+          if (response.farewell === "sendHTML") {
             // html getter tool
             var textfile = "datadump.txt";
             var blob = new Blob([response.data], {type:'text/plain'});
             var dl = document.getElementById("downloadLink");
             dl.download = textfile;
             
-            if (window.webkitURL != null)
+            if (window.webkitURL !== null)
             {
               // Chrome allows the link to be clicked
               // without actually adding it to the DOM.
@@ -147,18 +148,19 @@ var PopUp =
             }
             dl.click();
           }
+          window.close();
         });
       });
-      window.close();
     });
 
     // Notification test-tool, displays current notification
     this.buttons.showNotification.on("click", function() 
     {
       chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
+        console.log("notification message");
         chrome.tabs.sendMessage(tab[0].id, {greeting: "showNotification"});
+        window.close();
       });
-      window.close();
     });
 
     this.buttons.login.on("click", function() 
@@ -199,7 +201,7 @@ var PopUp =
       });
     });
 
-    this.buttons.showReceiptForm.on("click", function(event) 
+    this.buttons.showReceiptForm.on("click", function() 
     {
       chrome.extension.sendMessage({greeting: "addReceipt"});
       window.close();

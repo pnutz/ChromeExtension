@@ -1,13 +1,7 @@
 // searching methods for content script
 
-var search_terms = { "items": [] };
-
-// logic behind receipt items occurs on message handling in content script.
-// for receipt items, field = field&index, ex. cost0, quantity1
-
-// on-submit
-// generate templates & remove element place-holders
-// pass main page data over (html, domain, url)
+var search_terms = {},
+    attributes = { "items": {} };
 
 // issue: hidden elements - $.is(":visible")
 // list of parent elements, when checking which to allow selection for, check if visible before displaying on list
@@ -16,10 +10,6 @@ var search_terms = { "items": [] };
 // findRelevantMatches - appends temp elements at all probable text options and returns a reference list of all temp elements storing text options
                         // always include the exact match to text that user has entered
                         // probable text options
-// sendPageData - run on submit, unhighlightSelection(), clearTextOptions(), sendTemplates(), sends html, domain, url to eventPage
-
-// generate relevant match options around text (and append unique tags for each)
-// set element parent (marked) for highlighting if user selects
 
 // find all instances of search_term in the document and set data attribute
 // returns a list of parent elements that contain the search_term
@@ -105,7 +95,7 @@ function findMatch(node, params) {
     // start_node contains beginning of search_term and node contains end of search_term
     start_node = text_nodes[text_nodes_back_index + 1];
     console.log("final text_selection: " + text_selection);
-
+    
     // find index search_term starts on in text node (or prevSibling)
     var start_index = text_selection.toLowerCase().indexOf(search_term.toLowerCase());
     
@@ -148,16 +138,20 @@ function findMatch(node, params) {
       console.log(target_parent);
       
       // set start_node to node before the parent we are calculating with
-      start_node = text_nodes[text_nodes_back_index];
-      text_nodes_back_index--;
-      
-      var start_element = start_node.parentNode;
-      // continue adding text length to start_index until parent elements are not contained in target_parent
-      while ($.contains(target_parent, start_element) || target_parent === start_element) {
-        start_index += start_node.nodeValue.trim().length + 1;
+      console.log(text_nodes_back_index);
+      if (text_nodes_back_index !== -1) {
         start_node = text_nodes[text_nodes_back_index];
         text_nodes_back_index--;
-        start_element = start_node.parentNode;
+        
+        var start_element = start_node.parentNode;
+        
+        // continue adding text length to start_index until parent elements are not contained in target_parent
+        while (($.contains(target_parent, start_element) || target_parent === start_element) && text_nodes_back_index !== -1) {
+          start_index += start_node.nodeValue.trim().length + 1;
+          start_node = text_nodes[text_nodes_back_index];
+          text_nodes_back_index--;
+          start_element = start_node.parentNode;
+        }
       }
       
       // find index search_term ends on in text node
@@ -330,6 +324,11 @@ function highlightText(node, params) {
     
   var start_char = -1, end_char = -1;
   var next_index = current_index + text.length + space_buffer;
+  console.log(text);
+  console.log("current index: " + current_index);
+  console.log("start index: " + params.start_index);
+  console.log("end index: " + params.end_index);
+  console.log("next index: " + next_index);
   // highlight from start of text node
   if (current_index >= params.start_index && current_index < params.end_index) {
     start_char = 0;
@@ -408,8 +407,9 @@ function cleanElementData(field) {
       for (var index = 0; index < elements.length; index++) {
         elements.eq(index).removeAttr(data_field);
       }
-      delete search_terms[field];
     });
+    delete search_terms;
+    search_terms = {};
   }
 }
 
@@ -444,18 +444,39 @@ function iterateText(node, method, method_params) {
   return method_params;
 }
 
-function setFieldText(element, field, start, end) {
+// set attributes field, index implies receipt item
+function setFieldText(element, start, end, field, index) {
   var data_field = "data-tworeceipt-" + field;
+  if (index !== undefined) {
+    data_field += index;
+    if (attributes.items[index] === undefined) {
+      attributes.items[index] = {};
+    }
+    attributes.items[index][field] = true;
+  } else {
+    attributes[field] = true;
+  }
+  
   element.attr(data_field + "-start", start);
   element.attr(data_field + "-end", end);
 }
 
-// removes data-tworeceipt-field-start and -end attributes from all elements
-// if field is null, removes all -start and -end attributes for all elements
-function removeFieldText(field) {
+// removes data-tworeceipt-field-start and -end attributes for selected field (index for receipt items)
+// if field is null, removes all -start and -end attributes for all fields
+function cleanFieldText(field, index) {
   if (field) {
-    var data_field = "data-tworeceipt-" + field + "-start";
-    var element = $("[" + data_field + "]");
+    var data_field = "data-tworeceipt-" + field;
+    if (index !== undefined) {
+      data_field += index;
+      delete attributes.items[index][field];
+      if (Object.keys(attributes.items[index]).length === 0) {
+        delete attributes.items[index];
+      }
+    } else {
+      delete attributes[field];
+    }
+    
+    var element = $("[" + data_field + "-start]");
     if (element.length > 0 && element[0] !== undefined) {
       element.attr(data_field + "-start", null);
       element.attr(data_field + "-end", null);
@@ -463,16 +484,33 @@ function removeFieldText(field) {
       console.log("element " + field + " does not exist. data field text not removed");
     }
   } else {
-    $.each(search_terms, function(field) {
-      var data_field = "data-tworeceipt-" + field + "-start";
-      var element = $("[" + data_field + "]");
-      if (element.length > 0 && element[0] !== undefined) {
-        element.attr(data_field + "-start", null);
-        element.attr(data_field + "-end", null);
+    $.each(attributes, function(field) {
+      if (field === "items") {
+        $.each(attributes.items, function(item_index) {
+          $.each(attributes.items[item_index], function(item_attribute) {
+            var data_field = "data-tworeceipt-" + item_attribute + item_index + "-start";
+            var element = $("[" + data_field + "]");
+            if (element.length > 0 && element[0] !== undefined) {
+              element.attr(data_field + "-start", null);
+              element.attr(data_field + "-end", null);
+            } else {
+              console.log("element " + item_attribute + item_index + " does not exist. data field text not removed");
+            }
+          });
+        });
       } else {
-        console.log("element " + field + " does not exist. data field text not removed");
+        var data_field = "data-tworeceipt-" + field + "-start";
+        var element = $("[" + data_field + "]");
+        if (element.length > 0 && element[0] !== undefined) {
+          element.attr(data_field + "-start", null);
+          element.attr(data_field + "-end", null);
+        } else {
+          console.log("element " + field + " does not exist. data field text not removed");
+        }
       }
     });
+    delete attributes;
+    attributes = { "items": {} };
   }
 }
 

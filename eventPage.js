@@ -151,7 +151,11 @@ function receiptSetup() {
 
 function checkUrl(tab_id) {
   chrome.tabs.sendMessage(tab_id, { greeting: "checkUrl" }, function(response) {
-    console.log("TODO: send url to aServer - " + response.url);
+    if (response.url !== undefined) {
+      console.log("TODO: send url to aServer - " + response.url);
+    } else {
+      console.log("TODO: send url to aServer");
+    }
   });
 }
 
@@ -215,21 +219,6 @@ addReceipt:
 	trigger: Add Receipt selected from popup
 	action: creates new addreceipt popup if one does not exist
 
-purchaseComplete:
-	from: content.js
-	trigger: purchase input onSubmit event triggered
-	action: checks if page successfully http postbacks and redirects to new page
-	
-newReceipt:
-	from: addreceipt.js
-	trigger: addreceipt window created
-	action: setup receipt details
-
-deleteReceiptItem:
-  from: addreceipt.js
-  trigger: receipt item deleted
-  action: set flag to data for generated receipt item
-  
 default:
 {
 pull-off:

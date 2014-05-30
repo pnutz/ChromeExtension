@@ -1,8 +1,6 @@
 var incomingPort,
     lastClicked,
     mouseDownElement,
-    // don't need attributes field, just need to know if attributes exist for each receipt attribute
-    attributes = {},
     generated = {},
     receipt_notification;
 
@@ -15,7 +13,7 @@ $(document).ready(function () {
   console.log(document_text);
   
   // find how many instances of search_term exist in document
-  var search_word = "amazon";
+  var search_word = "2008-2014";
   var count = occurrences(document_text, search_word, true);
   if (count > 0) {
     search_terms["vendor"] = searchText(search_word, "vendor", count);
@@ -23,11 +21,8 @@ $(document).ready(function () {
     // search_terms.items["0"]
     console.log(findMatchText("vendor", 0));
     highlightMatchText("vendor", 0);
-    //cleanHighlight();
-    //cleanElementData();
     
-    setFieldText($("[data-tworeceipt-vendor-search=0]"), "vendor", search_terms["vendor"][0].start, search_terms["vendor"][0].end);
-    //removeFieldText("vendor");
+    setFieldText($("[data-tworeceipt-vendor-search=0]"), search_terms["vendor"][0].start, search_terms["vendor"][0].end, "vendor");
   }
   
 	// only run function when user prompts to start, so links keep working
@@ -518,4 +513,7 @@ function sendReceipt(saved_data) {
     console.log(message);
     incomingPort.postMessage(message);
   }
+  
+  // clean receipt data
+  cleanFieldText();
 }
