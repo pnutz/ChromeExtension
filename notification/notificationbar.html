@@ -3,23 +3,29 @@
 	<head>
 		<script src="notificationbar.js"></script>
 		<script src="../jquery-2.0.3.min.js"></script>
+		<script src="../js/jquery-ui-1.10.4.min.js"></script>
 		<script src="dist/jquery.handsontable.full.js"></script>
 		<link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
     <link rel="stylesheet" media="screen" href="dist/jquery.handsontable.full.css">
 		<link rel="stylesheet" type="text/css" href="css/notificationbar.css">
+		<link rel="stylesheet" href="../css/jquery-ui-1.9.2.custom.min.css">
 	</head>
 	<body id="readytoremove">
     <div id="receipt-container-upper" class="row">
       <div id="receipt-div-left" class="col-md-8">
         <div class="row">
             <div class="form-group col-xs-4 col-md-4" >
-              <label for="receipt-vendor" >Vendor</label>
-              <input id="receipt-vendor" class="form-control" type="text" name="receipt-vendor" placeholder="Vendor">
+              <label for="vendor" >Vendor</label>
+              <input id="receipt-vendor" class="form-control" type="text" name="vendor" placeholder="Vendor">
             </div>
             <div class="form-group col-xs-4 col-md-4" >
-              <label for="receipt-profile" >Profile</label>
+              <label for="receipt-date">Receipt Date</label>
+              <input id="receipt-date" type="text" name="date" placeholder="Today's Date" class="form-control"> 
+            </div>
+            <div class="form-group col-xs-2 col-md-2" >
+              <label for="profile" >Profile</label>
               <div >
-                <select id="receipt-profile" type="text" name="receipt-profile" class="form-control" >
+                <select id="receipt-profile" type="text" name="profile" class="form-control" >
                   <option>Profile 1</option>
                   <option>Profile 2</option>
                   <option>Profile 3</option>
@@ -28,10 +34,10 @@
                 </select>
               </div>
             </div>
-            <div class="form-group col-xs-4 col-md-4" >
-              <label for="receipt-category">Category</label>
+            <div class="form-group col-xs-2 col-md-2" >
+              <label for="category">Category</label>
               <div>
-                <select id="receipt-category" type="text" name="receipt-category" class="form-control">
+                <select id="receipt-category" type="text" name="category" class="form-control">
                   <option>Category 1</option>
                   <option>Category 2</option>
                   <option>Category 3</option>
@@ -43,12 +49,12 @@
        </div>
         <div class="row">
           <div class="form-group col-xs-7 col-md-7">
-            <label for="receipt-vendor-address">Address</label>
-            <input id="receipt-vendor-address" type="text" class="form-control" name="receipt-vendor-address" placeholder="Vendor Address">
+            <label for="address">Address</label>
+            <input id="receipt-vendor-address" type="text" class="form-control" name="address" placeholder="Vendor Address">
           </div>
           <div class="form-group col-xs-5 col-md-5">
-            <label for="receipt-invoice">Invoice</label>
-            <input id="receipt-invoice" type="text" class="form-control" name="receipt-invoice" placeholder="Invoice #">
+            <label for="invoice">Invoice</label>
+            <input id="receipt-invoice" type="text" class="form-control" name="invoice" placeholder="Invoice #">
           </div>
         </div>
 
@@ -56,32 +62,32 @@
           <div class="form-group col-xs-12 col-md-12">
             <label for="receipt-items-container" >Receipt Items</label>
             <div id="receipt-items-container" >
-              <div id="receipt-items"></div>
+              <div id="receipt-items" name="items"></div>
             </div>
           </div>
         </div>
       </div>
       <div id="receipt-div-mid" class="col-md-2">
         <div class="form-group col-xs-12 col-md-12">
-        <label for="receipt-taxes">Taxes</label>
-        <input id="receipt-taxes" type="text" class="form-control" name="receipt-taxes">
+        <label for="taxes">Taxes</label>
+        <input id="receipt-taxes" type="text" class="form-control" name="taxes">
         </div>
         <div class="form-group col-xs-12 col-md-12">
-          <label for="receipt-subtotal">SubTotal</label>
-          <input id="receipt-subtotal" type="text" class="form-control" name="receipt-subtotal">
+          <label for="subtotal">SubTotal</label>
+          <input id="receipt-subtotal" type="text" class="form-control" name="subtotal">
         </div>
         <div class="form-group col-xs-12 col-md-12">
-          <label for="receipt-total">Total</label>
-          <input id="receipt-total" type="text" class="form-control" name="receipt-total">
+          <label for="total">Total</label>
+          <input id="receipt-total" type="text" class="form-control" name="total">
         </div>
-        <input id="receipt-submit" class="form-control" type="submit" name="receipt-submit">
+        <input id="receipt-submit" class="form-control" type="submit" name="submit">
 
       </div>
       <div id="receipt-div-right" class="col-md-2">
         <div class="row">
           <div class="form-group col-xs-11 col-md-11">
-            <label for="receipt-notes">Notes</label>
-            <textarea id="receipt-notes" class="form-control">
+            <label for="notes">Notes</label>
+            <textarea id="receipt-notes" name="note" class="form-control">
             </textarea>
           </div>
         </div>
