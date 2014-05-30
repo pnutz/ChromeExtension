@@ -1,49 +1,34 @@
-var htmlGet = "pull-off",
-incomingPort,
-lastClicked,
-mouseDownElement,
-TEXT_ID = "-!_!-",
-CLASS_NAME = "TwoReceipt",
-search_terms = {};
+var incomingPort,
+    lastClicked,
+    mouseDownElement,
+    generated = {},
+    receipt_notification;
 
-$(document).ready(function() {
-	if (self === top)
-	{
+$(document).ready(function () {
+	if (self === top) {
 		console.log("document ready");
 	}
 	
-  // set highlight css style
-  var style = document.createElement("style");
-  style.innerHTML = ".highlighted { background-color: yellow; }";
-  document.getElementsByTagName("head")[0].appendChild(style);
-  
-  var children = $("body")[0].childNodes;
-  console.log(children);
-  
-  //searchAndHighlight("Amazon", "body", "highlighted");
-  
-  clean(document.body);
   var document_text = getDocumentText();
   console.log(document_text);
   
   // find how many instances of search_term exist in document
-  var search_word = "amazon";
+  var search_word = "2008-2014";
   var count = occurrences(document_text, search_word, true);
   if (count > 0) {
     search_terms["vendor"] = searchText(search_word, "vendor", count);
     console.log(search_terms["vendor"]);
+    // search_terms.items["0"]
     console.log(findMatchText("vendor", 0));
+    highlightMatchText("vendor", 0);
     
-    console.log($("[data-tworeceiptsearch-vendor]"));
-    //setFieldText($("[data-tworeceiptsearch-vendor=0]"), "vendor", search_terms["vendor"][0].start, search_terms["vendor"][0].end);
-    //removeFieldText("vendor");
+    setFieldText($("[data-tworeceipt-vendor-search=0]"), search_terms["vendor"][0].start, search_terms["vendor"][0].end, "vendor");
   }
   
 	// only run function when user prompts to start, so links keep working
-	$(document).click(function(event) {
+	/*$(document).click(function(event) {
 		lastClicked = $(event.target);
-		if (htmlGet != "pull-off")
-		{
+		if (htmlGet !== "pull-off")	{
 			var element = $(event.target);
       var element_text = element.text().trim();
 			console.log("Element Clicked: " + element_text);
@@ -59,9 +44,9 @@ $(document).ready(function() {
       var parentElement = element;
       if (parentElement !== null) {
         for (var index = 0; index < 3; index++) {
-          if (parentElement.parent().length != 0 && linkSelected == false) {
+          if (parentElement.parent().length !== 0 && linkSelected === false) {
             parentElement = parentElement.parent();
-            if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
+            if (parentElement[0].tagName === "BUTTON" || parentElement[0].tagName === "A") {
               linkSelected = true;
             }
           } else {
@@ -71,12 +56,12 @@ $(document).ready(function() {
       }
       
 			// only send message if nothing selected
-			if (linkSelected == true || window.getSelection().toString() === "" || element[0].tagName === "BODY")
+			if (linkSelected === true || window.getSelection().toString() === "" || element[0].tagName === "BODY")
 			{
 				element[0].className += " " + CLASS_NAME;
 				
         var message_domain;
-        if (document.domain == null || document.domain == "") {
+        if (document.domain === null || document.domain === "") {
           message_domain = "DOMAIN";
         } else {
           message_domain = document.domain;
@@ -119,16 +104,16 @@ $(document).ready(function() {
 	
 	// get selected text on mouseup (and element)
 	$(document).mouseup(function(event) {
-		
 		var textSelection = window.getSelection().toString();
 
     // check a few parent levels up for a link or button
+    // TO DO: find better way to deal with this case
     var parentElement = mouseDownElement;
     if (parentElement !== null) {
       for (var index = 0; index < 3; index++) {
-        if (parentElement.parent().length != 0) {
+        if (parentElement.parent().length !== 0) {
           parentElement = parentElement.parent();
-          if (parentElement[0].tagName == "BUTTON" || parentElement[0].tagName == "A") {
+          if (parentElement[0].tagName === "BUTTON" || parentElement[0].tagName === "A") {
             return false;
           }
         } else {
@@ -138,9 +123,9 @@ $(document).ready(function() {
     }
     
 		// only send message if text is selected or user did not click link
-		if (textSelection != "" && mouseDownElement !== null && mouseDownElement[0].tagName !== "A"
-          && mouseDownElement[0].tagName !== "BUTTON" && mouseDownElement[0].tagName !== "BODY") {
-			if (htmlGet != "pull-off") {
+		if (textSelection !== "" && mouseDownElement !== null && mouseDownElement[0].tagName !== "A" &&
+          mouseDownElement[0].tagName !== "BUTTON" && mouseDownElement[0].tagName !== "BODY") {
+			if (htmlGet !== "pull-off") {
 				console.log("Mouse-Up: " + textSelection);
 				
 				var range = window.getSelection().getRangeAt(0);
@@ -170,7 +155,7 @@ $(document).ready(function() {
 				commonAncestorContainer.className += " " + CLASS_NAME;
 				
         var message_domain;
-        if (document.domain == null || document.domain == "") {
+        if (document.domain === null || document.domain === "") {
           message_domain = "DOMAIN";
         } else {
           message_domain = document.domain;
@@ -195,24 +180,24 @@ $(document).ready(function() {
 				
 				commonAncestorContainer.className = commonAncestorContainer.className.replace(" " + CLASS_NAME, "");
 				
+        var removeNode;
 				// startContainer deletion first so we can use existing endOffset
 				if (startContainer.nodeType === Node.TEXT_NODE) {
 					startContainer.deleteData(startOffset, TEXT_ID.length);
 				} else {
-					var removeNode = startContainer.childNodes[0];
+					removeNode = startContainer.childNodes[0];
 					startContainer.removeChild(removeNode);
 				}
 				if (endContainer.nodeType === Node.TEXT_NODE) {
 					endContainer.deleteData(endOffset, TEXT_ID.length);
 				} else {
-					var removeNode = endContainer.childNodes[endContainer.childNodes.length - 1];
+					removeNode = endContainer.childNodes[endContainer.childNodes.length - 1];
 					endContainer.removeChild(removeNode);
 				}
 			}
 		}
-	});
+	});*/
   
-  	
 	// "paypal" "pay with paypal" "bestbuy" don't work
 	/*var postButtons = $("form[method='post']").find(":input[type='submit']");
 	var length = postButtons.length;
@@ -333,68 +318,95 @@ function createNotification() {
 // long-lived connection from background
 chrome.runtime.onConnect.addListener(function(port) {
 	// connect if not an iframe
-	if (self === top)
-	{
-		console.log("Connected to port: " + port.name);
-		console.assert(port.name == "newReceipt");
-		incomingPort = port;
+	if (self === top) {
+    console.log("Connected to port: " + port.name);
+    if (port.name === "receiptPort") {
+      incomingPort = port;
+    }
     
     var message_domain;
-    if (document.domain == null || document.domain == "") {
+    if (document.domain === null || document.domain === "") {
       message_domain = "DOMAIN";
     } else {
       message_domain = document.domain;
     }
     
-		port.onMessage.addListener(function(msg) {
+    // test content script with aServer, falsified attributes
+    attributes = { "vendor": true };
+    // saved_data falsified
+    sendReceipt({ "vendor": "Amazon" });
+    
+    port.onMessage.addListener(function(msg) {
       console.log("Received msg: " + msg.request + " for port: " + port.name);
-      if (msg.request == "initializeData") {
-        var msg_data = {
-					response: msg.request,
-					html: document.body.outerHTML,
-					url: location.href,
-					domain: message_domain
-				};
-				incomingPort.postMessage(msg_data);
-      } else {
-        htmlGet = msg.request;
+      // receive receipt notification-related messages
+      if (port.name === "receiptPort") {
+        // send basic page data so aServer can generate data
+        if (msg.request === "initializeData") {
+          var msg_data = {
+            response: msg.request,
+            html: document.body.outerHTML,
+            url: location.href,
+            domain: message_domain
+          };
+          incomingPort.postMessage(msg_data);
+        }
+        // receive generated data
+        else if (msg.request === "generatedData") {
+          generated = msg.generated;
+          
+          // send generated data to receipt notification
+          receipt_notification.postMessage(generated, "*");
+        }
       }
-		});
-		
-		port.onDisconnect.addListener(function() {
-			console.log("Disconnected port");
-			incomingPort = null;
-			htmlGet = "pull-off";
-		});
-	}
+    });
+    
+    port.onDisconnect.addListener(function() {
+      console.log("Disconnected " + port.name + " port");
+      if (port.name === "receiptPort") {
+        incomingPort = null;
+      }
+    });
+  }
 });
 
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
-	  console.log("running listener function");
+    console.log("running listener function for " + request.greeting);
 		// do not load for iframe
-		if (self == top)
-    {
-			console.log("received onMessage connection instead of port connect");
-			if (request.greeting === "getHTML")
-			{
+		if (self === top) {
+      // retrieve url & domain
+      if (request.greeting === "checkUrl") {
+        var message_domain;
+        if (document.domain === null || document.domain === "") {
+          message_domain = "DOMAIN";
+        } else {
+          message_domain = document.domain;
+        }
+      
+        var msg_data = {
+          response: request.greeting,
+          url: location.href,
+          domain: message_domain
+        };
+        sendResponse(msg_data);
+      }
+      // get page html
+      else if (request.greeting === "getHTML")	{
 				sendResponse({
 					data: document.body.outerHTML,
 					farewell: "sendHTML"
 				});
 			}
 			// this is how lastpass does it, by adding a div and iframe element to the current page
-			else if (request.greeting === "showNotification")
-			{
+			else if (request.greeting === "showNotification") {
 				createNotification();
 			}
 		}
-		else
-		{
+		else {
 			console.log("IFRAME (nothing run) - received onMessage connection instead of port connect");
 		}
 });
-	
+
 window.addEventListener("message", function(event) {
   if (event.origin.indexOf("chrome-extension://") !== -1)
   {
@@ -403,445 +415,105 @@ window.addEventListener("message", function(event) {
     notdiv.parentNode.removeChild(notdiv);
     
     document.documentElement.style.paddingTop = "0px";
-          
-    if (event.data === "yes")
-    {
-
-    }
-    else if (event.data === "no")
-    {
+    
+    receipt_notification = notdiv.contentWindow;
+    // receipt_notification.postMessage(message, "*");
+    
+    // window.parent.postMessage("yes", '*') from notificationbar.js
+    // to send to iframe, iframe = document.getElementById('iframe-id').contentWindow
+    // iframe.postMessage(message, '*') - * is where domain is defined
+    // event.source.postMessage(message, event.origin)
+    
+    // implementation in notificationbar.js
+    /*
+      each text field should have an event on change in value (keyup & text field selected/paste [ctrl v & right click paste])
+      send text to content script to complete search, send back search results
+      notification bar displays search results
+      user selects search result, send selected search result to content script
+      content script receives search result, highlight and alter parent element html
+      user modifies selected result quickly - send new result back to content script
+      content script receives new result, check if it still matches same selection
+          if it does, highlight and alter parent element html - generate attributes
       
-    }
-    else if (event.data === "x")
-    {
+      user saves receipt - send final text fields to content script - generate saved_data
+      content script sends template to eventPage
+      template: html, url, domain - use html and check for data attributes to see if template should be generated for receipt attribute
+      can search for data attr to get element, calculate text for attributes
       
+      token: localStorage["authToken"],
+      userID: localStorage["userID"],
+      email: localStorage["userEmail"],
+      domain: temp_domain,
+      url: url,
+      html: html,
+      
+      attributes: {}, - stored template text data
+      generated: {}, - generated text at page-load - has template ids
+      saved_data: {} - sent data from receipt
+      
+      all fields in attributes, generated, saved_data are same format
+      
+      - aServer will check if saved_data is different from generated. if so, it will check if attributes exists (and matches) saved_data
+      
+      can we set things in notificationbar from content.js?
+    */
+    
+    // user submitted receipt, send all data to eventPage
+    if (event.data === "")
+    {
+      // sendReceipt(event.saved_data);
+    }
+    // user requests search, respond with search data
+    else if (false) {
+    
+    }
+    // user selected search, highlight selected data
+    else if (false) {
+    
+    }
+    // user deleted a receipt item, mark removed index in generated
+    else if (false) {
+    
     }
     else
     {
       // message from iframe, element clicked
-      if (htmlGet !== "pull-off" && self !== top)
+      if (self !== top)
       {
-        console.log(event.data);
-        window.parent.postMessage(event.data, '*');
-      }
-      // format of htmlGet = pull-date, pull-transaction, etc. send response if not off
-      else if (htmlGet.indexOf("pull-") !== -1 && htmlGet.indexOf("off") === -1)
-      {
-        var msg_data = JSON.parse(event.data);
-        incomingPort.postMessage(msg_data);
+        /*console.log(event.data);
+        window.parent.postMessage(event.data, '*');*/
       }
     }
   }
 });
 
-// source: http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript/3561711#3561711
-// escape special characters in regex
-RegExp.escape = function(s) {
-    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-};
-
-// elements hold locations of possible selections
-// template on-submit
-// mark highlights text (can be over multiple elements)
-// when un-select text field, remove marks
-// does mark work on non-html5 pages
-// on highlight - remove all other mark elements and create new one & on submit
-
-// on-submit
-// generate templates & remove element place-holders
-// pass main page data over (html, domain, url)
-
-// functions:
-// 1) searchText - returns a reference list of all elements that contain text of element (nodes?)
-                // - needs to take into account text that traverses multiple nodes
-// 2) findExistingMatch - enter field/index of search and find key-value pair & return element
-// 2) findRelevantMatches - appends temp elements at all probable text options and returns a reference list of all temp elements storing text options
-                        // - always include the exact match to text that user has entered
-// 3) highlightSelection - highlights selected text
-// 4) unhighlightSelection - removes all highlight tags
-// 5) setFieldText - sets elements to surround selected text for field (replacing relevant match temp element)
-                // - possible for user to set text that isnt found on html, no template
-// 6) clearTextOptions - empties searched list and removes all temp elements
-                // should i maintain temp elements for each text field? to retain last search
-// 7) setTemplates - send data for individual templates back to eventPage
-// 8) sendPageData - run on submit, unhighlightSelection(), clearTextOptions(), sendTemplates(), sends html, domain, url to eventPage
-
-// generate relevant match options around text (and append unique tags for each)
-// set element parent (marked) for highlighting if user selects
-
-// find all instances of search_term in the document and set data attribute
-// returns a list of parent elements that contain the search_term
-function searchText(search_term, field, total) {
-  var search_elements = {},
-      params = {
-                  "text_nodes": [],
-                  "search_term": search_term,
-                  "search_elements": search_elements,
-                  "field": field,
-                  "total": total,
-                  "count": 0,
-                  "text": "",
-                  // holds last valid index
-                  "current_index": -1,
-                  "result": true
-                };
-  
-  // iterate through all children of body element
-  var children = $("body")[0].childNodes;
-  $.each(children, function(index,val) {
-    params = iterateText(children[index], findMatch, params);
-    search_elements = params.search_elements;
+function sendReceipt(saved_data) {
+  if (incomingPort !== undefined && incomingPort !== null) {
+    // clean html data
+    cleanHighlight();
+    cleanElementData();
     
-    if (params.result === false) {
-      return false;
-    }
-  });
-
-  return search_elements;
-}
-
-/* params: text_nodes - array of all text nodes iterated through
-*          search_term - search term to match
-*          search_elements - parent elements of found search terms
-*          field - text field we are matching for
-*          total - total # of matches found
-*          count - current # of matches found
-*          text - total plain-text of all passed text nodes
-*          current_index - holds last valid index
-*/
-function findMatch(node, params) {
-  var node_value = node.nodeValue.trim(),
-      text_nodes = params.text_nodes,
-      search_term = params.search_term,
-      search_elements = params.search_elements,
-      field = params.field,
-      total = params.total,
-      count = params.count,
-      text = params.text,
-      current_index = params.current_index;
-  
-  if (text === "") {
-    text = node_value;
-  } else {
-    text += " " + node_value;
-  }
-  text_nodes.push(node);
-
-  // if search_term is found, current text node is the end node for one count
-  var index = text.toLowerCase().indexOf(search_term.toLowerCase(), current_index + 1);
-  
-  // stores the number of characters the start of search_term is from the end of text
-  var characters_from_end = text.length - index;
-  console.log("characters from end: " + characters_from_end);
-  
-  // loop through text node in case there is more than one search_term instance in text
-  while (index !== -1) {
-    current_index = index;
-    
-    // remember how many text nodes before current node we are pulling from text_nodes
-    var text_nodes_back_index = text_nodes.length - 2;
-    // text_selection will contain a combined string of all text nodes where current search_term spans over
-    var text_selection = node_value;
-    var start_node;
-    
-    // set text_selection to contain prevSibling text nodes until the current search_term matches 
-    while (text_selection.length < characters_from_end) {
-      console.log("text_selection.length: " + text_selection.length + " < " + characters_from_end);
-      console.log("old text_selection: " + text_selection);
-      text_selection = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + text_selection;
-      text_nodes_back_index--;
-    }
-    // start_node contains beginning of search_term and node contains end of search_term
-    start_node = text_nodes[text_nodes_back_index + 1];
-    console.log("final text_selection: " + text_selection);
-
-    // find index search_term starts on in text node (or prevSibling)
-    var start_index = text_selection.toLowerCase().indexOf(search_term.toLowerCase());
-    if (start_index !== -1) {
-      // set parent as first element parent of text_node
-      var end_parent = node.parentNode;
-      while (end_parent.nodeType !== 1) {
-        end_parent = end_parent.parentNode;
-      }
-      end_parent = $(end_parent);
-      console.log("end parent");
-      console.log($(end_parent));
-      
-      var start_parent = start_node.parentNode;
-      while (start_parent.nodeType !== 1) {
-        start_parent = start_parent.parentNode;
-      }
-      start_parent = $(start_parent);
-      console.log("start parent");
-      console.log(start_parent);
-      
-      // TEST CASES WHERE NOT EQUAL!
-      
-      var target_parent;
-      // start and end parents are the same
-      if (start_parent[0] === end_parent[0]) {
-        target_parent = start_parent;
-      }
-      // start parent is target parent element
-      else if ($.contains(start_parent, end_parent)) {
-        target_parent = start_parent;
-      }
-      // end parent is target parent element
-      else if ($.contains(end_parent, start_parent)) {
-        target_parent = end_parent;
-      }
-      // neither parents contain one another
-      else {
-        // iterate upwards until start_parent contains end_parent
-        while (!$.contains(start_parent, end_parent)) {
-          start_parent = start_parent.parent();
-        }
-        target_parent = start_parent;
-      }
-      console.log("target parent");
-      console.log(target_parent);
-      
-      start_node = text_nodes[text_nodes_back_index];
-      var start_element = $(start_node.parentNode);
-      // continue adding text length to start_index until parent elements are not contained in target_parent
-      while ($.contains(target_parent, start_element) || target_parent[0] === start_element[0]) {
-        start_index += start_node.nodeValue.trim().length + 1;
-        text_nodes_back_index--;
-        start_node = text_nodes[text_nodes_back_index];
-        start_element = $(start_node.parentNode);
-      }
-      
-      // find index search_term ends on in text node
-      var end_index = start_index + search_term.length;
-      console.log("start index: " + start_index);
-      console.log("end index: " + end_index);
-      
-      // if a class for field search already exists, use that instead
-      console.log("data field");
-      var data_field = "data-tworeceiptsearch-" + field;
-      console.log(target_parent.attr(data_field));
-      if (target_parent.attr(data_field) !== undefined) {
-        search_elements[count] = {
-          start: start_index,
-          end: end_index,
-          data: target_parent.attr(data_field)
-        };
-      } else {
-        search_elements[count] = {
-          start: start_index,
-          end: end_index,
-          data: count
-        };
-        target_parent.attr(data_field, count);
-      }
-      
-      count++;
-      
-      // what if sanitization removes an element that has class?...
-      
-      // clean function - iterate through all k-v stores for attribute and remove class/data attr
-      // .data("tworeceiptsearch") or .attr("data-tworeceiptsearch")
-      
-      // issue: hidden elements - $.is(":visible")
-      // list of parent elements, when checking which to allow selection for, check if visible before displaying on list
-      
+    var message_domain;
+    if (document.domain === null || document.domain === "") {
+      message_domain = "DOMAIN";
     } else {
-      console.log(text_selection);
-      console.log(search_term);
+      message_domain = document.domain;
     }
     
-    index = text.toLowerCase().indexOf(search_term.toLowerCase(), current_index + 1);
-    characters_from_end = text.length - index;
-    
-    if (count === total) {
-      console.log("Completed calculations for all matched search_terms");
-      return {
-              "text_nodes": text_nodes,
-              "search_term": search_term,
-              "search_elements": search_elements,
-              "field": field,
-              "total": total,
-              "count": count,
-              "text": text,
-              "current_index": current_index,
-              "result": false
-            };
-    }
-  }
-  return {
-            "text_nodes": text_nodes,
-            "search_term": search_term,
-            "search_elements": search_elements,
-            "field": field,
-            "total": total,
-            "count": count,
-            "text": text,
-            "current_index": current_index,
-            "result": true
-          };
-}
-
-// find parent element stored on search_terms
-function findMatchElement(field, index) {
-  var data_field = "data-tworeceiptsearch-" + field;
-  return $("[" + data_field + "='" + search_terms[field][index].data + "']");
-}
-
-// find exact matched text stored on search_terms
-function findMatchText(field, index) {
-  var element = findMatchElement(field, index),
-      start_index = search_terms[field][index].start,
-      end_index = search_terms[field][index].end,
-      params = { "text": "" };
-  
-  // iterate through all children of element
-  var children = element[0].childNodes;
-  $.each(children, function(index,val) {
-    // get element text to match indices
-    params = iterateText(children[index], addText, params);
-  });
-  
-  var text = params.text.substring(start_index, end_index);
-  return text;
-}
-
-// params: text - total plain-text of all passed text nodes
-function addText(node, params) {
-  var text = params.text;
-  if (text === "") {
-    text = node.nodeValue.trim();
-  } else {
-    text += " " + node.nodeValue.trim();
-  }
-  return { "text": text }
-}
-
-function setFieldText(element, field, start, end) {
-  var data_field = "data-tworeceipt-" + field;
-  element.attr(data_field + "-start", start);
-  element.attr(data_field + "-end", end);
-}
-
-function removeFieldText(field) {
-  var data_field = "data-tworeceipt-" + field + "-start";
-  var element = $("[" + data_field + "]");
-  if (element[0] !== undefined) {
-    element.attr(data_field + "-start", null);
-    element.attr(data_field + "-end", null);
-  }
-}
-
-function iterateText(node, method, method_params) {
-  if (node.nodeType === 3) {
-    method_params = method(node, method_params);
-  }
-  else if (node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
-    $.each(node.childNodes, function(i,v) {
-      method_params = iterateText(node.childNodes[i], method, method_params);
-    });
-  }
-  return method_params;
-}
-
-function searchAndHighlight(searchTerm, selector, highlightClass, removePreviousHighlights) {
-  if (searchTerm) {
-    //var wholeWordOnly = new RegExp("\\g"+searchTerm+"\\g","ig"); //matches whole word only
-    //var anyCharacter = new RegExp("\\g["+searchTerm+"]\\g","ig"); //matches any word with any of search chars characters
-    var selector = selector || "body",                             //use body as selector if none provided
-      searchTermRegEx = new RegExp("("+RegExp.escape(searchTerm)+")","gi"),
-      matches = [],
-      helper = {};
-
-    // iterates through all nodes in dom, checking text nodes for search matches
-    helper.doHighlight = function(node, searchTerm){
-      if(node.nodeType === 3) {
-        if(node.nodeValue.match(searchTermRegEx)){
-          var tempNode = document.createElement('span');
-          tempNode.innerHTML = node.nodeValue.replace(searchTermRegEx, "<test class='hihi'></test><span class='"+highlightClass+"'>$1</span>");
-          node.parentNode.insertBefore(tempNode, node);
-          node.parentNode.removeChild(node);
-          matches.push(tempNode);
-        }
-      }
-      else if(node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
-        $.each(node.childNodes, function(i,v){
-          helper.doHighlight(node.childNodes[i], searchTerm);
-        });
-      }
+    // compose message
+    var message = {
+      request: "saveReceipt",
+      html: document.body.outerHTML,
+      url: location.href,
+      domain: message_domain,
+      attributes: attributes,
+      generated: generated,
+      saved_data: saved_data
     };
-    // this is fine if 2 classes are added - 1 for highlight, 1 to define text field/searchTerm
-    if(removePreviousHighlights) {
-      $('.'+highlightClass).removeClass(highlightClass);     //Remove old search highlights
-    }
-
-    // iterate through all children of body element
-    var children = $(selector)[0].childNodes;
-    $.each(children, function(index,val){
-      helper.doHighlight(children[index], searchTerm);
-    });
-    return matches;
+    console.log(message);
+    incomingPort.postMessage(message);
   }
-  return false;
-}
-
-// source: http://www.sitepoint.com/removing-useless-nodes-from-the-dom/
-function clean(node) {
-  for (var n = 0; n < node.childNodes.length; n++) {
-    var child = node.childNodes[n];
-    if (child.nodeType === 8 || (child.nodeType === 3 && !/\S/.test(child.nodeValue))) {
-      node.removeChild(child);
-      n--;
-    } else if(child.nodeType === 1) {
-      clean(child);
-    }
-  }
-}
-
-// retrieves the text contents of an element
-function getDocumentText(e) {
-  var selector = e || "body",
-      text = "",
-      helper = {};
-    
-    helper.addText = function(node) {
-      if (node.nodeType === 3) {
-        text += " " + node.nodeValue.trim();
-      }
-      else if (node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
-        $.each(node.childNodes, function(i,v){
-          helper.addText(node.childNodes[i]);
-        });
-      }
-    };
-
-    // iterate through all children of body element
-    var children = $(selector)[0].childNodes;
-    $.each(children, function(index,val) {
-      helper.addText(children[index]);
-    });
-    return text;
-}
-
-// source: http://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string
-/** Function count the occurrences of substring in a string; not case sensitive
- * @param {String} string   Required. The string;
- * @param {String} subString    Required. The string to search for;
- * @param {Boolean} allowOverlapping    Optional. Default: false;
- */
-function occurrences(string, subString, allowOverlapping){
-
-    string+="", subString+="";
-    string = string.toLowerCase();
-    subString = subString.toLowerCase();
-    
-    if(subString.length<=0) return string.length+1;
-
-    var n=0, pos=0;
-    var step=(allowOverlapping)?(1):(subString.length);
-
-    while(true){
-        pos=string.indexOf(subString,pos);
-        if(pos>=0){ n++; pos+=step; } else break;
-    }
-    return(n);
+  
+  // clean receipt data
+  cleanFieldText();
 }

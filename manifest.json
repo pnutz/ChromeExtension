@@ -14,14 +14,14 @@
 	"content_scripts": [
 		{
 			"matches": ["<all_urls>"],
-			"js":	["jquery-2.0.3.min.js", "content.js"],
+			"js":	["jquery-2.0.3.min.js", "content.js", "contentSearch.js"],
 			"all_frames": false,
       "run_at" : "document_start"
 		}
 	],
 	"background": {
-		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "FaceBookAPI.js", "eventPage.js"]
-		// eventPage ("persistent": false) doesn't work with webRequest permissions
+		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "FaceBookAPI.js", "eventPage.js", "old-template.js"],
+    "persistent": false
 	},
 	"web_accessible_resources": [
 		"/notification/*",
@@ -36,7 +36,7 @@
     "tabs",
 		// url permissions required for webRequest API
 		"<all_urls>",
-		"webRequest",
+		//"webRequest",
 		"background",
     "http://localhost:3000/api/v1/tokens.json",
 		"http://localhost:8888/"
