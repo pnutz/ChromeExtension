@@ -16,7 +16,7 @@ $(document).ready(function () {
   var search_word = "2008-2014";
   var count = occurrences(document_text, search_word, true);
   if (count > 0) {
-    search_terms["vendor"] = searchText(search_word, "vendor", count);
+    searchText(search_word, "vendor", count);
     console.log(search_terms["vendor"]);
     // search_terms.items["0"]
     console.log(findMatchText("vendor", 0));
@@ -355,7 +355,7 @@ chrome.runtime.onConnect.addListener(function(port) {
           generated = msg.generated;
           
           // send generated data to receipt notification
-          receipt_notification.postMessage(generated, "*");
+          receipt_notification.postMessage(msg, "*");
         }
       }
     });
@@ -424,10 +424,7 @@ window.addEventListener("message", function(event) {
     // iframe.postMessage(message, '*') - * is where domain is defined
     // event.source.postMessage(message, event.origin)
     
-    // implementation in notificationbar.js
     /*
-      each text field should have an event on change in value (keyup & text field selected/paste [ctrl v & right click paste])
-      send text to content script to complete search, send back search results
       notification bar displays search results
       user selects search result, send selected search result to content script
       content script receives search result, highlight and alter parent element html
@@ -439,33 +436,28 @@ window.addEventListener("message", function(event) {
       content script sends template to eventPage
       template: html, url, domain - use html and check for data attributes to see if template should be generated for receipt attribute
       can search for data attr to get element, calculate text for attributes
-      
-      token: localStorage["authToken"],
-      userID: localStorage["userID"],
-      email: localStorage["userEmail"],
-      domain: temp_domain,
-      url: url,
-      html: html,
-      
-      attributes: {}, - stored template text data
-      generated: {}, - generated text at page-load - has template ids
-      saved_data: {} - sent data from receipt
-      
-      all fields in attributes, generated, saved_data are same format
-      
-      - aServer will check if saved_data is different from generated. if so, it will check if attributes exists (and matches) saved_data
-      
-      can we set things in notificationbar from content.js?
     */
     
     // user submitted receipt, send all data to eventPage
-    if (event.data === "")
+    if (event.data.request !== undefined && event.data.request === "saveReceipt" && event.data.saved_data !== undefined)
     {
-      // sendReceipt(event.saved_data);
+      sendReceipt(event.data.saved_data);
     }
     // user requests search, respond with search data
-    else if (false) {
-    
+    else if (event.data.request !== undefined && event.data.request === "searchText" &&
+              event.data.fieldName !== undefined && event.data.text !== undefined) {
+      
+      var total = occurrences(document_text, search_word, true);
+      if (total > 0 && total < 5) {
+        console.log(total + " instances of " + event.data.text + " found in document");
+        searchText(event.data.text, event.data.fieldName, total);
+        
+        var results = getMatches(event.data.fieldName);
+        var message = { response: "searchResults", "results": results };
+        event.source.postMessage(message, event.origin);
+      } else {
+        console.log("document search halted: " + total + " instances of " + event.data.text + " found in document");
+      }
     }
     // user selected search, highlight selected data
     else if (false) {
@@ -477,7 +469,6 @@ window.addEventListener("message", function(event) {
     }
     else
     {
-      // message from iframe, element clicked
       if (self !== top)
       {
         /*console.log(event.data);
