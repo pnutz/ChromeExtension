@@ -1,15 +1,12 @@
 // searching methods for content script
 
+    // search_terms = { field: { 0: { data: "data-tworeceipt-field-search", start: 3, end: 6 } } };
 var search_terms = {},
+    // attributes = { field: true, items: { 0: { item_field: true } } };
     attributes = { "items": {} };
 
 // issue: hidden elements - $.is(":visible")
 // list of parent elements, when checking which to allow selection for, check if visible before displaying on list
-
-// functions:
-// findRelevantMatches - appends temp elements at all probable text options and returns a reference list of all temp elements storing text options
-                        // always include the exact match to text that user has entered
-                        // probable text options
 
 // find all instances of search_term in the document and set data attribute
 // returns a list of parent elements that contain the search_term
@@ -39,6 +36,7 @@ function searchText(search_term, field, total) {
     }
   });
 
+  search_terms[field] = search_elements;
   return search_elements;
 }
 
@@ -213,6 +211,65 @@ function findMatch(node, params) {
             "current_index": current_index,
             "result": true
           };
+}
+
+// always include the exact match to text that user has entered
+// probable text options
+
+// loop through all search_terms for field, adding possible search matches to search_terms object
+function findRelevantMatches(field) {
+  // for each search_term, look for next newline, end of word (if not identical to search_term [ex. search is only partial word])
+  // end of element/text node / until beginning of next element(even nested)
+  // backwards to beginning of word, beginning of element/text node
+  // forwards & backwards choices, multiple combinations?!
+  if (search_terms[field] !== undefined && Object.keys(search_terms[field]) > 0) {
+    $.each(search_terms[field], function(match) {
+      // run each match through a # of tests
+      // autocomplete from string of entire file?? - source
+      // can set source to refer to a server url that calculates
+      // can have callback that calculates and returns 
+      // $.ui.autocomplete.escapeRegex - take single string argument, pass to new RegExp()
+      
+      // versions: autofill full word / autofill end of line/element
+    });
+  }
+}
+
+// exact match
+// completed word (space character)
+// completed phrase (new-line/node)
+// can build data structure to quickly search?
+// built based off array of words - since finding duplicate words within document is too expensive & doesn't allow storing node/newline flag?
+// each word contains reference to if it is the beginning/end of an element or newline
+// - ex. next word is beginning of element, stop there
+// - previous word is end of an element or newline, stop there
+
+// performance issue, finding index of word - can store this 
+
+// once match is found - find match in full text & calculate indices using original method, text node by text node
+
+// need to know where new-line and node breaks are on page - nodes are more difficult since 
+
+// search_data is an object within search_terms, containing data attr, start, and end to calculate on
+// check if result is the same as search_data entered
+// how to get multi-combos - this finds end of element, what about beginning?
+function findElementMatch(search_data) {
+
+}
+
+// returns an array of matches for the parameter field - [ { text: "", index: "" }, { text: "", index: "" } ]
+function getMatches(field) {
+  if (seach_terms[field] !== undefined && Object.keys(search_terms[field]).length > 0) {
+    var matches = [];
+    var keys = Object.keys(search_terms[field]);
+    for (var index = 0; index < keys.length; index++) {
+      var text = findMatchText(field, index);
+      matches.push({ "text": text, "index": index });
+    }
+    return matches;
+  } else {
+    return [];
+  }
 }
 
 // find parent element stored on search_terms
@@ -408,7 +465,6 @@ function cleanElementData(field) {
         elements.eq(index).removeAttr(data_field);
       }
     });
-    delete search_terms;
     search_terms = {};
   }
 }
@@ -509,7 +565,6 @@ function cleanFieldText(field, index) {
         }
       }
     });
-    delete attributes;
     attributes = { "items": {} };
   }
 }

@@ -1,6 +1,6 @@
 var fieldTypes  = 
 {
-  NUMBER : 1 ,
+  NUMBER : 1,
   TEXT : 2,
   DATE : 3,
   SELECT : 4
@@ -50,7 +50,7 @@ var NotiBar =
                       },
                     "items" : 
                       {
-                        id : "#receipt-items" ,
+                        id : "#receipt-items",
                         type : fieldTypes.TABLE
                       },                
                     "profile" : 
@@ -94,6 +94,13 @@ var NotiBar =
     this.rows = [];
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker();
+    // set autocomplete ui element
+    $(this.configurations.formFields.subtotal.id).autocomplete({ minLength: 2 });
+    $(this.configurations.formFields.total.id).autocomplete({ minLength: 2 });
+    $(this.configurations.formFields.vendor.id).autocomplete({ minLength: 2 });
+    $(this.configurations.formFields.address.id).autocomplete({ minLength: 2 });
+    $(this.configurations.formFields.invoice.id).autocomplete({ minLength: 2 });
+    $(this.configurations.formFields.taxes.id).autocomplete({ minLength: 2 });
     // set handsontable width to the parent div width
     var tableWidth = $("#receipt-items-container").width() - 100;
     console.log(tableWidth);
@@ -161,9 +168,26 @@ var NotiBar =
           renderer : this.coverRenderer, 
           readOnly : true, 
           copyable: false
-        },
+        }
       ]
     });
+    
+    // on receipt submit, send dictionary of form data to content script
+    $("#receipt-submit").click(function() {
+      var saved_data = {};
+      var message = { request: "saveReceipt", "saved_data": saved_data };
+      window.parent.postMessage(message, "*");
+    });
+
+    // on text form propertychange, send form text and fieldName to content script
+    // wait ___ time for event to trigger again before sending message?
+    $("input").bind("input propertychange", function() {
+      // how to get fieldName?
+      var message = { request: "searchText", "text": this.value, "fieldName": this.id };
+      alert(this.value);
+      //window.parent.postMessage(message, "*");
+    });
+    
   },
 
   /**
@@ -242,11 +266,9 @@ var NotiBar =
       }
     }
     else
-    {
       console.error("Could not find field : " + fieldName);
-    }
   },
-
+  
   /**
    * @brief set the chosen option for the <select> fields
    * @params fieldId the id for the element
@@ -278,7 +300,7 @@ var NotiBar =
   setSelectFieldOptions: function(fieldName, options)
   {
     if (fieldName in this.configurations.formFields &&
-        this.configurations.formFields[fieldName].type == fieldTypes.SELECT)
+        this.configurations.formFields[fieldName].type === fieldTypes.SELECT)
     {
       var field = $(this.configurations.formFields[fieldName].id);
       $.each(options, function(index, option)
@@ -311,10 +333,71 @@ var NotiBar =
 
     formDict[$(this.configurations.formFields.items).attr('name')] = this.getReceiptItems();
     return formDict;
+  },
+  
+  /**
+   * @brief set the autocomplete options for the form fields
+   * @params fieldName of the element
+   * @params array of options for autocomplete
+   */
+  setAutoCompleteOptions: function(fieldName, options)
+  {
+    // do not include notes field
+    if (fieldName in this.configurations.formFields)
+    {
+      var field = this.configurations.formFields[fieldName];
+      
+      switch(field.type)
+      {
+        case fieldTypes.NUMBER:
+        case fieldTypes.TEXT:
+          $(field.id).autocomplete("option", "source", options);
+          break;
+        case fieldTypes.SELECT:
+          break;
+        default: 
+          console.error("Incorrect type");
+      }
+    }
+    else
+      console.error("Could not find field : " + fieldName);
   }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
   NotiBar.init();
   NotiBar.addItemRow("hello", 3, 43.2);
+});
+
+// send message using window.parent.postMessage("yes", '*')
+window.addEventListener("message", function(event) {
+  if (event.origin.indexOf("chrome-extension://") !== -1)
+  {
+    console.log(event.data);
+    
+    // event.source.postMessage("yes", event.origin);
+    
+    // generated values for form fields
+    if (event.data.request === "generatedData")
+    {
+      
+    }
+    // interaction with highlighted data
+    else if (event.data.request === "highlightSelected")
+    {
+      
+    }
+    // search results
+    else if (event.data.response === "searchResults")
+    {
+      // event.data.results
+    }
+    else
+    {
+      if (self !== top)
+      {
+        
+      }
+    }
+  }
 });
