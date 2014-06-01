@@ -81,7 +81,8 @@ var NotiBar =
     $anchor.attr('href', '#');
     $anchor.attr('row', row);
     $anchor.text('Delete');
-    $anchor.click(function() {
+    $anchor.click(function() 
+    {
       instance.alter('remove_row', row);
     });
     $(td).empty().append($anchor); //empty is needed because you are rendering to an existing cell
@@ -89,6 +90,7 @@ var NotiBar =
 
   init: function() 
   {
+    var self = this;
     this.rows = [];
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker();
@@ -98,7 +100,7 @@ var NotiBar =
     // setup handsontable for receipt items
     this.receiptItemTable = $("#receipt-items");
     this.receiptItemTable.handsontable({
-      stretchH : 'last', //Setting this to 'all' causes resizing issues
+      stretchH : 'last', // Setting this to 'all' causes resizing issues
       colWidths : [tableWidth * 0.6 , tableWidth * 0.2, tableWidth * 0.2, 50],
       width : $("#receipt-items-container").width(),
       colHeaders : this.configurations.itemTableHeaders,
@@ -106,20 +108,52 @@ var NotiBar =
       manualColumnResize : true,
       minSpareRows : this.configurations.minSpareRows,
       columnSorting : true,
-      afterCreateRow : function () {
-        console.log("made new row");
+      startRows: 0,
+      afterCreateRow : function (index, data) 
+        {
+          // add a row to the representation
+          self.rows.push(index); 
+        },
+      afterRemoveRow: function (tableRowIndex, data)
+        {
+          var rowsCount = 0;
+          // Use the table's row index to find the corresponding index
+          // in the table
+          // the position in the array corresponding to the 
+          // tables row index is where we should start subtracting
+          $.each(self.rows, function(index, value) 
+          {
+            if (value === tableRowIndex)
+            {
+              self.rows[index] = null; 
+              rowsCount = index++;
+            }
+          });
+
+          // Decrement each non null element by 1
+          for (; rowsCount < self.rows.length; rowsCount++)
+          {
+            // don't decrement if the element is null
+            // since that means the item was removed
+            if (self.rows[rowsCount] !== null) 
+              self.rows[rowsCount] -= 1; 
+          }
+        },
+      afterInit: function()
+      {
+        // If we want stuff ater the table initializes
       },
       columns: [
         {
-          data: 0
+          data: 'name'
         },
         {
-          data: 1,
+          data: 'quantity',
           type : 'numeric',
           format : "0.00"
         },
         {
-          data: 2,
+          data: 'price',
           type : 'numeric',
           format : "$0, 0.00"
         },
@@ -133,12 +167,25 @@ var NotiBar =
   },
 
   /**
-   * @brief Set entire table data
+   * @brief Set entire table using a key value pair. 
+   *        key increments are assumed to start from 0
+   *        and are consecutive with no gaps 
    * @param data dictionary of data
    */
   setTable: function(data)
   {
-    
+    var itemsArray = [];
+    // NotiBar.receiptItemTable.handsontable('loadData', [{"name": "4341", "quantity" : "42344", "price" : "423432"});
+    for (var count = 0; count < data.length; count++)
+    {
+      itemsArray.push(
+        {
+          "name" : data[count].name, 
+          "quantity" : data[count].quantity,
+          "price" : data[count].price
+        });
+    }
+    this.receiptItemTable.handsontable('loadData', data[count].name, data[count].quantity, data[count].price); 
   },
 
   addItemRow: function(name, quantity, price)
@@ -160,14 +207,18 @@ var NotiBar =
   },
 
   getReceiptItems: function()
-  {
+  {   
+    var receiptItems = {};
     // Minus one row since there is always an extra empty row
-    var rows = this.receiptItemTable.handsontable('countRows') - this.configurations.minSpareRows;
-    var receiptItems = [];
-    for (var i = 0; i < rows; i++)
+    var rowsToIterate = this.rows.length - this.configurations.minSpareRows;
+    for (var i = 0; i < rowsToIterate; i++)
     {
-      var thisRow = this.receiptItemTable.handsontable('getDataAtRow', i);
-      receiptItems.push(thisRow.slice(0,3));
+      var thisRow = null;
+      // if position contains null then that means the element was removed
+      if (this.rows[i] !== null)
+        thisRow = this.receiptItemTable.handsontable('getDataAtRow', this.rows[i]);
+    
+      receiptItems[i] = thisRow;
     }
     return receiptItems;
   },
