@@ -9,20 +9,23 @@ $(document).ready(function () {
 		console.log("document ready");
 	}
 	
-  var document_text = getDocumentText();
+  var document_text = initializeContentSearch();
   console.log(document_text);
   
   // find how many instances of search_term exist in document
-  var search_word = "2008-2014";
+  var search_word = "order number";
   var count = occurrences(document_text, search_word, true);
   if (count > 0) {
     searchText(search_word, "vendor", count);
     console.log(search_terms["vendor"]);
-    // search_terms.items["0"]
-    console.log(findMatchText("vendor", 0));
-    highlightMatchText("vendor", 0);
+    // console.log(findMatchText("vendor", 0));
     
-    setFieldText($("[data-tworeceipt-vendor-search=0]"), search_terms["vendor"][0].start, search_terms["vendor"][0].end, "vendor");
+    //setFieldText($("[data-tworeceipt-vendor-search=0]"), search_terms["vendor"][0].start, search_terms["vendor"][0].end, "vendor");
+    
+    // before searching, need to clean highlight since it ruins getDocumentText
+    //cleanHighlight();
+    console.log(findMatchByNewLine("vendor", search_terms.vendor.count));
+    highlightMatchText("vendor", 1);
   }
   
 	// only run function when user prompts to start, so links keep working
