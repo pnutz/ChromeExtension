@@ -78,13 +78,18 @@ var NotiBar =
     console.log(self);
     console.log(instance);
     var $anchor = $('<a>');
+    // create span for delete icon
+    var $deleteIcon = $('<span>');
+    $deleteIcon.addClass('glyphicon glyphicon-remove');
     $anchor.attr('href', '#');
     $anchor.attr('row', row);
-    $anchor.text('Delete');
+    $anchor.append($deleteIcon);
     $anchor.click(function() 
     {
       instance.alter('remove_row', row);
     });
+    // Add class to center the icon
+    $(td).addClass("deleteTd");
     $(td).empty().append($anchor); //empty is needed because you are rendering to an existing cell
   },
   
