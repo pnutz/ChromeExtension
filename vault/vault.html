@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="vault.js"></script>
+		<script src="../jquery-2.0.3.min.js"></script>
+		<script src="../js/jquery-ui-1.10.4.min.js"></script>
+		<script src="../js/bootstrap.js"></script>
+		<link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="css/vault.css">
+		<link rel="stylesheet" href="../css/jquery-ui-1.9.2.custom.min.css">
+	</head>
+  <body>
+    <ul id="vault-navbar" class="nav nav-tabs">
+      <li class="active"><a href="#vault" class="tabHeader">Vault</a></li>
+      <li><a href="#bills" class="tabHeader">Bills</a></li>
+      <li><a href="#subscriptions" class="tabHeader">Subscriptions</a></li>
+      <li><a href="#orders" class="tabHeader">Orders</a></li>
+      <li><a href="#settings" class="tabHeader">Settings</a></li>
+    </ul>
+	</body>
+
+  <div class="tab-content">
+    <div class="tab-pane active" id="vault">
+      <div class="row">
+        <div class="col-md-3">
+          <div id="vault-recent-purchases-container" class="panel panel-default">
+            <div class="panel-heading">Recent Purchases</div>
+            <div class="panel-body">
+              <table id="vault-recent-purchases">
+                <tr>
+                  <th>Date</th>
+                  <th>Vendor</th>
+                  <th>Price</th>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-9">
+          <div class="row">
+            <label for="start-date">Start Date</label>
+            <input id="receipt-start-date" name="start-date" type="text">
+            <label for="end-date">End Date</label>
+            <input id="receipt-end-date" name="end-date" type="text">
+            <label for="preset-range">Preset</label>
+            <select id="vault-date-preset" name="present-range">
+              <option value="0">Today</option>
+              <option value="1">Yesterday</option>
+              <option value="2">Last Week</option>
+              <option value="3">Last 2 Week</option>
+              <option value="5">Last Month</option>
+              <option value="6">Custom</option>
+            </select>
+          </div>
+          <div class="row">
+            <div class="well well-lg">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-pane" id="bills">
+      <p>Bills this is</p>
+    </div>
+    <div class="tab-pane" id="subscriptions">
+      <p>Subscriptions this is</p>
+    </div>
+    <div class="tab-pane" id="orders">
+      <p>orders this is</p>
+    </div>
+    <div class="tab-pane" id="settings">
+      <p>settings this is</p>
+    </div>
+  </div>
+</html>

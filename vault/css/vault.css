@@ -1,0 +1,14 @@
+a.tabHeader
+{
+  font-weight: bold;
+}
+
+.nav-tabs
+{
+  margin-bottom: 15px;
+}
+
+.tab-pane
+{
+  padding: 10px;
+}
