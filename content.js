@@ -2,31 +2,32 @@ var incomingPort,
     lastClicked,
     mouseDownElement,
     generated = {},
-    receipt_notification;
+    receipt_notification,
+    document_text;
 
 $(document).ready(function () {
 	if (self === top) {
 		console.log("document ready");
 	}
 	
-  var document_text = initializeContentSearch();
+  document_text = initializeContentSearch();
   console.log(document_text);
   
   // find how many instances of search_term exist in document
-  var search_word = "order number";
+  /*var search_word = "book";
   var count = occurrences(document_text, search_word, true);
+  
   if (count > 0) {
+    console.log(count + " instances of " + search_word + " found in document");
+    
+    cleanHighlight();
     searchText(search_word, "vendor", count);
-    console.log(search_terms["vendor"]);
-    // console.log(findMatchText("vendor", 0));
+    findRelevantMatches("vendor");
     
-    //setFieldText($("[data-tworeceipt-vendor-search=0]"), search_terms["vendor"][0].start, search_terms["vendor"][0].end, "vendor");
-    
-    // before searching, need to clean highlight since it ruins getDocumentText
-    //cleanHighlight();
-    console.log(findMatchByNewLine("vendor", search_terms.vendor.count));
-    highlightMatchText("vendor", 1);
-  }
+    highlightMatchText("vendor", 0);
+  } else {
+    console.log("document search halted: " + count + " instances of " + event.data.text + " found in document");
+  }*/
   
 	// only run function when user prompts to start, so links keep working
 	/*$(document).click(function(event) {
@@ -298,23 +299,24 @@ function createNotification() {
 	style.innerHTML = ".twoReceiptIFrame { width: 100%; }";
 	document.getElementsByTagName("head")[0].appendChild(style);
 	
+  document.getElementsByTagName("body")[0].style.paddingTop = "300px";
+  
 	// append iframe notification within div to body
 	var div = document.createElement("div");
 	div.id = "notificationdiv";
-	div.setAttribute("style", "top: 0px; left: 0px; height: 200px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
+	div.setAttribute("style", "top: 0px; left: 0px; height: 300px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
 	var iframe = document.createElement("iframe");
 	iframe.id = "twoReceiptIFrame";
 	iframe.className = "twoReceiptIFrame";
 	iframe.scrolling = "no";
 	iframe.style.width = "100%";
-	iframe.setAttribute("style", 'height: 200px; border: 0px;');
+	iframe.setAttribute("style", 'height: 300px; border: 0px;');
 	iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
 	div.appendChild(iframe);
 
   // before appending, hide the div
   $(div).hide();
 	document.documentElement.appendChild(div);
-	document.documentElement.style.paddingTop = "27px";
   $(div).toggle("slide");
 }
 
@@ -414,68 +416,61 @@ window.addEventListener("message", function(event) {
   if (event.origin.indexOf("chrome-extension://") !== -1)
   {
     console.log(event.data);
-    var notdiv = document.getElementById("notificationdiv");
-    notdiv.parentNode.removeChild(notdiv);
     
-    document.documentElement.style.paddingTop = "0px";
-    
-    receipt_notification = notdiv.contentWindow;
-    // receipt_notification.postMessage(message, "*");
-    
-    // window.parent.postMessage("yes", '*') from notificationbar.js
-    // to send to iframe, iframe = document.getElementById('iframe-id').contentWindow
-    // iframe.postMessage(message, '*') - * is where domain is defined
-    // event.source.postMessage(message, event.origin)
-    
-    /*
-      notification bar displays search results
-      user selects search result, send selected search result to content script
-      content script receives search result, highlight and alter parent element html
-      user modifies selected result quickly - send new result back to content script
-      content script receives new result, check if it still matches same selection
-          if it does, highlight and alter parent element html - generate attributes
-      
-      user saves receipt - send final text fields to content script - generate saved_data
-      content script sends template to eventPage
-      template: html, url, domain - use html and check for data attributes to see if template should be generated for receipt attribute
-      can search for data attr to get element, calculate text for attributes
-    */
-    
-    // user submitted receipt, send all data to eventPage
-    if (event.data.request !== undefined && event.data.request === "saveReceipt" && event.data.saved_data !== undefined)
-    {
-      sendReceipt(event.data.saved_data);
-    }
-    // user requests search, respond with search data
-    else if (event.data.request !== undefined && event.data.request === "searchText" &&
-              event.data.fieldName !== undefined && event.data.text !== undefined) {
-      
-      var total = occurrences(document_text, search_word, true);
-      if (total > 0 && total < 5) {
-        console.log(total + " instances of " + event.data.text + " found in document");
-        searchText(event.data.text, event.data.fieldName, total);
-        
-        var results = getMatches(event.data.fieldName);
-        var message = { response: "searchResults", "results": results };
-        event.source.postMessage(message, event.origin);
-      } else {
-        console.log("document search halted: " + total + " instances of " + event.data.text + " found in document");
-      }
-    }
-    // user selected search, highlight selected data
-    else if (false) {
-    
-    }
-    // user deleted a receipt item, mark removed index in generated
-    else if (false) {
-    
-    }
-    else
-    {
-      if (self !== top)
+    if (event.data.request !== undefined) {
+      // user submitted receipt, send all data to eventPage
+      if (event.data.request === "saveReceipt" && event.data.saved_data !== undefined)
       {
-        /*console.log(event.data);
-        window.parent.postMessage(event.data, '*');*/
+        var notdiv = document.getElementById("notificationdiv");
+        sendReceipt(event.data.saved_data);
+        document.getElementsByTagName("body")[0].style.paddingTop = "0px";
+        notdiv.parentNode.removeChild(notdiv);
+      }
+      // user requests search, respond with search data
+      else if (event.data.request === "searchText" && event.data.fieldName !== undefined && event.data.text !== undefined) {
+        var total = occurrences(document_text, event.data.text, true);
+        if (total > 0 && total < 5) {
+          console.log(total + " instances of " + event.data.text + " found in document");
+          
+          cleanHighlight();
+          cleanElementData(event.data.fieldName);
+          
+          searchText(event.data.text, event.data.fieldName, total);
+          findRelevantMatches(event.data.fieldName);
+          
+          var results = getMatches(event.data.fieldName);
+          var message = { "response": "searchResults", "results": results, "fieldName": event.data.fieldName };
+          console.log(message);
+          event.source.postMessage(message, event.origin);
+        } else {
+          console.log("document search halted: " + total + " instances of " + event.data.text + " found in document");
+        }
+      }
+      // user focused on search, highlight selected area
+      else if (event.data.request === "highlightText" && event.data.fieldName !== undefined && event.data.value !== undefined) {
+        cleanHighlight();
+        highlightMatchText(event.data.fieldName, event.data.value);
+      }
+      // user selected search, highlight and set field text for selected data
+      else if (event.data.request === "selectText" && event.data.fieldName !== undefined && event.data.value !== undefined) {
+        cleanHighlight();
+        highlightMatchText(event.data.fieldName, event.data.value);
+        
+        // field text is assuming receipt items different / not old method
+        //cleanFieldText(event.data.fieldName, event.data.value);
+        //setFieldText(element, start, end, field, index);
+      }
+      // user deleted a receipt item, mark removed index in generated
+      else if (false) {
+      
+      }
+      else
+      {
+        if (self !== top)
+        {
+          /*console.log(event.data);
+          window.parent.postMessage(event.data, '*');*/
+        }
       }
     }
   }

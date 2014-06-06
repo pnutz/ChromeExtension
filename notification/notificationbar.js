@@ -15,57 +15,57 @@ var NotiBar =
     formFields : {
                     "subtotal" : 
                       {
-                        id : "#receipt-subtotal",
+                        id : "#subtotal",
                         type : fieldTypes.NUMBER
                       },
                     "total" : 
                       {
-                        id : "#receipt-total",
+                        id : "#total",
                         type : fieldTypes.NUMBER
                       },
                     "vendor" :
                       {
-                        id : "#receipt-vendor",
+                        id : "#vendor",
                         type : fieldTypes.TEXT
                       },
                     "address" : 
                       {
-                        id : "#receipt-vendor-address",
+                        id : "#address",
                         type : fieldTypes.TEXT
                       },
-                    "invoice" : 
+                    "transaction" : 
                       {
-                        id : "#receipt-invoice",
+                        id : "#transaction",
                         type : fieldTypes.TEXT
                       },
-                    "taxes" : 
+                    "taxes" :
                       {
-                        id : "#receipt-taxes",
+                        id : "#taxes",
                         type : fieldTypes.NUMBER
                       },                    
                     "notes" : 
                       {
-                        id : "#receipt-notes",
+                        id : "#notes",
                         type : fieldTypes.TEXT
                       },
                     "items" : 
                       {
-                        id : "#receipt-items",
+                        id : "#items",
                         type : fieldTypes.TABLE
                       },                
                     "profile" : 
                       {
-                        id : "#receipt-profile",
+                        id : "#profile",
                         type : fieldTypes.SELECT
                       },
                     "category" :
                       {
-                        id :  "#receipt-category",
+                        id :  "#category",
                         type : fieldTypes.SELECT
                       },
                     "date" :
                       {
-                        id :  "#receipt-date",
+                        id :  "#date",
                         type : fieldTypes.DATE
                       }
                   }
@@ -87,7 +87,7 @@ var NotiBar =
     });
     $(td).empty().append($anchor); //empty is needed because you are rendering to an existing cell
   },
-
+  
   init: function() 
   {
     var self = this;
@@ -95,17 +95,12 @@ var NotiBar =
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker();
     // set autocomplete ui element
-    $(this.configurations.formFields.subtotal.id).autocomplete({ minLength: 2 });
-    $(this.configurations.formFields.total.id).autocomplete({ minLength: 2 });
-    $(this.configurations.formFields.vendor.id).autocomplete({ minLength: 2 });
-    $(this.configurations.formFields.address.id).autocomplete({ minLength: 2 });
-    $(this.configurations.formFields.invoice.id).autocomplete({ minLength: 2 });
-    $(this.configurations.formFields.taxes.id).autocomplete({ minLength: 2 });
+    this.initAutoComplete("vendor");
     // set handsontable width to the parent div width
     var tableWidth = $("#receipt-items-container").width() - 100;
     console.log(tableWidth);
     // setup handsontable for receipt items
-    this.receiptItemTable = $("#receipt-items");
+    this.receiptItemTable = $("#items");
     this.receiptItemTable.handsontable({
       stretchH : 'last', // Setting this to 'all' causes resizing issues
       colWidths : [tableWidth * 0.6 , tableWidth * 0.2, tableWidth * 0.2, 50],
@@ -182,14 +177,13 @@ var NotiBar =
     // on text form propertychange, send form text and fieldName to content script
     // wait ___ time for event to trigger again before sending message?
     $("input").bind("input propertychange", function() {
-      // how to get fieldName?
-      var message = { request: "searchText", "text": this.value, "fieldName": this.id };
-      alert(this.value);
-      //window.parent.postMessage(message, "*");
+      if (this.value.length > 2) {
+        var message = { request: "searchText", "text": this.value, "fieldName": this.id };
+        window.parent.postMessage(message, "*");
+      }
     });
-    
   },
-
+  
   /**
    * @brief Set entire table using a key value pair. 
    *        key increments are assumed to start from 0
@@ -335,6 +329,50 @@ var NotiBar =
     return formDict;
   },
   
+  initAutoComplete: function(fieldName)
+  {
+  // does this need the same kinda thing as setAutoCompleteOptions? if (fieldName in this.configurations.formFields)...
+    $(this.configurations.formFields[fieldName].id).autocomplete(
+    {
+      minLength: 3,
+      focus: function (event, ui)
+      {
+        $(this).val(ui.item.label);
+        $(this).attr("data-value", ui.item.value)
+        // highlight focus
+        var message = { request: "highlightText", "fieldName": this.id, "value": $(this).attr("data-value") };
+        window.parent.postMessage(message, "*");
+        
+        return false;
+      },
+      select: function (event, ui)
+      {
+        $(this).val(ui.item.label);
+        $(this).attr("data-value", ui.item.value);
+        // highlight and set selected
+        var message = { request: "highlightText", "fieldName": this.id, "value": $(this).attr("data-value") };
+        window.parent.postMessage(message, "*");
+        
+        message = { request: "selectText", "fieldName": this.id, "value": $(this).attr("data-value") };
+        window.parent.postMessage(message, "*");
+        
+        // trigger search again
+        if (this.value.length > 2) {
+          var message = { request: "searchText", "text": this.value, "fieldName": this.id };
+          window.parent.postMessage(message, "*");
+        }
+        
+        return false;
+      }
+    })
+    // displays autocomplete list on form focus
+    // TODO: auto-select first item on list?? (forcing selection of a template)
+    .focus(function()
+    {
+      $(this).autocomplete("search");
+    });
+  },
+  
   /**
    * @brief set the autocomplete options for the form fields
    * @params fieldName of the element
@@ -351,7 +389,7 @@ var NotiBar =
       {
         case fieldTypes.NUMBER:
         case fieldTypes.TEXT:
-          $(field.id).autocomplete("option", "source", options);
+          $(field.id).autocomplete("option", { source: options });
           break;
         case fieldTypes.SELECT:
           break;
@@ -371,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // send message using window.parent.postMessage("yes", '*')
 window.addEventListener("message", function(event) {
-  if (event.origin.indexOf("chrome-extension://") !== -1)
+  if (event.origin.indexOf("chrome-extension://") === -1)
   {
     console.log(event.data);
     
@@ -390,7 +428,7 @@ window.addEventListener("message", function(event) {
     // search results
     else if (event.data.response === "searchResults")
     {
-      // event.data.results
+      NotiBar.setAutoCompleteOptions(event.data.fieldName, event.data.results);
     }
     else
     {
