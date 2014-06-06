@@ -1,9 +1,13 @@
 // searching methods for content script
 
-    // search_terms = { field: { 0: { data: "data-tworeceipt-field-search", start: 3, end: 6 } } };
+    // search_terms = { field: { 0: { data: index, start: 3, end: 6, start_node_index: 3, end_node_index: 4 } } };
+    // start_node_index / end_node_index is the index of start/end node in text_nodes
+    // data-tworeceipt-field-search=index
 var search_terms = {},
     // attributes = { field: true, items: { 0: { item_field: true } } };
-    attributes = { "items": {} };
+    attributes = { "items": {} },
+    // array of each non-whitespace text node in the document
+    text_nodes = [];
 
 // issue: hidden elements - $.is(":visible")
 // list of parent elements, when checking which to allow selection for, check if visible before displaying on list
@@ -13,7 +17,7 @@ var search_terms = {},
 function searchText(search_term, field, total) {
   var search_elements = {},
       params = {
-                  "text_nodes": [],
+                  "node_index": 0,
                   "search_term": search_term,
                   "search_elements": search_elements,
                   "field": field,
@@ -27,8 +31,8 @@ function searchText(search_term, field, total) {
   
   // iterate through all children of body element
   var children = $("body")[0].childNodes;
-  $.each(children, function(index) {
-    params = iterateText(children[index], findMatch, params);
+  $.each(children, function(index, value) {
+    params = iterateText(value, findMatch, params);
     search_elements = params.search_elements;
     
     if (params.result === false) {
@@ -37,10 +41,11 @@ function searchText(search_term, field, total) {
   });
 
   search_terms[field] = search_elements;
+  search_terms[field].count = params.count;
   return search_elements;
 }
 
-/* params: text_nodes - array of all text nodes iterated through
+/* params: node_index - index in text_nodes iterated through
 *          search_term - search term to match
 *          search_elements - parent elements of found search terms
 *          field - text field we are matching for
@@ -48,10 +53,11 @@ function searchText(search_term, field, total) {
 *          count - current # of matches found
 *          text - total plain-text of all passed text nodes
 *          current_index - holds last valid index
+*          result - set to false to break out of iterateText
 */
 function findMatch(node, params) {
   var node_value = node.nodeValue.trim(),
-      text_nodes = params.text_nodes,
+      node_index = params.node_index,
       search_term = params.search_term,
       search_elements = params.search_elements,
       field = params.field,
@@ -65,11 +71,12 @@ function findMatch(node, params) {
   } else {
     text += " " + node_value;
   }
-  text_nodes.push(node);
 
   // if search_term is found, current text node is the end node for one count
   var index = text.toLowerCase().indexOf(search_term.toLowerCase(), current_index + 1);
-  
+  // if there is multiple instances of search_term in text (loops through while loop), use old_start_index to calculate start_index
+  var old_start_index, start_node_index;
+
   // stores the number of characters the start of search_term is from the end of text
   var characters_from_end = text.length - index;
   
@@ -78,7 +85,8 @@ function findMatch(node, params) {
     current_index = index;
     
     // remember how many text nodes before current node we are pulling from text_nodes
-    var text_nodes_back_index = text_nodes.length - 2;
+    var text_nodes_back_index = node_index - 1;
+    
     // text_selection will contain a combined string of all text nodes where current search_term spans over
     var text_selection = node_value;
     var start_node;
@@ -90,12 +98,23 @@ function findMatch(node, params) {
       text_selection = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + text_selection;
       text_nodes_back_index--;
     }
-    // start_node contains beginning of search_term and node contains end of search_term
-    start_node = text_nodes[text_nodes_back_index + 1];
-    console.log("final text_selection: " + text_selection);
     
-    // find index search_term starts on in text node (or prevSibling)
-    var start_index = text_selection.toLowerCase().indexOf(search_term.toLowerCase());
+    // use old start_node_index value before re-calculating it if its the same as new start_node_index
+    // start_index needs to ignore previous instances of text
+    var start_index;
+    if (start_node_index !== undefined && start_node_index === text_nodes_back_index + 1) {
+      // find index search_term starts on in text node (or prevSibling)
+      start_index = text_selection.toLowerCase().indexOf(search_term.toLowerCase(), old_start_index + 1);
+    } else {
+      start_index = text_selection.toLowerCase().indexOf(search_term.toLowerCase());
+    }
+    old_start_index = start_index;
+
+    // start_node contains beginning of search_term and node contains end of search_term
+    var start_node_index = text_nodes_back_index + 1;
+    // possibly null parentNode because highlighted text before, adding MARK tag and then removed it
+    start_node = text_nodes[start_node_index];
+    console.log("final text_selection: " + text_selection);
     
     if (start_index !== -1) {
       // set parent as first element parent of text_node
@@ -104,6 +123,7 @@ function findMatch(node, params) {
       console.log(end_parent);
       
       var start_parent = start_node.parentNode;
+      console.log(start_node);
       console.log("start parent");
       console.log(start_parent);
       
@@ -136,7 +156,6 @@ function findMatch(node, params) {
       console.log(target_parent);
       
       // set start_node to node before the parent we are calculating with
-      console.log(text_nodes_back_index);
       if (text_nodes_back_index !== -1) {
         start_node = text_nodes[text_nodes_back_index];
         text_nodes_back_index--;
@@ -165,18 +184,22 @@ function findMatch(node, params) {
         search_elements[count] = {
           start: start_index,
           end: end_index,
-          data: $(target_parent).attr(data_field)
+          data: parseInt($(target_parent).attr(data_field)),
+          start_node_index: start_node_index,
+          end_node_index: node_index
         };
       } else {
         search_elements[count] = {
           start: start_index,
           end: end_index,
-          data: count
+          data: count,
+          start_node_index: start_node_index,
+          end_node_index: node_index
         };
         $(target_parent).attr(data_field, count);
       }
       
-      count++;      
+      count++;
     } else {
       console.log(text_selection);
       console.log(search_term);
@@ -184,11 +207,13 @@ function findMatch(node, params) {
     
     index = text.toLowerCase().indexOf(search_term.toLowerCase(), current_index + 1);
     characters_from_end = text.length - index;
+    console.log("characters from end: " + characters_from_end);
     
     if (count === total) {
       console.log("Completed calculations for all matched search_terms");
+      node_index++;
       return {
-              "text_nodes": text_nodes,
+              "node_index": node_index,
               "search_term": search_term,
               "search_elements": search_elements,
               "field": field,
@@ -200,8 +225,9 @@ function findMatch(node, params) {
             };
     }
   }
+  node_index++;
   return {
-            "text_nodes": text_nodes,
+            "node_index": node_index,
             "search_term": search_term,
             "search_elements": search_elements,
             "field": field,
@@ -213,58 +239,344 @@ function findMatch(node, params) {
           };
 }
 
-// always include the exact match to text that user has entered
-// probable text options
-
 // loop through all search_terms for field, adding possible search matches to search_terms object
 function findRelevantMatches(field) {
-  // for each search_term, look for next newline, end of word (if not identical to search_term [ex. search is only partial word])
-  // end of element/text node / until beginning of next element(even nested)
-  // backwards to beginning of word, beginning of element/text node
-  // forwards & backwards choices, multiple combinations?!
-  if (search_terms[field] !== undefined && Object.keys(search_terms[field]) > 0) {
-    $.each(search_terms[field], function(match) {
-      // run each match through a # of tests
-      // autocomplete from string of entire file?? - source
-      // can set source to refer to a server url that calculates
-      // can have callback that calculates and returns 
-      // $.ui.autocomplete.escapeRegex - take single string argument, pass to new RegExp()
-      
-      // versions: autofill full word / autofill end of line/element
-    });
+  if (search_terms.hasOwnProperty(field) && Object.keys(search_terms[field]).length > 0) {
+    var count = search_terms[field].count;
+    console.log(findMatchByWord(field, count));
+    console.log(findMatchByNode(field, count));
+    console.log(findMatchByElement(field, count));
   }
 }
 
-// exact match
-// completed word (space character)
-// completed phrase (new-line/node)
-// can build data structure to quickly search?
-// built based off array of words - since finding duplicate words within document is too expensive & doesn't allow storing node/newline flag?
-// each word contains reference to if it is the beginning/end of an element or newline
-// - ex. next word is beginning of element, stop there
-// - previous word is end of an element or newline, stop there
-
-// performance issue, finding index of word - can store this 
-
-// once match is found - find match in full text & calculate indices using original method, text node by text node
-
-// need to know where new-line and node breaks are on page - nodes are more difficult since 
-
-// search_data is an object within search_terms, containing data attr, start, and end to calculate on
-// check if result is the same as search_data entered
-// how to get multi-combos - this finds end of element, what about beginning?
-function findElementMatch(search_data) {
-
+// parent element? loop until text changes?
+// appends matches (excluding index > count) complete by element and returns newly added search terms
+function findMatchByElement(field, count) {
+  var keys = Object.keys(search_terms[field]);
+  console.log(keys);
+  var original_count = search_terms[field].count;
+  
+  $.each(keys, function(key, index) {
+    // do not include count index and indices less than count (# of original search_terms)
+    if (!isNaN(parseInt(index)) && parseInt(index) < count) {
+      console.log("findMatchByElement: " + index);
+      
+      var field_value = getSearchTermProperty(field, "data", index),
+          start_node_index = getSearchTermProperty(field, "start_node_index", index),
+          end_node_index = getSearchTermProperty(field, "end_node_index", index),
+          start_index = getSearchTermProperty(field, "start", index),
+          end_index = getSearchTermProperty(field, "end", index),
+          // code duplication so 'getSearchTermProperty' for data is not run twice
+          element = $("[data-tworeceipt-" + field + "-search='" + field_value + "']");
+      
+      var element_text = getDocumentText(element);
+      
+      // current search_term is already the element match
+      if (start_index === 0 && end_index === element_text.length) {
+        console.log("search_term is already match element");
+        return true;
+      }
+      
+      // calculating for new search_term node_index
+      var new_start_node_index = start_node_index;
+      console.log(text_nodes[new_start_node_index]);
+      // keep iterating backwards until start of text_nodes, or text_node is not within element, or text node parent is not equal to element
+      while (new_start_node_index !== 0 &&
+              $.contains(element[0], text_nodes[new_start_node_index].parentNode) &&
+              text_nodes[new_start_node_index].parentNode !== element[0]) {
+        new_start_node_index--;
+        console.log(new_start_node_index);
+        console.log(text_nodes[new_start_node_index]);
+      }
+      
+      var new_end_node_index = end_node_index;
+      console.log(text_nodes[new_end_node_index]);
+      // keep iterating forwards until end of text_nodes, or text_node is not within element, or text node parent is not equal to element
+      while (new_end_node_index !== text_nodes.length - 1 &&
+              $.contains(element[0], text_nodes[new_end_node_index].parentNode) &&
+              text_nodes[new_end_node_index].parentNode !== element[0]) {
+        new_end_node_index++;
+        console.log(new_end_node_index);
+        console.log(text_nodes[new_end_node_index]);
+      }
+      
+      var new_search_term = {
+                              data: field_value,
+                              start: 0,
+                              end: element_text.length,
+                              start_node_index: new_start_node_index,
+                              end_node_index: new_end_node_index
+                            };
+      
+      // only consider valid search terms
+      if (isValidSearchTerm(new_search_term)) {
+        // check all existing search_terms for duplicates
+        var duplicate = hasDuplicate(field, new_search_term);
+        
+        console.log(new_search_term);
+        if (duplicate) {
+          console.log("duplicate");
+        } else {
+          console.log("NOT duplicate");
+          search_terms[field][search_terms[field].count] = new_search_term;
+          search_terms[field].count++;
+        }
+      }
+    }
+  });
+  
+  // return new search_terms added to object
+  var added_search_terms = {};
+  for (var index = original_count; index < search_terms[field].count; index++) {
+    added_search_terms[index] = search_terms[field][index];
+  }
+  return added_search_terms;
 }
 
-// returns an array of matches for the parameter field - [ { text: "", index: "" }, { text: "", index: "" } ]
+// appends matches (excluding index > count) complete by text node and returns newly added search terms
+function findMatchByNode(field, count) {
+  var keys = Object.keys(search_terms[field]);
+  console.log(keys);
+  var original_count = search_terms[field].count;
+  
+  $.each(keys, function(key, index) {
+    // do not include count index and indices less than count (# of original search_terms)
+    if (!isNaN(parseInt(index)) && parseInt(index) < count) {
+      console.log("findMatchByNode: " + index);
+      
+      var field_value = getSearchTermProperty(field, "data", index),
+          start_node_index = getSearchTermProperty(field, "start_node_index", index),
+          end_node_index = getSearchTermProperty(field, "end_node_index", index),
+          // code duplication so 'getSearchTermProperty' for data is not run twice
+          element = $("[data-tworeceipt-" + field + "-search='" + field_value + "']");
+
+      // iterating to first text node of element, counting characters
+      var node_index = start_node_index - 1;
+      var char_count = 0;
+      while (node_index > -1 &&
+              ($.contains(element[0], text_nodes[node_index].parentNode) ||
+              text_nodes[node_index].parentNode === element[0])) {
+        char_count += text_nodes[node_index].nodeValue.trim().length + 1;
+        node_index--;
+      }
+      var start_index = char_count;
+      
+      // iterate through text_nodes from start_node to end of end_node, counting characters
+      node_index = start_node_index;
+      while (node_index < end_node_index && node_index < text_nodes.length) {
+        char_count += text_nodes[node_index].nodeValue.trim().length + 1;
+        node_index++;
+      }
+      var end_index = char_count + text_nodes[end_node_index].nodeValue.trim().length;
+      
+      var new_search_term = {
+                              data: field_value,
+                              start: start_index,
+                              end: end_index,
+                              start_node_index: start_node_index,
+                              end_node_index: end_node_index
+                            };
+
+      // only consider valid search terms
+      if (isValidSearchTerm(new_search_term)) {
+        // check all existing search_terms for duplicates
+        var duplicate = hasDuplicate(field, new_search_term);
+        
+        console.log(new_search_term);
+        if (duplicate) {
+          console.log("duplicate");
+        } else {
+          console.log("NOT duplicate");
+          search_terms[field][search_terms[field].count] = new_search_term;
+          search_terms[field].count++;
+        }
+      }
+    }
+  });
+  
+  // return new search_terms added to object
+  var added_search_terms = {};
+  for (var index = original_count; index < search_terms[field].count; index++) {
+    added_search_terms[index] = search_terms[field][index];
+  }
+  return added_search_terms;
+}
+
+// appends matches (excluding index > count) complete by word (separated by space characters/text nodes) and returns newly added search terms
+function findMatchByWord(field, count) {
+  var keys = Object.keys(search_terms[field]);
+  console.log(keys);
+  var original_count = search_terms[field].count;
+  
+  $.each(keys, function(key, index) {
+    // do not include count index and indices less than count (# of original search_terms)
+    if (!isNaN(parseInt(index)) && parseInt(index) < count) {
+      console.log("findMatchByWord: " + index);
+      
+      var field_value = getSearchTermProperty(field, "data", index),
+          start_node_index = getSearchTermProperty(field, "start_node_index", index),
+          end_node_index = getSearchTermProperty(field, "end_node_index", index),
+          start_index = getSearchTermProperty(field, "start", index),
+          end_index = getSearchTermProperty(field, "end", index),
+          // code duplication so 'getSearchTermProperty' for data is not run twice
+          element = $("[data-tworeceipt-" + field + "-search='" + field_value + "']");
+
+      // check if there are any non-space characters to left / right of indices
+      var element_text = getDocumentText(element);
+      var start_text = element_text.substring(0, start_index);
+      // while there are no spaces from the end of start_text, subtract characters from start_index
+      var char_index = start_text.length - 1;
+      while (start_text.charAt(char_index).match(/\s/) === null && char_index !== -1) {
+        char_index--;
+        start_index--;
+      }
+      
+      var end_text = element_text.substring(end_index);
+      char_index = 0;
+      while (end_text.charAt(char_index).match(/\s/) === null && char_index !== end_text.length) {
+        char_index++;
+        end_index++;
+      }
+      
+      var new_search_term = {
+                              data: field_value,
+                              start: start_index,
+                              end: end_index,
+                              start_node_index: start_node_index,
+                              end_node_index: end_node_index
+                            };
+                            
+      // only consider valid search terms
+      if (isValidSearchTerm(new_search_term)) {
+        // check all existing search_terms for duplicates
+        var duplicate = hasDuplicate(field, new_search_term);
+        
+        console.log(new_search_term);
+        if (duplicate) {
+          console.log("duplicate");
+        } else {
+          console.log("NOT duplicate");
+          search_terms[field][search_terms[field].count] = new_search_term;
+          search_terms[field].count++;
+        }
+      }
+    }
+  });
+  
+  // return new search_terms added to object
+  var added_search_terms = {};
+  for (var index = original_count; index < search_terms[field].count; index++) {
+    added_search_terms[index] = search_terms[field][index];
+  }
+  return added_search_terms;
+}
+
+// appends matches (excluding index > count) complete by new-line (separated by new-lines) and returns newly added search terms
+/*function findMatchByNewLine(field, count) {
+  var keys = Object.keys(search_terms[field]);
+  console.log(keys);
+  var original_count = search_terms[field].count;
+  
+  $.each(keys, function(key, index) {
+    // do not include count index and indices less than count (# of original search_terms)
+    if (!isNaN(parseInt(index)) && parseInt(index) < count) {
+      console.log("findMatchByNewLine: " + index);
+      
+      var field_value = getSearchTermProperty(field, "data", index),
+          start_node_index = getSearchTermProperty(field, "start_node_index", index),
+          end_node_index = getSearchTermProperty(field, "end_node_index", index),
+          start_index = getSearchTermProperty(field, "start", index),
+          end_index = getSearchTermProperty(field, "end", index),
+          // code duplication so 'getSearchTermProperty' for data is not run twice
+          element = $("[data-tworeceipt-" + field + "-search='" + field_value + "']");
+
+      // check if there are any non-space characters to left / right of indices
+      var element_text = getDocumentText();
+      
+      // insert newline logic HERE
+      console.log("split by new-line");
+      console.log(element_text.split("\n")); // this does not include <br> tags
+      // can track break tags by checking tag-name in iterateText when element node (not text node)
+      
+      // is this necessary? text nodes should be enough
+      // ex. element selected - but want end of next text node...
+      // even then, new-line will be incorrect (in this case)
+      // this is probably not necessary
+      
+      // how about 'small' text matches (ex. quantity) - 3 char minimum?
+      // worry: NEED this system to match text for template - for auto-complete
+      // showing 'nearby' text won't work for tables, since column name not shown
+      // click to fill?... too complex experience - 
+      
+      var new_search_term = {
+                              data: field_value,
+                              start: start_index,
+                              end: end_index,
+                              start_node_index: start_node_index,
+                              end_node_index: end_node_index
+                            };
+                            
+      // check all existing search_terms for duplicates
+      var duplicate = hasDuplicate(field, new_search_term);
+      
+      console.log(new_search_term);
+      if (duplicate) {
+        console.log("duplicate");
+      } else {
+        console.log("NOT duplicate");
+        search_terms[field][search_terms[field].count] = new_search_term;
+        search_terms[field].count++;
+      }
+    }
+  });
+  
+  // return new search_terms added to object
+  var added_search_terms = {};
+  for (var index = original_count; index < search_terms[field].count; index++) {
+    added_search_terms[index] = search_terms[field][index];
+  }
+  return added_search_terms;
+}*/
+
+// returns true if new_search_term is valid
+function isValidSearchTerm(search_term) {
+  // selection length is not too long 200+ / short 3-
+  if (search_term.end - search_term.start >= 200 || search_term.end - search_term.start <= 3) {
+    return false;
+  } else if (search_term.start_node_index > search_term.end_node_index) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+// returns true if new_search_term is a duplicate of a search_term in search_terms[field]
+function hasDuplicate(field, new_search_term) {
+  var duplicate = false;
+  $.each(search_terms[field], function(key2, value) {        
+    if (key2 !== "count" &&
+        value.data === new_search_term.data &&
+        value.start === new_search_term.start &&
+        value.end === new_search_term.end &&
+        value.node_index === new_search_term.node_index) {
+      duplicate = true;
+      return false;
+    }
+  });
+  return duplicate;
+}
+
+// returns an array of matches for the parameter field - [ { label: "", value: "" }, { label: "", value: "" } ]
+// format is intended as a jquery ui autocomplete source
 function getMatches(field) {
-  if (seach_terms[field] !== undefined && Object.keys(search_terms[field]).length > 0) {
+  if (search_terms.hasOwnProperty(field) && Object.keys(search_terms[field]).length > 0) {
     var matches = [];
     var keys = Object.keys(search_terms[field]);
     for (var index = 0; index < keys.length; index++) {
-      var text = findMatchText(field, index);
-      matches.push({ "text": text, "index": index });
+      if (keys[index] !== "count") {
+        var text = findMatchText(field, keys[index]);
+        matches.push({ "label": text, "value": keys[index] });
+      }
     }
     return matches;
   } else {
@@ -272,49 +584,34 @@ function getMatches(field) {
   }
 }
 
-// find parent element stored on search_terms
-function findMatchElement(field, index) {
-  var data_field = "data-tworeceipt-" + field + "-search";
-  var field_value = "";
-  if (search_terms.hasOwnProperty(field)) {
-    field_value = search_terms[field][index].data;
-  } else if (search_terms.items.hasOwnProperty(field)) {
-    field_value = search_terms.items[field][index].data;
-  }
-  return $("[" + data_field + "='" + field_value + "']");
+function getMatchElement(field, index) {
+  return $("[data-tworeceipt-" + field + "-search='" + getSearchTermProperty(field, "data", index) + "']");
 }
 
-function getStartIndex(field, index) {
-  var start_index = -1;
-  if (search_terms.hasOwnProperty(field)) {
-    start_index = search_terms[field][index].start;
-  } else if (search_terms.items.hasOwnProperty(field)) {
-    start_index = search_terms.items[field][index].start;
+function getSearchTermProperty(field, property, index) {
+  var result = -1;
+  if (search_terms.hasOwnProperty(field) && search_terms[field].hasOwnProperty(index) && search_terms[field][index].hasOwnProperty(property)) {
+    result = search_terms[field][index][property];
   }
-  return start_index;
-}
-
-function getEndIndex(field, index) {
-  var end_index = -1;
-  if (search_terms.hasOwnProperty(field)) {
-    end_index = search_terms[field][index].end;
-  } else if (search_terms.items.hasOwnProperty(field)) {
-    end_index = search_terms.items[field][index].end;
-  }
-  return end_index;
+  return result;
 }
 
 // find exact matched text stored on search_terms
 function findMatchText(field, index) {
-  var element = findMatchElement(field, index),
-      start_index = getStartIndex(field, index),
-      end_index = getEndIndex(field, index),
+  var element = getMatchElement(field, index),
+      start_index = getSearchTermProperty(field, "start", index),
+      end_index = getSearchTermProperty(field, "end", index),
       text = "";
-
-  text = getDocumentText(element);
-  if (text.length !== 0 && start_index !== -1 && end_index !== -1) {
-    text = text.substring(start_index, end_index);
+  
+  if ($(element).length > 0) {
+    text = getDocumentText(element);
+    if (text.length !== 0 && start_index !== -1 && end_index !== -1) {
+      text = text.substring(start_index, end_index);
+    }
+  } else {
+    console.log("element " + field + " does not exist. match not found");
   }
+  
   return text;
 }
 
@@ -324,6 +621,7 @@ function findMatchText(field, index) {
 function addText(node, params) {
   var text = params.text;
   var trim = params.trim;
+  
   if (trim) {
     if (text === "") {
       text = node.nodeValue.trim();
@@ -333,21 +631,24 @@ function addText(node, params) {
   } else {
     text += node.nodeValue;
   }
-  return { "text": text, "trim": trim };
+  
+  params.text = text;
+  return params;
 }
 
 // replace the instance of match text in each child element to surround it with a <mark> tag
 function highlightMatchText(field, index) {
-  var element = findMatchElement(field, index),
-      start_index = getStartIndex(field, index),
-      end_index = getEndIndex(field, index),
-      params = { "start_index": start_index, "end_index": end_index, "current_index": 0, "result": true };
+  var element = getMatchElement(field, index),
+      start_index = getSearchTermProperty(field, "start", index),
+      end_index = getSearchTermProperty(field, "end", index),
+      start_node_index = getSearchTermProperty(field, "start_node_index", index),
+      params = { "start_index": start_index, "end_index": end_index, "current_index": 0, "node_index": start_node_index, "result": true };
       
   // look for start and end index within element
   if ($(element).length > 0) {
     var children = $(element)[0].childNodes;
-    $.each(children, function(index) {
-      params = iterateText(children[index], highlightText, params);
+    $.each(children, function(index, value) {
+      params = iterateText(value, highlightText, params);
       
       if (params.result === false) {
         return false;
@@ -361,12 +662,15 @@ function highlightMatchText(field, index) {
 /* params:  start_index - the character index where the highlighting should start
 *           end_index - the character index where the highlighting should end before
 *           current_index - placeholder for how many indices have been passed so far
+*           node_index - placeholder for index in text_nodes (only updates on match)
+*           result - set to false to break out of iterateText
 */
 function highlightText(node, params) {
-  var current_index = params.current_index;
-  var text = node.nodeValue.trim();
-  var result = true;
-  var space_buffer = 1;
+  var current_index = params.current_index,
+      text = node.nodeValue.trim(),
+      result = true,
+      space_buffer = 1,
+      node_index = params.node_index;
   
   // track whitespace trimmed, so replaced text node will be identical to existing
   var left_trim_num = node.nodeValue.indexOf(text);
@@ -422,28 +726,45 @@ function highlightText(node, params) {
     
     var temp_node = document.createElement("span");
     temp_node.setAttribute("name", "tworeceipt_highlight");
+    temp_node.setAttribute("data-node-index", node_index);
     temp_node.innerHTML = left_trim + left_text +
                           "<mark>" + mark_text + "</mark>" +
                           right_text + right_trim;
     node.parentNode.insertBefore(temp_node, node);
     node.parentNode.removeChild(node);
+    
+    node_index++;
   }
   
-  return { "start_index": params.start_index, "end_index": params.end_index, "current_index": current_index, "result": result };
+  return {
+          "start_index": params.start_index,
+          "end_index": params.end_index,
+          "current_index": current_index,
+          "node_index": node_index,
+          "result": result
+         };
 }
 
 // returns highlighted text to its original form
 function cleanHighlight() {
   var highlight_span = $("[name='tworeceipt_highlight']");
-  highlight_span.each(function(index) {
-    var node = highlight_span[index];
-    var params = { "text": "", "trim": false };
-    params = iterateText(node, addText, params);
-    var text_node = document.createTextNode(params.text);
-    
-    node.parentNode.insertBefore(text_node, node);
-    node.parentNode.removeChild(node);
-  });
+  if (highlight_span.length > 0) {
+    highlight_span.each(function(index) {
+      var node = highlight_span[index];
+      var element = highlight_span.eq(index);
+      var node_index = element.attr("data-node-index");
+      console.log("data-node-index: " + node_index);
+      var params = { "text": "", "trim": false };
+      params = iterateText(node, addText, params);
+      
+      var text_node = document.createTextNode(params.text);
+      node.parentNode.insertBefore(text_node, node);
+      node.parentNode.removeChild(node);
+
+      // set text_nodes reference to new text node
+      text_nodes[node_index] = text_node;
+    });
+  }
 }
 
 // removes data-tworeceipt-field-search attribute from all elements
@@ -469,16 +790,42 @@ function cleanElementData(field) {
   }
 }
 
-// retrieves the text contents of a optional param element or document body
-function getDocumentText(element) {
-  var selector = element || "body",
-      params = { "text": "", "trim": true };
+// initializes text_nodes and retrieves document text
+function initializeContentSearch() {
+  var selector = "body",
+      params = { "text": "", "trim": true, "text_nodes": [] };
   
   // iterate through all children of body element
   if ($(selector).length > 0) {
     var children = $(selector)[0].childNodes;
-    $.each(children, function(index) {
-      params = iterateText(children[index], addText, params);
+    $.each(children, function(index, value) {
+      params = iterateText(value, initTextNodes, params);
+    });
+    text_nodes = params.text_nodes;
+    console.log(text_nodes);
+  } else {
+    console.log("element does not exist. no text retrieved");
+  }
+  return params.text;
+}
+
+// stores text node in param text_nodes and calls addText
+function initTextNodes(node, params) {
+  params.text_nodes.push(node);
+  params = addText(node, params);
+  return params;
+}
+
+// retrieves the text contents of a optional param element or document body
+function getDocumentText(element) {
+  var selector = element || "body",
+      params = { "text": "", "trim": true, "br": true };
+  
+  // iterate through all children of body element
+  if ($(selector).length > 0) {
+    var children = $(selector)[0].childNodes;
+    $.each(children, function(index, value) {
+      params = iterateText(value, addText, params);
     });
   } else {
     console.log("element does not exist. no text retrieved");
@@ -492,9 +839,9 @@ function iterateText(node, method, method_params) {
     method_params = method(node, method_params);
   }
   // iterateText through children of non-style/script elements
-  else if (node.nodeType === 1 && node.childNodes && !/(style|script)/i.test(node.tagName)) {
-    $.each(node.childNodes, function(i) {
-      method_params = iterateText(node.childNodes[i], method, method_params);
+  else if (node.nodeType === 1 && node.childNodes.length > 0 && !/(style|script)/i.test(node.tagName)) {
+    $.each(node.childNodes, function(index, value) {
+      method_params = iterateText(value, method, method_params);
     });
   }
   return method_params;
@@ -542,8 +889,8 @@ function cleanFieldText(field, index) {
   } else {
     $.each(attributes, function(field) {
       if (field === "items") {
-        $.each(attributes.items, function(item_index) {
-          $.each(attributes.items[item_index], function(item_attribute) {
+        $.each(attributes.items, function(item_index, item_value) {
+          $.each(item_value, function(item_attribute) {
             var data_field = "data-tworeceipt-" + item_attribute + item_index + "-start";
             var element = $("[" + data_field + "]");
             if (element.length > 0 && element[0] !== undefined) {
