@@ -5,9 +5,12 @@
 		<script src="../jquery-2.0.3.min.js"></script>
 		<script src="../js/jquery-ui-1.10.4.min.js"></script>
 		<script src="../js/bootstrap.js"></script>
-		<link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
+    <script src="../ApiComm.js"></script>
+    <script type="text/javascript" charset="utf8" src="../js/DataTables-1.10.0/media/js/jquery.dataTables.js"></script>
 		<link rel="stylesheet" type="text/css" href="css/vault.css">
 		<link rel="stylesheet" href="../css/jquery-ui-1.9.2.custom.min.css">
+    <link rel="stylesheet" type="text/css" href="../js/DataTables-1.10.0/media/css/jquery.dataTables.css">
+		<link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
 	</head>
   <body>
     <ul id="vault-navbar" class="nav nav-tabs">
@@ -38,10 +41,18 @@
         </div>
         <div class="col-md-9">
           <div class="row">
+            <label for="category">Category</label>
+            <select id="category-select" name="category">
+            </select>
+            <label for="profile">Profile</label>
+            <select id="profile-select" name="profile">
+            </select>
+          </div>
+          <div class="row">
             <label for="start-date">Start Date</label>
-            <input id="receipt-start-date" name="start-date" type="text">
+            <input id="start-date" name="start-date" type="text">
             <label for="end-date">End Date</label>
-            <input id="receipt-end-date" name="end-date" type="text">
+            <input id="end-date" name="end-date" type="text">
             <label for="preset-range">Preset</label>
             <select id="vault-date-preset" name="present-range">
               <option value="0">Today</option>
@@ -53,7 +64,20 @@
             </select>
           </div>
           <div class="row">
-            <div class="well well-lg">
+            <div class="well well-sm">
+              <table id="vault-receipts" class="display">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Vendor</th>
+                  <th>Trans. No.</th>
+                  <th>Price</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+              </table>
             </div>
           </div>
         </div>

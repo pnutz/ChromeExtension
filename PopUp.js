@@ -16,6 +16,7 @@ var PopUp =
       fbLogin: $("#fb-login"),
       registration: $("#registration"),
       folders: $("#view-folders"),
+      vault: $("#view-vault"),
       logout: $("#logout"),
       pullPage: $("#pull-page"),
       showNotification: $("#show-notification"),
@@ -27,6 +28,8 @@ var PopUp =
 
   init: function()
   {
+    // Temporarily hard code webapp host
+    localStorage["webAppHost"] = "http://localhost:3000";
     this.controllers = new ControllerUrls(this.configurations.host);
     this.initButtons();
     this.bindButtonEvents();
@@ -101,17 +104,20 @@ var PopUp =
     // save context
     var self = this;
 
+    // facebook login
     this.buttons.fbLogin.on("click", function() 
     {
       chrome.runtime.sendMessage({greeting: "FB_LOGIN_OAUTH"});
     });
     
+    // Registration button
     this.buttons.registration.on("click", function() 
     {
       chrome.tabs.create({url: registrationUrl});
       window.close();
     });
 
+    // Logout button 
     this.buttons.logout.on("click", function() 
     {
       delete localStorage["authToken"];
@@ -126,6 +132,14 @@ var PopUp =
       chrome.tabs.create({url: self.appendCred(self.configurations.host)});
       window.close();
     });
+
+    // Setup vault link click action
+    this.buttons.vault.on("click", function() 
+    { 
+      chrome.tabs.create({url: "vault/vault.html"});
+      window.close();
+    });
+
   
     // HTML getter tool, saves HTML in datadump.txt
     this.buttons.pullPage.on("click", function() 

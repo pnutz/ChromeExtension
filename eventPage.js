@@ -4,6 +4,7 @@ var receipt_ports = { /* tabId: receiptPort */ },
 currentTabId,
 
 aServerHost = "http://localhost:8888";
+var webAppHost = "http://localhost:3000";
 
 var facebookAPI = new FaceBookAPI();
 
@@ -249,7 +250,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     case "FB_LOGIN_OAUTH":
       facebookAPI.StartLoginFlow();
       break;
-		
 		default:
 	}
 });
