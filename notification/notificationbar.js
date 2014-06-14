@@ -93,19 +93,141 @@ var NotiBar =
     $(td).empty().append($anchor); //empty is needed because you are rendering to an existing cell
   },
   
-  init: function() 
+  init: function()
   {
     var self = this;
     this.rows = [];
+    // handsontable source
+    this.source = {};
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker();
     // set autocomplete ui element
     this.initAutoComplete("vendor");
+    this.initAutoComplete("address");
     // set handsontable width to the parent div width
     var tableWidth = $("#receipt-items-container").width() - 100;
     console.log(tableWidth);
     // setup handsontable for receipt items
     this.receiptItemTable = $("#items");
+    
+    // TwoReceipt extension of handsontable AutocompleteEditor
+    var TwoReceiptEditor = Handsontable.editors.AutocompleteEditor.prototype.extend();
+
+    TwoReceiptEditor.prototype.init = function () {
+      Handsontable.editors.AutocompleteEditor.prototype.init.apply(this, arguments);
+    };
+
+    TwoReceiptEditor.prototype.createElements = function(){
+      Handsontable.editors.AutocompleteEditor.prototype.createElements.apply(this, arguments);
+
+      this.$htContainer.addClass('TwoReceiptEditor');
+
+    };
+
+    TwoReceiptEditor.prototype.bindEvents = function(){
+      Handsontable.editors.AutocompleteEditor.prototype.bindEvents.apply(this, arguments);
+      
+      // deselect from TEXTAREA does not work?
+      
+      // AS TEXT CHANGES - the dropdownlist options shown change - if originally none and appear later, highlight does not work
+      // need to rerun open() event
+      
+      // timeout? delay between calls
+      
+      var that = this;
+      // cell textarea change event
+      $(this.TEXTAREA).bind("input propertychange", function() {
+        var newValue = this.value.toString();
+        
+        // retrieve actual row (including deleted)
+        var row;
+        for (var index = 0; index < self.rows.length; index++)
+        {
+          if (self.rows[index] === that.row)
+          {
+            row = index;
+            break;
+          }
+        }
+        
+        var col_name = that.instance.colToProp(that.col);
+        // minimum 3 characters (NAME ONLY)
+        if (newValue.length > 2) {
+          var message = { request: "searchText", "fieldName": col_name, "itemIndex": row, "text": newValue };
+          console.log(message);
+          window.parent.postMessage(message, "*");  
+        }
+        // remove source? (NAME ONLY)
+        else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name))
+        {
+          self.source[row][col_name] = [];
+          
+          // clear autocomplete list
+          self.updateTableSource(col_name, row);
+        }
+      });
+    };
+
+    TwoReceiptEditor.prototype.open = function () {
+      Handsontable.editors.AutocompleteEditor.prototype.open.apply(this, arguments);
+      
+      console.log("open");
+      var row;
+      for (var index = 0; index < self.rows.length; index++)
+      {
+        if (self.rows[index] === this.row)
+        {
+          row = index;
+          break;
+        }
+      }
+      
+      if (row !== undefined && Handsontable.helper.isArray(this.cellProperties.source))
+      {
+        for (var index = 0; index < this.$htContainer.handsontable('countRows'); index++)
+        {
+          // optionIndex is selected option index in visible autocomplete list (choices)
+          (function (that, optionIndex) {
+            $(that.$htContainer.handsontable('getCell', optionIndex, 0)).on('mouseenter', function()
+            { 
+              // iterate through entire autocomplete source, matching with shown choices until optionIndex is found
+              var choiceIndex = 0;
+              for (var sourceIndex = 0; sourceIndex < that.cellProperties.source.length; sourceIndex++)
+              {
+                if (that.cellProperties.source[sourceIndex] === that.choices[choiceIndex])
+                {
+                  // change optionIndex to represent selected option in entire source
+                  if (choiceIndex === optionIndex)
+                  {
+                    optionIndex = sourceIndex;
+                    break;
+                  }
+                  choiceIndex++;
+                }
+              }
+              
+              var message = { request: "highlightSearchText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row, "value": optionIndex };
+              window.parent.postMessage(message, "*");
+            });
+          })(this, index);
+        }
+      }
+    };
+
+    TwoReceiptEditor.prototype.close = function () {
+      Handsontable.editors.AutocompleteEditor.prototype.close.apply(this, arguments);
+      
+      console.log("close");
+      for (var index = 0; index < this.$htContainer.handsontable('countRows'); index++) {
+        (function (that, row) {
+          $(that.$htContainer.handsontable('getCell', row, 0)).off('mouseenter');
+        })(this, index);
+      }
+    };
+
+    //Handsontable.editors.TwoReceiptEditor = TwoReceiptEditor;
+    //Handsontable.editors.registerEditor('tworeceipt', TwoReceiptEditor);
+    
     this.receiptItemTable.handsontable({
       stretchH : 'last', // Setting this to 'all' causes resizing issues
       colWidths : [tableWidth * 0.6 , tableWidth * 0.2, tableWidth * 0.2, 50],
@@ -117,51 +239,60 @@ var NotiBar =
       columnSorting : true,
       startRows: 0,
       afterCreateRow : function (index, data) 
-        {
-          // add a row to the representation
-          self.rows.push(index); 
-        },
+      {
+        // add a row to the representation
+        self.rows.push(index); 
+      },
       afterRemoveRow: function (tableRowIndex, data)
+      {
+        var rowsCount = 0;
+        // Use the table's row index to find the corresponding index
+        // in the table
+        // the position in the array corresponding to the 
+        // tables row index is where we should start subtracting
+        $.each(self.rows, function(index, value) 
         {
-          var rowsCount = 0;
-          // Use the table's row index to find the corresponding index
-          // in the table
-          // the position in the array corresponding to the 
-          // tables row index is where we should start subtracting
-          $.each(self.rows, function(index, value) 
+          if (value === tableRowIndex)
           {
-            if (value === tableRowIndex)
-            {
-              self.rows[index] = null; 
-              rowsCount = index++;
-            }
-          });
-
-          // Decrement each non null element by 1
-          for (; rowsCount < self.rows.length; rowsCount++)
-          {
-            // don't decrement if the element is null
-            // since that means the item was removed
-            if (self.rows[rowsCount] !== null) 
-              self.rows[rowsCount] -= 1; 
+            // index is the rowIndex to send to content script
+            // TODO: SEND MESSAGE TO CONTENT SCRIPT HERE - INDEX
+            // THIS IS UNNECESSARY? send self.rows on receipt submit - can check if the generated indices are null (deleted)
+            self.rows[index] = null;
+            delete source[index];
+            rowsCount = index++;
           }
-        },
+        });
+
+        // Decrement each non null element by 1
+        for (; rowsCount < self.rows.length; rowsCount++)
+        {
+          // don't decrement if the element is null
+          // since that means the item was removed
+          if (self.rows[rowsCount] !== null) 
+            self.rows[rowsCount] -= 1;
+        }
+      },
+      // If we want stuff after the table initializes
       afterInit: function()
       {
-        // If we want stuff ater the table initializes
+        
       },
       columns: [
         {
-          data: 'name'
+          data: 'name',
+          editor: TwoReceiptEditor,
+          strict: false
         },
         {
           data: 'quantity',
-          type : 'numeric',
+          editor: TwoReceiptEditor,
+          //type : 'numeric',
           format : "0.00"
         },
         {
           data: 'price',
-          type : 'numeric',
+          editor: TwoReceiptEditor,
+          //type : 'numeric',
           format : "$0, 0.00"
         },
         {
@@ -179,13 +310,28 @@ var NotiBar =
       window.parent.postMessage(message, "*");
     });
 
-    // on text form propertychange, send form text and fieldName to content script
+    // on text form propertychange, send form text and fieldName to content script for search (not triggered on autocomplete select)
+    // unhighlight and unselect existing text
     // wait ___ time for event to trigger again before sending message?
     $("input").bind("input propertychange", function() {
+      $(this).attr("data-value", null);
+      
+      self.setAutoCompleteOptions(this.id, []);
+      
       if (this.value.length > 2) {
         var message = { request: "searchText", "text": this.value, "fieldName": this.id };
         window.parent.postMessage(message, "*");
       }
+    });
+    
+    // when user focuses on input field, highlight selected text if possible
+    $("input").focus(function() {
+      window.parent.postMessage({ request: "highlightText", "fieldName": this.id }, "*");
+    });
+    
+    // when user leaves input field, clean highlight
+    $("input").blur(function() {
+      window.parent.postMessage({ request: "cleanHighlight" }, "*");
     });
   },
   
@@ -223,10 +369,10 @@ var NotiBar =
   {
     this.receiptItemTable.handsontable('alter', 'remove_row', rowNum);
     window.parent.postMessage({
-                                field : 'items',
-                                action : "delete",
-                                index : rowNum 
-                              });
+                                request: "delete",
+                                field: "items",
+                                index: rowNum 
+                              }, "*");
   },
 
   getReceiptItems: function()
@@ -335,17 +481,19 @@ var NotiBar =
   },
   
   initAutoComplete: function(fieldName)
-  {
-  // does this need the same kinda thing as setAutoCompleteOptions? if (fieldName in this.configurations.formFields)...
+  {    
+    // does this need the same kinda thing as setAutoCompleteOptions? if (fieldName in this.configurations.formFields)...
     $(this.configurations.formFields[fieldName].id).autocomplete(
     {
       minLength: 3,
+      autoFocus: true,
+      source: [""],
       focus: function (event, ui)
       {
         $(this).val(ui.item.label);
         $(this).attr("data-value", ui.item.value)
         // highlight focus
-        var message = { request: "highlightText", "fieldName": this.id, "value": $(this).attr("data-value") };
+        var message = { request: "highlightSearchText", "fieldName": this.id, "value": $(this).attr("data-value") };
         window.parent.postMessage(message, "*");
         
         return false;
@@ -354,27 +502,27 @@ var NotiBar =
       {
         $(this).val(ui.item.label);
         $(this).attr("data-value", ui.item.value);
-        // highlight and set selected
-        var message = { request: "highlightText", "fieldName": this.id, "value": $(this).attr("data-value") };
-        window.parent.postMessage(message, "*");
         
+        // highlight, set selected
         message = { request: "selectText", "fieldName": this.id, "value": $(this).attr("data-value") };
         window.parent.postMessage(message, "*");
         
-        // trigger search again
-        if (this.value.length > 2) {
-          var message = { request: "searchText", "text": this.value, "fieldName": this.id };
-          window.parent.postMessage(message, "*");
-        }
+        // WANT TO OPEN AUTOCOMPLETE AGAIN
+        // $(this).autocomplete("search");
         
         return false;
       }
     })
-    // displays autocomplete list on form focus
-    // TODO: auto-select first item on list?? (forcing selection of a template)
     .focus(function()
     {
-      $(this).autocomplete("search");
+      // displays autocomplete list on form focus
+      if ($(this).autocomplete("option", "source") !== null) {
+        $(this).autocomplete("search");
+      }
+      
+      // unhighlight other form text and highlight text (if it exists)
+      var message = { request: "highlightSearchText", "fieldName": this.id, "value": $(this).attr("data-value") };
+      window.parent.postMessage(message, "*");
     });
   },
   
@@ -385,7 +533,6 @@ var NotiBar =
    */
   setAutoCompleteOptions: function(fieldName, options)
   {
-    // do not include notes field
     if (fieldName in this.configurations.formFields)
     {
       var field = this.configurations.formFields[fieldName];
@@ -395,6 +542,11 @@ var NotiBar =
         case fieldTypes.NUMBER:
         case fieldTypes.TEXT:
           $(field.id).autocomplete("option", { source: options });
+          
+          // displays autocomplete list on form focus
+          if ($(field.id).autocomplete("option", "source") !== null) {
+            $(field.id).autocomplete("search");
+          }
           break;
         case fieldTypes.SELECT:
           break;
@@ -404,6 +556,19 @@ var NotiBar =
     }
     else
       console.error("Could not find field : " + fieldName);
+  },
+  
+  updateTableSource: function(fieldName, itemIndex)
+  {
+    // set autocomplete source
+    var row = this.rows[itemIndex];
+    var col = $("#items").handsontable('propToCol', fieldName);
+    var cellProperties = $("#items").handsontable('getCellMeta', row, col);
+    cellProperties.source = this.source[itemIndex][fieldName];
+    
+    // open TwoReceiptEditor
+    cellProperties.instance.getActiveEditor().close();
+    cellProperties.instance.getActiveEditor().open();
   }
 };
 
@@ -433,7 +598,24 @@ window.addEventListener("message", function(event) {
     // search results
     else if (event.data.response === "searchResults")
     {
-      NotiBar.setAutoCompleteOptions(event.data.fieldName, event.data.results);
+      // regular form
+      if (event.data.itemIndex === undefined)
+      {
+        NotiBar.setAutoCompleteOptions(event.data.fieldName, event.data.results);
+      }
+      // handsontable
+      else
+      {
+        // store search results in source so handsontable can switch between sources for different cells
+        if (!NotiBar.source.hasOwnProperty(event.data.itemIndex))
+        {
+          NotiBar.source[event.data.itemIndex] = {};
+        }
+        NotiBar.source[event.data.itemIndex][event.data.fieldName] = event.data.results;
+        
+        // update table autocomplete source and open TwoReceiptEditor
+        NotiBar.updateTableSource(event.data.fieldName, event.data.itemIndex);
+      }
     }
     else
     {
@@ -444,3 +626,17 @@ window.addEventListener("message", function(event) {
     }
   }
 });
+
+          // auto match first option (not case sensitive)
+          // afterChange event callback
+          // cannot use numeric & autocomplete type at same time? - enforce numeric separately
+          // price/quantity need additional logic for matching - since common it will be under 3 characters
+          // 1st) FINISH NAME - how to differentiate different row name fields
+          
+          // onChange
+          // get row/column for change
+          // send change value to content.js
+          // receive new source in message (along with row/column), set source (and autoselect first in source if source exists)
+          // store key/value source locally - on event user selects/highlights a source match, do same as other autocomplete
+          
+            // afterLoadData() after new data is loaded into data source array

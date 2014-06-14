@@ -4459,7 +4459,6 @@ Handsontable.SelectionPoint.prototype.arr = function (arr) {
     TD.appendChild(ARROW);
     Handsontable.Dom.addClass(TD, 'htAutocomplete');
 
-
     if (!TD.firstChild) { //http://jsperf.com/empty-node-if-needed
       //otherwise empty fields appear borderless in demo/renderers.html (IE)
       TD.appendChild(document.createTextNode('\u00A0')); //\u00A0 equals &nbsp; for a text node
@@ -5451,7 +5450,7 @@ Handsontable.SelectionPoint.prototype.arr = function (arr) {
     this.$htContainer.on('mouseenter', function () {
       that.$htContainer.handsontable('deselectCell');
     });
-
+    
     Handsontable.editors.HandsontableEditor.prototype.bindEvents.apply(this, arguments);
 
   };
@@ -5502,10 +5501,8 @@ Handsontable.SelectionPoint.prototype.arr = function (arr) {
     choicesListHot.addHook('beforeKeyDown', onBeforeKeyDownInner);
 
     this.queryChoices(this.TEXTAREA.value);
-
-
   };
-
+  
   AutocompleteEditor.prototype.close = function () {
 
     this.$htContainer.handsontable('getInstance').removeHook('beforeKeyDown', onBeforeKeyDownInner);

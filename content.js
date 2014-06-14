@@ -14,20 +14,65 @@ $(document).ready(function () {
   console.log(document_text);
   
   // find how many instances of search_term exist in document
-  /*var search_word = "book";
+  /*var search_word = "order number:";
+  console.log("OCCURRENCES 1");
   var count = occurrences(document_text, search_word, true);
   
   if (count > 0) {
     console.log(count + " instances of " + search_word + " found in document");
     
+    console.log("CLEAN HIGHLIGHT");
     cleanHighlight();
+    console.log("SEARCH TEXT");
     searchText(search_word, "vendor", count);
+    console.log("FIND RELEVANT MATCHES");
     findRelevantMatches("vendor");
     
+    var field = "vendor";
+    var index = "0";
+    var element = getMatchElement(field, index),
+        start_index = getSearchTermProperty(field, "start", index),
+        end_index = getSearchTermProperty(field, "end", index),
+        start_node_index = getSearchTermProperty(field, "start_node_index", index);
+        var params = { "text": "", "trim": false };
+        
+    // look for start and end index within element
+    if ($(element).length > 0) {
+      var children = $(element)[0].childNodes;
+      $.each(children, function(index, value) {
+        params = iterateText(value, addText, params);
+      });
+    } else {
+      console.log("element " + field + " does not exist. text not highlighted");
+    }
+    console.log(params);
+    
+    console.log("HIGHLIGHT");
     highlightMatchText("vendor", 0);
   } else {
-    console.log("document search halted: " + count + " instances of " + event.data.text + " found in document");
+    console.log("document search halted: " + count + " instances of " + search_word + " found in document");
+  }
+  cleanHighlight();*/
+  /*search_word = "num";
+  console.log("OCCURRENCES 2");
+  count = occurrences(document_text, search_word, true);
+  
+  if (count > 0) {
+    console.log(count + " instances of " + search_word + " found in document");
+    
+    console.log("CLEAN HIGHLIGHT");
+    cleanHighlight();
+    console.log("SEARCH TEXT");
+    searchText(search_word, "vendor", count);
+    console.log("FIND RELEVANT MATCHES");
+    findRelevantMatches("vendor");
+    
+    console.log("HIGHLIGHT");
+    highlightMatchText("vendor", 0);
+  } else {
+    console.log("document search halted: " + count + " instances of " + search_word + " found in document");
   }*/
+
   
 	// only run function when user prompts to start, so links keep working
 	/*$(document).click(function(event) {
@@ -299,18 +344,18 @@ function createNotification() {
 	style.innerHTML = ".twoReceiptIFrame { width: 100%; }";
 	document.getElementsByTagName("head")[0].appendChild(style);
 	
-  document.getElementsByTagName("body")[0].style.paddingTop = "300px";
+  document.getElementsByTagName("body")[0].style.paddingTop = "500px";
   
 	// append iframe notification within div to body
 	var div = document.createElement("div");
 	div.id = "notificationdiv";
-	div.setAttribute("style", "top: 0px; left: 0px; height: 300px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
+	div.setAttribute("style", "top: 0px; left: 0px; height: 500px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
 	var iframe = document.createElement("iframe");
 	iframe.id = "twoReceiptIFrame";
 	iframe.className = "twoReceiptIFrame";
 	iframe.scrolling = "no";
 	iframe.style.width = "100%";
-	iframe.setAttribute("style", 'height: 300px; border: 0px;');
+	iframe.setAttribute("style", 'height: 500px; border: 0px;');
 	iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
 	div.appendChild(iframe);
 
@@ -426,20 +471,28 @@ window.addEventListener("message", function(event) {
         document.getElementsByTagName("body")[0].style.paddingTop = "0px";
         notdiv.parentNode.removeChild(notdiv);
       }
-      // user requests search, respond with search data
+      // user requests search, respond with search data. unselect and unhighlight text for fieldName
       else if (event.data.request === "searchText" && event.data.fieldName !== undefined && event.data.text !== undefined) {
+      
+        var field = event.data.fieldName;
+        if (event.data.itemIndex !== undefined) {
+          field += event.data.itemIndex;
+        }
+        
+        cleanHighlight();
+        cleanElementData(field);
+        cleanFieldText(event.data.fieldName, event.data.itemIndex);
+        
         var total = occurrences(document_text, event.data.text, true);
+        
         if (total > 0 && total < 5) {
           console.log(total + " instances of " + event.data.text + " found in document");
           
-          cleanHighlight();
-          cleanElementData(event.data.fieldName);
+          searchText(event.data.text, field, total);
+          findRelevantMatches(field);
           
-          searchText(event.data.text, event.data.fieldName, total);
-          findRelevantMatches(event.data.fieldName);
-          
-          var results = getMatches(event.data.fieldName);
-          var message = { "response": "searchResults", "results": results, "fieldName": event.data.fieldName };
+          var results = getMatches(event.data.fieldName, event.data.itemIndex);
+          var message = { "response": "searchResults", "results": results, "fieldName": event.data.fieldName, "itemIndex": event.data.itemIndex };
           console.log(message);
           event.source.postMessage(message, event.origin);
         } else {
@@ -447,22 +500,43 @@ window.addEventListener("message", function(event) {
         }
       }
       // user focused on search, highlight selected area
-      else if (event.data.request === "highlightText" && event.data.fieldName !== undefined && event.data.value !== undefined) {
+      else if (event.data.request === "highlightSearchText" && event.data.fieldName !== undefined) {
         cleanHighlight();
-        highlightMatchText(event.data.fieldName, event.data.value);
+        var field = event.data.fieldName;
+        if (event.data.itemIndex !== undefined) {
+          field += event.data.itemIndex;
+        }
+        highlightMatchText(field, event.data.value);
       }
-      // user selected search, highlight and set field text for selected data
+      // user selected search, highlight, and set field text
       else if (event.data.request === "selectText" && event.data.fieldName !== undefined && event.data.value !== undefined) {
         cleanHighlight();
-        highlightMatchText(event.data.fieldName, event.data.value);
+        cleanFieldText(event.data.fieldName, event.data.itemIndex);
         
-        // field text is assuming receipt items different / not old method
-        //cleanFieldText(event.data.fieldName, event.data.value);
-        //setFieldText(element, start, end, field, index);
+        var field = event.data.fieldName;
+        if (event.data.itemIndex !== undefined) {
+          field += event.data.itemIndex;
+        }
+        
+        var element = getMatchElement(field, event.data.value);
+        var start = getSearchTermProperty(field, "start", event.data.value);
+        var end = getSearchTermProperty(field, "end", event.data.value);
+        var node = getSearchTermProperty(field, "start_node_index", event.data.value);
+        setFieldText(element, start, end, event.data.fieldName, event.data.itemIndex, node);
+                
+        highlightAttributeText(event.data.fieldName, event.data.itemIndex);
+      }
+      // user focuses on notification text field, highlight attribute data if it exists
+      else if (event.data.request === "highlightText" && event.data.fieldName !== undefined && event.data.itemIndex !== undefined) {
+        highlightAttributeText(event.data.fieldName, event.data.itemIndex);
+      }
+      // user lost focus on notification text field, remove all highlighting
+      else if (event.data.request === "cleanHighlight") {
+        cleanHighlight();
       }
       // user deleted a receipt item, mark removed index in generated
-      else if (false) {
-      
+      else if (event.data.request === "delete"/* && event.data.index !== undefined*/) {
+        console.log("ack " + event.data.index + " deleted");
       }
       else
       {
