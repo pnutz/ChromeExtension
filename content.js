@@ -528,6 +528,7 @@ window.addEventListener("message", function(event) {
       }
       // user focuses on notification text field, highlight attribute data if it exists
       else if (event.data.request === "highlightText" && event.data.fieldName !== undefined && event.data.itemIndex !== undefined) {
+        cleanHighlight();
         highlightAttributeText(event.data.fieldName, event.data.itemIndex);
       }
       // user lost focus on notification text field, remove all highlighting

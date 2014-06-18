@@ -99,6 +99,8 @@ var NotiBar =
     this.rows = [];
     // handsontable source
     this.source = {};
+    // handsontable last focused index
+    this.index = -1;
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker();
     // set autocomplete ui element
@@ -121,9 +123,8 @@ var NotiBar =
       Handsontable.editors.AutocompleteEditor.prototype.createElements.apply(this, arguments);
 
       this.$htContainer.addClass('TwoReceiptEditor');
-
     };
-
+    
     TwoReceiptEditor.prototype.bindEvents = function(){
       Handsontable.editors.AutocompleteEditor.prototype.bindEvents.apply(this, arguments);
       
@@ -155,7 +156,7 @@ var NotiBar =
         if (newValue.length > 2) {
           var message = { request: "searchText", "fieldName": col_name, "itemIndex": row, "text": newValue };
           console.log(message);
-          window.parent.postMessage(message, "*");  
+          window.parent.postMessage(message, "*");
         }
         // remove source? (NAME ONLY)
         else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name))
@@ -167,11 +168,70 @@ var NotiBar =
         }
       });
     };
-
+    
+    var onBeforeKeyDownTR;
+    
     TwoReceiptEditor.prototype.open = function () {
       Handsontable.editors.AutocompleteEditor.prototype.open.apply(this, arguments);
-      
       console.log("open");
+      
+      /*onBeforeKeyDownTR = function (event) {
+        var instance = this; //context of listener function is always set to Handsontable.Core instance
+        var editor = this.getActiveEditor();
+        var innerHOT = editor.$htContainer.handsontable('getInstance');
+        
+        // down only occurs from textarea
+        // after first event, starts scrolling page
+        // can self-calculate indices from start, but need to keep track physical mouse pointer mouseenters too
+        
+        // event keycode
+        console.log("KEYCODE:" + event.keyCode);
+        
+        switch (event.keyCode){
+        case Handsontable.helper.keyCode.ARROW_UP:
+          console.log("UP");
+          // mouseenter on cell already
+          if (self.index !== -1)
+          {
+            self.index--;
+            $(innerHOT.getCell(self.index, 0)).trigger("mouseenter");
+          }
+          else 
+          {
+             $(editor.$textarea).trigger("mouseenter");
+          }
+          console.log(self.index);
+          // why does hook only work once?
+          
+          //event.stopImmediatePropagation();         // prevent EditorManager from processing this event
+          event.preventDefault();                   // prevent browser from scrolling the page up
+          break;
+
+        case Handsontable.helper.keyCode.ARROW_DOWN:
+          console.log("DOWN");
+          // mouseenter on cell already
+          if (self.index !== -1)
+          {
+            // check if at end of source
+            self.index++;
+            $(innerHOT.getCell(self.index, 0)).trigger("mouseenter");
+            // not turning grey??
+          }
+          else
+          {
+            self.index = 0;
+            $(innerHOT.getCell(self.index, 0)).trigger("mouseenter");
+          }
+          console.log(self.index);
+          
+          //event.stopImmediatePropagation();         // prevent EditorManager from processing this event
+          event.preventDefault();                   // prevent browser from scrolling the page down
+          break;
+        }
+      };*/
+      
+      //this.instance.addHook('beforeKeyDown', onBeforeKeyDownTR);
+      
       var row;
       for (var index = 0; index < self.rows.length; index++)
       {
@@ -184,12 +244,25 @@ var NotiBar =
       
       if (row !== undefined && Handsontable.helper.isArray(this.cellProperties.source))
       {
+        (function (that) {
+          // mouseenter/mouseleave for main text area
+          $(that.$textarea).on('mouseenter', function()
+          {
+            window.parent.postMessage({ request: "highlightText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row }, "*");
+          })
+          .on('mouseleave', function()
+          {
+            window.parent.postMessage({ request: "cleanHighlight" }, "*");
+          });
+        })(this);
+        
         for (var index = 0; index < this.$htContainer.handsontable('countRows'); index++)
         {
           // optionIndex is selected option index in visible autocomplete list (choices)
           (function (that, optionIndex) {
-            $(that.$htContainer.handsontable('getCell', optionIndex, 0)).on('mouseenter', function()
-            { 
+            $(that.$htContainer.handsontable('getCell', optionIndex, 0))
+            .on('mouseenter', function()
+            {
               // iterate through entire autocomplete source, matching with shown choices until optionIndex is found
               var choiceIndex = 0;
               for (var sourceIndex = 0; sourceIndex < that.cellProperties.source.length; sourceIndex++)
@@ -205,9 +278,15 @@ var NotiBar =
                   choiceIndex++;
                 }
               }
-              
+              console.log(that.$htContainer);
+              self.index = optionIndex;
               var message = { request: "highlightSearchText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row, "value": optionIndex };
               window.parent.postMessage(message, "*");
+            })
+            .on('mouseleave', function()
+            {
+              self.index = -1;
+              window.parent.postMessage({ request: "cleanHighlight" }, "*");
             });
           })(this, index);
         }
@@ -218,9 +297,14 @@ var NotiBar =
       Handsontable.editors.AutocompleteEditor.prototype.close.apply(this, arguments);
       
       console.log("close");
+      
+      //this.instance.removeHook('beforeKeyDown', onBeforeKeyDownTR);
+      
+      $(this.$textarea).off('mouseenter').off('mouseleave');
+      
       for (var index = 0; index < this.$htContainer.handsontable('countRows'); index++) {
         (function (that, row) {
-          $(that.$htContainer.handsontable('getCell', row, 0)).off('mouseenter');
+          $(that.$htContainer.handsontable('getCell', row, 0)).off('mouseenter').off('mouseleave');
         })(this, index);
       }
     };
@@ -258,7 +342,7 @@ var NotiBar =
             // TODO: SEND MESSAGE TO CONTENT SCRIPT HERE - INDEX
             // THIS IS UNNECESSARY? send self.rows on receipt submit - can check if the generated indices are null (deleted)
             self.rows[index] = null;
-            delete source[index];
+            delete self.source[index];
             rowsCount = index++;
           }
         });
@@ -300,7 +384,55 @@ var NotiBar =
           readOnly : true, 
           copyable: false
         }
-      ]
+      ],
+      afterChange: function(arr, op)
+      {
+        // after autocomplete is closed, include duplicate values since text location might be different
+        if (op === "edit" && arr.length === 1 && self.index !== -1)
+        {
+          // retrieve actual row (including deleted)
+          var row;
+          for (var index = 0; index < self.rows.length; index++)
+          {
+            if (self.rows[index] === arr[0][0])
+            {
+              row = index;
+              break;
+            }
+          }
+          
+          // highlight, set selected
+          var message = { request: "selectText", "fieldName": arr[0][1], "itemIndex": row , "value": self.index };
+          window.parent.postMessage(message, "*");
+          
+          self.index = -1;
+        }
+      },
+      afterSelection: function(selectedRow, col)
+      {
+        var row;
+        for (var index = 0; index < self.rows.length; index++)
+        {
+          if (self.rows[index] === selectedRow)
+          {
+            row = index;
+            break;
+          }
+        }
+        
+        if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(this.colToProp(col)))
+        {
+          window.parent.postMessage({ request: "highlightText", "fieldName": this.colToProp(col), "itemIndex": row }, "*");
+        }
+        else
+        {
+          window.parent.postMessage({ request: "cleanHighlight" }, "*");
+        }
+      },
+      afterDeselect: function()
+      {
+        window.parent.postMessage({ request: "cleanHighlight" }, "*");
+      }
     });
     
     // on receipt submit, send dictionary of form data to content script
@@ -481,7 +613,7 @@ var NotiBar =
   },
   
   initAutoComplete: function(fieldName)
-  {    
+  {
     // does this need the same kinda thing as setAutoCompleteOptions? if (fieldName in this.configurations.formFields)...
     $(this.configurations.formFields[fieldName].id).autocomplete(
     {
@@ -504,13 +636,10 @@ var NotiBar =
         $(this).attr("data-value", ui.item.value);
         
         // highlight, set selected
-        message = { request: "selectText", "fieldName": this.id, "value": $(this).attr("data-value") };
+        var message = { request: "selectText", "fieldName": this.id, "value": $(this).attr("data-value") };
         window.parent.postMessage(message, "*");
         
-        // WANT TO OPEN AUTOCOMPLETE AGAIN
-        // $(this).autocomplete("search");
-        
-        return false;
+        event.preventDefault();
       }
     })
     .focus(function()
@@ -523,6 +652,13 @@ var NotiBar =
       // unhighlight other form text and highlight text (if it exists)
       var message = { request: "highlightSearchText", "fieldName": this.id, "value": $(this).attr("data-value") };
       window.parent.postMessage(message, "*");
+    })
+    .click(function()
+    {
+      // if form already focused, will re-open autocomplete on click
+      if ($(this).is(":focus") && $(this).autocomplete("option", "source") !== null) {
+        $(this).autocomplete("search");
+      }
     });
   },
   
