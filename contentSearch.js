@@ -619,6 +619,7 @@ function highlightAttributeText(field, index) {
     
     var element = $("[" + data_field + "-start]");
     if (element.length > 0 && element[0] !== undefined) {
+      console.log("HERE");
       var start_index = element.attr(data_field + "-start");
       var end_index = element.attr(data_field + "-end");
       var start_node_index = element.attr(data_field + "-node");

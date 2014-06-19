@@ -102,10 +102,19 @@ var NotiBar =
     // handsontable last focused index
     this.index = -1;
     // set datepicker ui element
-    $(this.configurations.formFields.date.id).datepicker();
+    $(this.configurations.formFields.date.id).datepicker({
+      showOn: "button",
+      buttonText: '<span class="glyphicon glyphicon-calendar"></span>',
+      constrainInput: false
+    });
     // set autocomplete ui element
     this.initAutoComplete("vendor");
     this.initAutoComplete("address");
+    this.initAutoComplete("date");
+    this.initAutoComplete("transaction");
+    this.initAutoComplete("subtotal");
+    this.initAutoComplete("total");
+    this.initAutoComplete("taxes");
     // set handsontable width to the parent div width
     var tableWidth = $("#receipt-items-container").width() - 100;
     console.log(tableWidth);
@@ -130,42 +139,44 @@ var NotiBar =
       
       // deselect from TEXTAREA does not work?
       
-      // AS TEXT CHANGES - the dropdownlist options shown change - if originally none and appear later, highlight does not work
-      // need to rerun open() event
-      
-      // timeout? delay between calls
-      
       var that = this;
       // cell textarea change event
       $(this.TEXTAREA).bind("input propertychange", function() {
-        var newValue = this.value.toString();
+        console.log("HERE");
+        var temp_this = this;
+        var delay = 150;
         
-        // retrieve actual row (including deleted)
-        var row;
-        for (var index = 0; index < self.rows.length; index++)
-        {
-          if (self.rows[index] === that.row)
+        clearTimeout($(temp_this).data("timer"));
+        $(temp_this).data("timer", setTimeout(function() {
+          $(temp_this).removeData("timer");
+          var newValue = temp_this.value.toString();
+        
+          // retrieve actual row (including deleted)
+          var row;
+          for (var index = 0; index < self.rows.length; index++)
           {
-            row = index;
-            break;
+            if (self.rows[index] === that.row)
+            {
+              row = index;
+              break;
+            }
           }
-        }
-        
-        var col_name = that.instance.colToProp(that.col);
-        // minimum 3 characters (NAME ONLY)
-        if (newValue.length > 2) {
-          var message = { request: "searchText", "fieldName": col_name, "itemIndex": row, "text": newValue };
-          console.log(message);
-          window.parent.postMessage(message, "*");
-        }
-        // remove source? (NAME ONLY)
-        else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name))
-        {
-          self.source[row][col_name] = [];
           
-          // clear autocomplete list
-          self.updateTableSource(col_name, row);
-        }
+          var col_name = that.instance.colToProp(that.col);
+          // minimum 3 characters (NAME ONLY)
+          if (newValue.length > 2) {
+            var message = { request: "searchText", "fieldName": col_name, "itemIndex": row, "text": newValue };
+            window.parent.postMessage(message, "*");
+          }
+          // remove source? (NAME ONLY)
+          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name))
+          {
+            self.source[row][col_name] = [];
+            
+            // clear autocomplete list
+            self.updateTableSource(col_name, row);
+          }
+        }, delay));
       });
     };
     
@@ -365,17 +376,20 @@ var NotiBar =
         {
           data: 'name',
           editor: TwoReceiptEditor,
+          renderer: "autocomplete",
           strict: false
         },
         {
           data: 'quantity',
           editor: TwoReceiptEditor,
+          renderer: "autocomplete",
           //type : 'numeric',
           format : "0.00"
         },
         {
           data: 'price',
           editor: TwoReceiptEditor,
+          renderer: "autocomplete",
           //type : 'numeric',
           format : "$0, 0.00"
         },
@@ -437,33 +451,28 @@ var NotiBar =
     
     // on receipt submit, send dictionary of form data to content script
     $("#receipt-submit").click(function() {
-      var saved_data = {};
+      var saved_data = self.getAllValues();
       var message = { request: "saveReceipt", "saved_data": saved_data };
       window.parent.postMessage(message, "*");
     });
-
+    
     // on text form propertychange, send form text and fieldName to content script for search (not triggered on autocomplete select)
-    // unhighlight and unselect existing text
-    // wait ___ time for event to trigger again before sending message?
     $("input").bind("input propertychange", function() {
-      $(this).attr("data-value", null);
+      var that = this;
+      var delay = 150;
       
-      self.setAutoCompleteOptions(this.id, []);
+      clearTimeout($(that).data("timer"));
+      $(that).data("timer", setTimeout(function() {
+        $(that).removeData("timer");
+        $(that).attr("data-value", null);
       
-      if (this.value.length > 2) {
-        var message = { request: "searchText", "text": this.value, "fieldName": this.id };
-        window.parent.postMessage(message, "*");
-      }
-    });
-    
-    // when user focuses on input field, highlight selected text if possible
-    $("input").focus(function() {
-      window.parent.postMessage({ request: "highlightText", "fieldName": this.id }, "*");
-    });
-    
-    // when user leaves input field, clean highlight
-    $("input").blur(function() {
-      window.parent.postMessage({ request: "cleanHighlight" }, "*");
+        self.setAutoCompleteOptions(that.id, []);
+        
+        if (that.value.length > 2) {
+          var message = { request: "searchText", "text": that.value, "fieldName": that.id };
+          window.parent.postMessage(message, "*");
+        }
+      }, delay));
     });
   },
   
@@ -530,8 +539,9 @@ var NotiBar =
     {
       var field = this.configurations.formFields[fieldName];
       switch(field.type)
-      {   
+      {
         case fieldTypes.NUMBER:
+        case fieldTypes.DATE:
         case fieldTypes.TEXT:
           this.setInputFieldValue(field.id, value);
           break;
@@ -608,58 +618,77 @@ var NotiBar =
       formDict[formItem.attr('name')] = formItem.val();
     });
 
-    formDict[$(this.configurations.formFields.items).attr('name')] = this.getReceiptItems();
+    formDict[$(this.configurations.formFields.items.id).attr('name')] = this.getReceiptItems();
     return formDict;
   },
   
   initAutoComplete: function(fieldName)
   {
-    // does this need the same kinda thing as setAutoCompleteOptions? if (fieldName in this.configurations.formFields)...
-    $(this.configurations.formFields[fieldName].id).autocomplete(
+    if (fieldName in this.configurations.formFields)
     {
-      minLength: 3,
-      autoFocus: true,
-      source: [""],
-      focus: function (event, ui)
-      {
-        $(this).val(ui.item.label);
-        $(this).attr("data-value", ui.item.value)
-        // highlight focus
-        var message = { request: "highlightSearchText", "fieldName": this.id, "value": $(this).attr("data-value") };
-        window.parent.postMessage(message, "*");
-        
-        return false;
-      },
-      select: function (event, ui)
-      {
-        $(this).val(ui.item.label);
-        $(this).attr("data-value", ui.item.value);
-        
-        // highlight, set selected
-        var message = { request: "selectText", "fieldName": this.id, "value": $(this).attr("data-value") };
-        window.parent.postMessage(message, "*");
-        
-        event.preventDefault();
-      }
-    })
-    .focus(function()
-    {
-      // displays autocomplete list on form focus
-      if ($(this).autocomplete("option", "source") !== null) {
-        $(this).autocomplete("search");
-      }
+      var field = this.configurations.formFields[fieldName];
       
-      // unhighlight other form text and highlight text (if it exists)
-      var message = { request: "highlightSearchText", "fieldName": this.id, "value": $(this).attr("data-value") };
-      window.parent.postMessage(message, "*");
-    })
-    .click(function()
-    {
-      // if form already focused, will re-open autocomplete on click
-      if ($(this).is(":focus") && $(this).autocomplete("option", "source") !== null) {
-        $(this).autocomplete("search");
+      switch(field.type)
+      {
+        case fieldTypes.NUMBER:
+        case fieldTypes.DATE:
+        case fieldTypes.TEXT:
+          $(this.configurations.formFields[fieldName].id).autocomplete(
+            {
+              minLength: 3,
+              //autoFocus: true,
+              //delay: 500, // default 300
+              source: [""],
+              focus: function (event, ui)
+              {
+                // highlight focus
+                var message = { request: "highlightSearchText", "fieldName": this.id, "value": ui.item.value };
+                window.parent.postMessage(message, "*");
+                
+                return false;
+              },
+              select: function (event, ui)
+              {
+                $(this).val(ui.item.label);
+                $(this).attr("data-value", ui.item.value);
+                
+                // highlight, set selected
+                var message = { request: "selectText", "fieldName": this.id, "value": $(this).attr("data-value") };
+                window.parent.postMessage(message, "*");
+                
+                event.preventDefault();
+              }
+            })
+            .focus(function()
+            {
+              // displays autocomplete list on form focus
+              if ($(this).autocomplete("option", "source") !== null) {
+                $(this).autocomplete("search");
+              }
+              
+              // unhighlight other form text and highlight text (if it exists)
+              var message = { request: "highlightText", "fieldName": this.id };
+              window.parent.postMessage(message, "*");
+            })
+            .click(function()
+            {
+              // if form already focused, will re-open autocomplete on click
+              if ($(this).is(":focus") && $(this).autocomplete("option", "source") !== null) {
+                $(this).autocomplete("search");
+              }
+            })
+            .blur(function() {
+              window.parent.postMessage({ request: "cleanHighlight" }, "*");
+            });
+          break;
+        case fieldTypes.SELECT:
+          break;
+        default: 
+          console.error("Incorrect type");
       }
-    });
+    }
+    else
+      console.error("Could not find field : " + fieldName);
   },
   
   /**
@@ -676,6 +705,7 @@ var NotiBar =
       switch(field.type)
       {
         case fieldTypes.NUMBER:
+        case fieldTypes.DATE:
         case fieldTypes.TEXT:
           $(field.id).autocomplete("option", { source: options });
           
@@ -762,17 +792,3 @@ window.addEventListener("message", function(event) {
     }
   }
 });
-
-          // auto match first option (not case sensitive)
-          // afterChange event callback
-          // cannot use numeric & autocomplete type at same time? - enforce numeric separately
-          // price/quantity need additional logic for matching - since common it will be under 3 characters
-          // 1st) FINISH NAME - how to differentiate different row name fields
-          
-          // onChange
-          // get row/column for change
-          // send change value to content.js
-          // receive new source in message (along with row/column), set source (and autoselect first in source if source exists)
-          // store key/value source locally - on event user selects/highlights a source match, do same as other autocomplete
-          
-            // afterLoadData() after new data is loaded into data source array
