@@ -1,7 +1,6 @@
 var dummyArray = [];
 var controllers;
 
-
 var Vault = 
 {
   data: 
@@ -24,6 +23,7 @@ var Vault =
   },
   init: function ()
   {
+    var self = this;
     // get the controller urls
     controllers = new ControllerUrls(localStorage["webAppHost"]);
     // initialize the tab navigation bar
@@ -31,6 +31,15 @@ var Vault =
       e.preventDefault();
       $(this).tab('show');
     });
+
+    $('#new-folder-submit').click(function (e) {
+      self.addFolder_();
+      $("#add-folder-modal").modal("hide");
+      self.clearFolders_();
+      self.getFolders_();
+
+    });
+
 
     // If authentication token and email exist then grab receipt data.
     if ("authToken" in localStorage && "userEmail" in localStorage)
@@ -99,21 +108,10 @@ var Vault =
           dataType: 'json'
         }).done(function(data){
           $.each(data, function(index, value) {
-            var newListItem = $("<li></li>");
-            var newFolder = $("<a></a>")
-            newFolder.text(value.name);
-            newFolder.attr("folder_database_id", value.id);
-            newFolder.attr("href", "#vault-receipts-pane");
-            newFolder.attr("data-toggle", "pill");
-            newListItem.append(newFolder);
-            newListItem.insertBefore($("#add-new-folder"));
+            self.addFolderToList_(value.name, value.id);
           });
-          // Add hook for folder change, except the add new folder
-          $("#vault-folders-navbar > li > a").not("#add-new-folder > a").click(function(e){
-            $("#folder-name").text(this.text); 
-            var folder = $(this)
-            self.filterReceiptList_(folder.attr("folder_database_id"));
-          });
+          //Add hooks to all the folders
+          self.addFolderEventCallbacks_();
         }).fail(function (jqXHR, textStatus, errorThrown){
         // log the error to the console
           console.error(
@@ -121,14 +119,27 @@ var Vault =
             errorThrown);
         });
   },
-  addFolder_: function(folderData)
+  addFolderToList_: function(name, database_id)
+  {
+    var newListItem = $("<li></li>");
+    // Add class for later removal when adding new folders
+    newListItem.addClass("requested");
+    var newFolder = $("<a></a>")
+    newFolder.text(name);
+    newFolder.attr("folder_database_id", database_id);
+    newFolder.attr("href", "#vault-receipts-pane");
+    newFolder.attr("data-toggle", "pill");
+    newListItem.append(newFolder);
+    newListItem.insertBefore($("#add-new-folder"));
+  },
+  addFolder_: function()
   {
     var self = this;
     folderData = {};
     folderData["folder"] = 
     {
-      description : "444",
-      name : "addfolderCraeted",
+      description : $("#new-folder-description").val(),
+      name : $("#new-folder-name").val(),
       folder_type_id : 5,
       folder_id : null
     };
@@ -138,7 +149,6 @@ var Vault =
           data: folderData,
           dataType: 'json'
         }).done(function(data){
-          console.log("got data")
         }).fail(function (jqXHR, textStatus, errorThrown){
         // log the error to the console
           console.error(
@@ -146,10 +156,22 @@ var Vault =
             errorThrown);
         });
   },
-
+  clearFolders_: function()
+  {
+    $("#vault-folders-navbar > .requested").remove();
+  },
+  addFolderEventCallbacks_: function()
+  {
+    var self = this;
+    // Add hook for folder change, except the add new folder
+    $("#vault-folders-navbar > li > a").not("#add-new-folder > a").click(function(e){
+      $("#folder-name").text(this.text); 
+      var folder = $(this)
+      self.filterReceiptList_(folder.attr("folder_database_id"));
+    });
+  }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
   Vault.init();
- 
 });

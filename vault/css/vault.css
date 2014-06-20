@@ -17,3 +17,8 @@ a.tabHeader
 {
   width:100%;
 }
+
+.modal-body
+{
+  padding: 10px;
+}

@@ -20,7 +20,33 @@
       <li><a href="#orders" class="tabHeader">Orders</a></li>
       <li><a href="#settings" class="tabHeader">Settings</a></li>
     </ul>
-	</body>
+
+    <div class="modal fade" id="add-folder-modal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">New Folder</h4>
+          </div>
+          <div class="modal-body">
+            <form role="form">
+              <div class="form-group">
+                <label for="folder-name">Name</label>
+                <input id="new-folder-name" name="folder-name" type="text" class="form-control"/>
+              </div>
+              <div class="form-group">
+                <label for="folder-description">Description</label>
+                <input id="new-folder-description" name="folder-description" type="text" class="form-control"/>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="new-folder-submit">Save changes</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
 
   <div class="tab-content">
     <div class="tab-pane active" id="vault">
@@ -28,7 +54,7 @@
         <div class="col-md-2">
           <ul id="vault-folders-navbar" class="nav nav-pills nav-stacked">
             <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">Recent/All</a></li>
-            <li id="add-new-folder"><a href="#">+ New Folder...</a></li>
+            <li id="add-new-folder"><a href="#" data-toggle="modal" data-target="#add-folder-modal">+ New Folder...</a></li>
           </ul>
         </div>
         <div class="tab-content">
@@ -93,4 +119,5 @@
       <p>settings this is</p>
     </div>
   </div>
+	</body>
 </html>
