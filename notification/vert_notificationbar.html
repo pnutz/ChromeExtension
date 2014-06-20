@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 	<head>
+    <script src="tworeceipt-handsontable.js"></script>
 		<script src="notificationbar.js"></script>
 		<script src="../jquery-2.0.3.min.js"></script>
 		<script src="../js/jquery-ui-1.10.4.min.js"></script>
@@ -11,12 +12,12 @@
 		<link rel="stylesheet" href="../css/jquery-ui-1.9.2.custom.min.css">
 	</head>
 	<body id="readytoremove-hor">
-    <div id="receipt-container-upper">
+    <form id="notification-form" method="post">
       <div class="row">
         <div class="form-group" >
           <label for="date" class="col-xs-1 col-md-1">Date</label>
           <div class="col-xs-5 col-md-5" >
-            <input id="date" type="text" name="date" placeholder="Today's Date" class="form-control"> 
+            <input id="date" type="text" name="date" placeholder="Today's Date" class="form-control">
           </div>
         </div>
       </div>
@@ -75,5 +76,6 @@
           <input id="receipt-submit" class="form-control" type="submit" name="receipt-submit">
         </div>
       </div>
+    </form>
 	</body>
 </html>

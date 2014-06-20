@@ -6,7 +6,7 @@
   "version": "1.0",
 	// key is for enabling panels, remove if not using
 	"key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDsDApubb73tPfYlNIFxDu3K3/EHgV6/YOJXJkld1OZ20jW/cOht1j0NggnXhQYuu1mXFUufud4I2N7b5ydyg09gcM9Va3Zk17RhNV9smbPHOd4XlzJeXifX/9MgHPu4FzCen3CiSXsOeAELJIXEuT28xICriuUko/rNPwGeIB9VwIDAQAB",
-	
+
   "browser_action": {
     "default_icon": "icon.png",
     "default_popup": "popup.html"
@@ -26,7 +26,8 @@
 	"web_accessible_resources": [
 		"/notification/*",
 		"css/bootstrap.min.css",
-		"jquery-2.0.3.min.js"
+		"jquery-2.0.3.min.js",
+    "jquery.validate.min.js"
 	],
 	// for when sending messages from web application to chrome extension
 	//"externally_connectable": {

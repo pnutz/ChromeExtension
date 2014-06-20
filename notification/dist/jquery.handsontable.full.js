@@ -5561,7 +5561,8 @@ Handsontable.SelectionPoint.prototype.arr = function (arr) {
       this.highlightBestMatchingChoice();
     }
 
-    this.focus();
+    // TwoReceipt Edit - Commented out because it causes typing cursor to move to the end of text field after every key
+    //this.focus();
   };
 
   AutocompleteEditor.prototype.highlightBestMatchingChoice = function () {
