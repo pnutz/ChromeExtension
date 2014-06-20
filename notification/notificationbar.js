@@ -92,9 +92,14 @@ var NotiBar =
     // on receipt submit, send dictionary of form data to content script
     $("#receipt-submit").click(function()
     {
-      var saved_data = self.getAllValues();
-      var message = { request: "saveReceipt", "saved_data": saved_data };
-      window.parent.postMessage(message, "*");
+      var valid = $("#notification-form").valid();
+
+      if (valid)
+      {
+        var saved_data = self.getAllValues();
+        var message = { request: "saveReceipt", "saved_data": saved_data };
+        window.parent.postMessage(message, "*");
+      }
     });
 
     // on text form propertychange, send form text and fieldName to content script for search (not triggered on autocomplete select)
@@ -119,22 +124,26 @@ var NotiBar =
 
   initValidation: function()
   {
+    jQuery.validator.addMethod("isDate", function(value, element)
+    {
+      return !isNaN(new Date(value).getTime());
+    }, "Invalid date.");
+
     $("#notification-form").validate({
       rules: {
         vendor: "required",
-        date: "required",
+        date: { required: true, isDate: true },
         total: "required",
         taxes: "required"
       },
 
       highlight: function(element, errorClass, validClass)
       {
-        $(element).parents(".control-group").addClass("error");
+        $(element).closest(".form-group").removeClass("has-success").addClass("has-error");
       },
       unhighlight: function(element, errorClass, validClass)
       {
-        $(element).parents('.control-group').removeClass('error');
-        $(element).parents('.control-group').addClass('success');
+        $(element).closest(".form-group").removeClass("has-error").addClass("has-success");
       }
     });
   },

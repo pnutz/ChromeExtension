@@ -27,7 +27,8 @@
 		"/notification/*",
 		"css/bootstrap.min.css",
 		"jquery-2.0.3.min.js",
-    "jquery.validate.min.js"
+    "/js/jquery-ui-1.10.4.min.js",
+    "/js/jquery.validate.min.js"
 	],
 	// for when sending messages from web application to chrome extension
 	//"externally_connectable": {
