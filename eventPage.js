@@ -3,10 +3,10 @@ var receipt_ports = { /* tabId: receiptPort */ },
 // track last non chrome- url tab
 currentTabId,
 
-aServerHost = "http://localhost:8888";
-var webAppHost = "http://localhost:3000";
+aServerHost = "http://localhost:8888",
+webAppHost = "http://localhost:3000",
 
-var facebookAPI = new FaceBookAPI();
+facebookAPI = new FaceBookAPI();
 
 // this needs modification based on final receipt popup values
 function sendAttributeTemplate(html, url, domain, generated, attributes, saved_data) {
@@ -129,7 +129,7 @@ function receiptSetup() {
 	console.log("Connected to port " + receipt_ports[currentTabId].name + " for tab: " + currentTabId);
 	
   // prompt content.js for data if new receipt popup
-  receipt_ports[currentTabId].postMessage({"request": "initializeData"});
+  receipt_ports[currentTabId].postMessage({"request": "initializeReceipt"});
 	
 	receipt_ports[currentTabId].onMessage.addListener(function(msg) {
     if (msg.request) {
@@ -142,7 +142,7 @@ function receiptSetup() {
       //sendDomain(currentTabId, msg.html, msg.url, msg.domain);
     } else if (msg.request === "saveReceipt") {
       console.log(msg);
-      sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
+      //sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
       closeReceipt();
     } else if (msg.request === "closeReceipt") {
       closeReceipt();

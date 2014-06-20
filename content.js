@@ -381,17 +381,12 @@ chrome.runtime.onConnect.addListener(function(port) {
       message_domain = document.domain;
     }
     
-    // test content script with aServer, falsified attributes
-    attributes = { "vendor": true };
-    // saved_data falsified
-    sendReceipt({ "vendor": "Amazon" });
-    
     port.onMessage.addListener(function(msg) {
       console.log("Received msg: " + msg.request + " for port: " + port.name);
       // receive receipt notification-related messages
       if (port.name === "receiptPort") {
         // send basic page data so aServer can generate data
-        if (msg.request === "initializeData") {
+        if (msg.request === "initializeReceipt") {
           var msg_data = {
             response: msg.request,
             html: document.body.outerHTML,
@@ -399,6 +394,8 @@ chrome.runtime.onConnect.addListener(function(port) {
             domain: message_domain
           };
           incomingPort.postMessage(msg_data);
+          
+          createNotification();
         }
         // receive generated data
         else if (msg.request === "generatedData") {
@@ -527,7 +524,8 @@ window.addEventListener("message", function(event) {
         highlightAttributeText(event.data.fieldName, event.data.itemIndex);
       }
       // user focuses on notification text field, highlight attribute data if it exists
-      else if (event.data.request === "highlightText" && event.data.fieldName !== undefined && event.data.itemIndex !== undefined) {
+      else if (event.data.request === "highlightText" && event.data.fieldName !== undefined) {
+        cleanHighlight();
         highlightAttributeText(event.data.fieldName, event.data.itemIndex);
       }
       // user lost focus on notification text field, remove all highlighting
@@ -537,6 +535,10 @@ window.addEventListener("message", function(event) {
       // user deleted a receipt item, mark removed index in generated
       else if (event.data.request === "delete"/* && event.data.index !== undefined*/) {
         console.log("ack " + event.data.index + " deleted");
+      }
+      // user submitted receipt
+      else if (event.data.request === "saveReceipt" && event.data.saved_data !== undefined) {
+        sendReceipt(event.data.saved_data);
       }
       else
       {
