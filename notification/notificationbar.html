@@ -14,82 +14,84 @@
 	</head>
 	<body id="readytoremove">
     <form id="notification-form" method="post">
-      <div id="receipt-div-left" class="col-md-8">
-        <div class="row">
-            <div class="form-group col-xs-4 col-md-4" >
-              <label for="vendor" >Vendor</label>
-              <input id="vendor" class="form-control" type="text" name="vendor" placeholder="Vendor">
-            </div>
-            <div class="form-group col-xs-4 col-md-4" >
-              <label for="date">Receipt Date</label>
-              <input id="date" type="text" name="date" placeholder="Today's Date" class="form-control">
-            </div>
-            <div class="form-group col-xs-2 col-md-2" >
-              <label for="profile" >Profile</label>
-              <div >
-                <select id="profile" type="text" name="profile" class="form-control" >
-                  <option>Profile 1</option>
-                  <option>Profile 2</option>
-                  <option>Profile 3</option>
-                  <option>Profile 4</option>
-                  <option>Profile 5</option>
-                </select>
+      <div id="receipt-container-upper" class="row">
+        <div id="receipt-div-left" class="col-md-8">
+          <div class="row">
+              <div class="form-group col-xs-4 col-md-4" >
+                <label for="vendor" >Vendor</label>
+                <input id="vendor" class="form-control" type="text" name="vendor" placeholder="Vendor">
               </div>
-            </div>
-            <div class="form-group col-xs-2 col-md-2" >
-              <label for="category">Category</label>
-              <div>
-                <select id="category" type="text" name="category" class="form-control">
-                  <option>Category 1</option>
-                  <option>Category 2</option>
-                  <option>Category 3</option>
-                  <option>Category 4</option>
-                  <option>Category 5</option>
-                </select>
+              <div class="form-group col-xs-4 col-md-4" >
+                <label for="date">Receipt Date</label>
+                <input id="date" type="text" name="date" placeholder="Today's Date" class="form-control">
               </div>
+              <div class="form-group col-xs-2 col-md-2" >
+                <label for="profile" >Profile</label>
+                <div >
+                  <select id="profile" type="text" name="profile" class="form-control" >
+                    <option>Profile 1</option>
+                    <option>Profile 2</option>
+                    <option>Profile 3</option>
+                    <option>Profile 4</option>
+                    <option>Profile 5</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group col-xs-2 col-md-2" >
+                <label for="category">Category</label>
+                <div>
+                  <select id="category" type="text" name="category" class="form-control">
+                    <option>Category 1</option>
+                    <option>Category 2</option>
+                    <option>Category 3</option>
+                    <option>Category 4</option>
+                    <option>Category 5</option>
+                  </select>
+                </div>
+              </div>
+         </div>
+          <div class="row">
+            <div class="form-group col-xs-7 col-md-7">
+              <label for="address">Address</label>
+              <input id="address" type="text" class="form-control" name="address" placeholder="Vendor Address">
             </div>
-       </div>
-        <div class="row">
-          <div class="form-group col-xs-7 col-md-7">
-            <label for="address">Address</label>
-            <input id="address" type="text" class="form-control" name="address" placeholder="Vendor Address">
+            <div class="form-group col-xs-5 col-md-5">
+              <label for="transaction">Invoice</label>
+              <input id="transaction" type="text" class="form-control" name="transaction" placeholder="Invoice #">
+            </div>
           </div>
-          <div class="form-group col-xs-5 col-md-5">
-            <label for="transaction">Invoice</label>
-            <input id="transaction" type="text" class="form-control" name="transaction" placeholder="Invoice #">
+
+          <div class="row">
+            <div class="form-group col-xs-12 col-md-12">
+              <label for="receipt-items-container" >Receipt Items</label>
+              <div id="receipt-items-container" >
+                <div id="items" name="items"></div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div class="row">
+        <div id="receipt-div-mid" class="col-md-2">
           <div class="form-group col-xs-12 col-md-12">
-            <label for="receipt-items-container" >Receipt Items</label>
-            <div id="receipt-items-container" >
-              <div id="items" name="items"></div>
-            </div>
+          <label for="taxes">Taxes</label>
+          <input id="taxes" type="text" class="form-control" name="taxes">
           </div>
-        </div>
-      </div>
-      <div id="receipt-div-mid" class="col-md-2">
-        <div class="form-group col-xs-12 col-md-12">
-        <label for="taxes">Taxes</label>
-        <input id="taxes" type="text" class="form-control" name="taxes">
-        </div>
-        <div class="form-group col-xs-12 col-md-12">
-          <label for="subtotal">SubTotal</label>
-          <input id="subtotal" type="text" class="form-control" name="subtotal">
-        </div>
-        <div class="form-group col-xs-12 col-md-12">
-          <label for="total">Total</label>
-          <input id="total" type="text" class="form-control" name="total">
-        </div>
-        <input id="receipt-submit" class="form-control" type="submit" name="submit">
+          <div class="form-group col-xs-12 col-md-12">
+            <label for="subtotal">SubTotal</label>
+            <input id="subtotal" type="text" class="form-control" name="subtotal">
+          </div>
+          <div class="form-group col-xs-12 col-md-12">
+            <label for="total">Total</label>
+            <input id="total" type="text" class="form-control" name="total">
+          </div>
+          <input id="receipt-submit" class="form-control" type="submit" name="submit">
 
-      </div>
-      <div id="receipt-div-right" class="col-md-2">
-        <div class="row">
-          <div class="form-group col-xs-11 col-md-11">
-            <label for="notes">Notes</label>
-            <textarea id="notes" name="note" class="form-control"></textarea>
+        </div>
+        <div id="receipt-div-right" class="col-md-2">
+          <div class="row">
+            <div class="form-group col-xs-11 col-md-11">
+              <label for="notes">Notes</label>
+              <textarea id="notes" name="note" class="form-control"></textarea>
+            </div>
           </div>
         </div>
       </div>
