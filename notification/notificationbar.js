@@ -3,7 +3,8 @@ var fieldTypes  =
   NUMBER : 1,
   TEXT : 2,
   DATE : 3,
-  SELECT : 4
+  SELECT : 4,
+  TABLE : 5
 
 };
 var NotiBar =
@@ -26,11 +27,11 @@ var NotiBar =
                         id : "#vendor",
                         type : fieldTypes.TEXT
                       },
-                    "address" :
+                    /*"address" :
                       {
                         id : "#address",
                         type : fieldTypes.TEXT
-                      },
+                      },*/
                     "transaction" :
                       {
                         id : "#transaction",
@@ -41,9 +42,9 @@ var NotiBar =
                         id : "#taxes",
                         type : fieldTypes.NUMBER
                       },
-                    "notes" :
+                    "note" :
                       {
-                        id : "#notes",
+                        id : "#note",
                         type : fieldTypes.TEXT
                       },
                     "items" :
@@ -80,7 +81,7 @@ var NotiBar =
     });
     // set autocomplete ui element
     this.initAutoComplete("vendor");
-    this.initAutoComplete("address");
+    //this.initAutoComplete("address");
     this.initAutoComplete("date");
     this.initAutoComplete("transaction");
     this.initAutoComplete("subtotal");
@@ -89,15 +90,19 @@ var NotiBar =
 
     this.initValidation();
 
-    // on receipt submit, send dictionary of form data to content script
+    // on receipt submit, validate data and send dictionary of form data to content script
     $("#receipt-submit").click(function()
     {
-      var valid = $("#notification-form").valid();
+      var notiBarValid = $("#notification-form").valid();
+      var handsOnTableValid = TwoReceiptHandsOnTable.isValid();
 
-      if (valid)
+      console.log("submit");
+
+      if (notiBarValid && handsOnTableValid)
       {
-        var saved_data = self.getAllValues();
-        var message = { request: "saveReceipt", "saved_data": saved_data };
+        var savedData = self.getAllValues();
+        var rows = TwoReceiptHandsOnTable.getRows();
+        var message = { request: "saveReceipt", "saved_data": savedData, "rows": rows };
         window.parent.postMessage(message, "*");
       }
     });
@@ -129,12 +134,35 @@ var NotiBar =
       return !isNaN(new Date(value).getTime());
     }, "Invalid date.");
 
+    jQuery.validator.addMethod("isMoney", function(value, element)
+    {
+      if (value.length === 0)
+      {
+        return true;
+      }
+      else
+      {
+        if (value.charAt(0) === ".")
+        {
+          value = "0" + value;
+        }
+
+        if (value.charAt(value.length - 1) === ".")
+        {
+          value += "0";
+        }
+
+        return Handsontable.helper.isNumeric(value);
+      }
+    }, "Invalid monetary value.");
+
     $("#notification-form").validate({
       rules: {
         vendor: "required",
         date: { required: true, isDate: true },
-        total: "required",
-        taxes: "required"
+        total: { required: true, isMoney: true },
+        subtotal: { isMoney: true },
+        taxes: { isMoney: true }
       },
 
       highlight: function(element, errorClass, validClass)
@@ -234,6 +262,7 @@ var NotiBar =
     });
 
     formDict[$(this.configurations.formFields.items.id).attr('name')] = TwoReceiptHandsOnTable.getReceiptItems();
+    console.log(formDict);
     return formDict;
   },
 
@@ -317,9 +346,14 @@ var NotiBar =
             })
             .focus(function()
             {
+              console.log("focus");
+              var $this = $(this);
               // displays autocomplete list on form focus
-              if ($(this).autocomplete("option", "source") !== null) {
-                $(this).autocomplete("search");
+              if ($this.autocomplete("option", "source") !== null) {
+                setTimeout(function()
+                {
+                  $this.autocomplete("search");
+                }, 140);
               }
 
               // unhighlight other form text and highlight text (if it exists)
@@ -329,8 +363,13 @@ var NotiBar =
             .click(function()
             {
               // if form already focused, will re-open autocomplete on click
-              if ($(this).is(":focus") && $(this).autocomplete("option", "source") !== null) {
-                $(this).autocomplete("search");
+              var $this = $(this);
+              if ($this.is(":focus") && $this.autocomplete("option", "source") !== null) {
+                console.log("click");
+                setTimeout(function()
+                {
+                  $this.autocomplete("search");
+                }, 140);
               }
             })
             .blur(function() {

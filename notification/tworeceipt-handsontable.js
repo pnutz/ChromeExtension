@@ -9,6 +9,7 @@ var TwoReceiptHandsOnTable =
   init: function()
   {
     var self = this;
+    this.valid = true;
     this.rows = [];
     // handsontable source
     this.source = {};
@@ -73,23 +74,26 @@ var TwoReceiptHandsOnTable =
       },
       columns: [
         {
-          data: 'name',
+          data: 'itemtype',
           editor: TwoReceiptEditor,
           renderer: "autocomplete",
+          validator: this.twoReceiptValidator,
           strict: false
         },
         {
           data: 'quantity',
           editor: TwoReceiptEditor,
           renderer: "numeric",
-          validator: Handsontable.NumericValidator,
+          validator: this.twoReceiptNumericValidator,
+          //allowInvalid: false,
           format : "0.00"
         },
         {
-          data: 'price',
+          data: 'cost',
           editor: TwoReceiptEditor,
           renderer: "numeric",
-          validator: Handsontable.NumericValidator,
+          validator: this.twoReceiptNumericValidator,
+          //allowInvalid: false,
           format : "$0, 0.00"
         },
         {
@@ -145,6 +149,10 @@ var TwoReceiptHandsOnTable =
       afterDeselect: function()
       {
         window.parent.postMessage({ request: "cleanHighlight" }, "*");
+      },
+      afterValidate: function(isValid, value, row, prop, source)
+      {
+        self.valid = isValid;
       }
     });
   },
@@ -169,6 +177,24 @@ var TwoReceiptHandsOnTable =
     // Add class to center the icon
     $(td).addClass("deleteTd");
     $(td).empty().append($anchor); //empty is needed because you are rendering to an existing cell
+  },
+
+  twoReceiptValidator: function (value, callback)
+  {
+    if (value === null)
+    {
+      value = '';
+    }
+    callback(value.length !== 0);
+  },
+
+  twoReceiptNumericValidator: function (value, callback)
+  {
+    if (value === null)
+    {
+      value = '';
+    }
+    callback(/^-?\d*\.?\d*$/.test(value) && value.length !== 0);
   },
 
   // returns TwoReceipt extension of handsontable AutocompleteEditor
@@ -405,11 +431,6 @@ var TwoReceiptHandsOnTable =
   deleteItemRow: function(rowNum)
   {
     this.receiptItemTable.handsontable('alter', 'remove_row', rowNum);
-    window.parent.postMessage({
-                                request: "delete",
-                                field: "items",
-                                index: rowNum
-                              }, "*");
   },
 
   getReceiptItems: function()
@@ -440,5 +461,16 @@ var TwoReceiptHandsOnTable =
     // open TwoReceiptEditor
     cellProperties.instance.getActiveEditor().close();
     cellProperties.instance.getActiveEditor().open();
+  },
+
+  isValid: function()
+  {
+    console.log("handsontable valid: " + this.valid);
+    return this.valid;
+  },
+
+  getRows: function()
+  {
+    return self.rows;
   }
 };

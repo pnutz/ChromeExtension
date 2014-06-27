@@ -13,7 +13,7 @@
 		<link rel="stylesheet" href="../css/jquery-ui-1.9.2.custom.min.css">
 	</head>
 	<body id="readytoremove-hor">
-    <form id="notification-form" method="post">
+    <form id="notification-form">
       <div class="row">
         <div class="form-group" >
           <label for="date" class="col-xs-1 col-md-1">Date</label>
@@ -26,8 +26,8 @@
         <div class="form-group col-xs-8 col-md-8">
             <label for="vendor">Vendor</label>
             <input id="vendor" class="form-control" type="text" name="vendor" placeholder="Vendor">
-            <label for="address">Address</label>
-            <input id="address" type="text" class="form-control" name="address" placeholder="Vendor Address">
+            <!--<label for="address">Address</label>
+            <input id="address" type="text" class="form-control" name="address" placeholder="Vendor Address">-->
             <label for="transaction">Invoice</label>
             <input id="transaction" type="text" class="form-control" name="transaction" placeholder="Invoice #">
         </div>
@@ -64,8 +64,8 @@
       </div>
       <div class="row">
         <div class="form-group col-xs-6 col-md-6">
-          <label for="notes">Notes</label>
-          <textarea id="notes" class="form-control"></textarea>
+          <label for="note">Notes</label>
+          <textarea id="note" class="form-control" name="note"></textarea>
         </div>
         <div class="form-group col-xs-6 col-md-6">
           <label for="taxes">Taxes</label>
@@ -74,7 +74,7 @@
           <input id="subtotal" type="text" class="form-control" name="subtotal">
           <label for="total" >Total</label>
           <input id="total" type="text" class="form-control" name="total">
-          <input id="receipt-submit" class="form-control" type="submit" name="receipt-submit">
+          <input id="receipt-submit" class="form-control" type="button" name="submit" value="Submit">
         </div>
       </div>
     </form>

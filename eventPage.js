@@ -4,13 +4,12 @@ var receipt_ports = { /* tabId: receiptPort */ },
 currentTabId,
 
 aServerHost = "http://localhost:8888",
-webAppHost = "http://localhost:3000",
 
 facebookAPI = new FaceBookAPI();
 
 // this needs modification based on final receipt popup values
 function sendAttributeTemplate(html, url, domain, generated, attributes, saved_data) {
-  // formatting saved_data to match aServer defaults 
+  // formatting saved_data to match aServer defaults
   /*saved_data.vendor = saved_data.vendor_name;
   saved_data.transaction = saved_data.transaction_number;
   saved_data.items = saved_data.receipt_items_attributes;
@@ -20,13 +19,13 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, saved_d
   delete saved_data.note;
   delete saved_data.title;
   delete saved_data.purchase_type_id;
-  
+
   var keys = Object.keys(saved_data.items);
   keys.forEach(function(key) {
     saved_data.items[key].name = saved_data.items[key].itemtype;
     delete saved_data.items[key].itemtype;
   });*/
-    
+
 	var host = aServerHost + "/template";
 	var message = {
 		token: localStorage["authToken"],
@@ -42,7 +41,7 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, saved_d
   message.attributes = JSON.stringify(attributes);
   message.generated = JSON.stringify(generated);
   message.saved_data = JSON.stringify(saved_data);
-  
+
 	request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
@@ -53,7 +52,7 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, saved_d
 
 // on start of receipt, send domain to aServer and receive generated values
 function sendDomain(tabId, html, url, domain) {
-  
+
 	var host = aServerHost + "/load";
 	var message = {
 		token: localStorage["authToken"],
@@ -63,7 +62,7 @@ function sendDomain(tabId, html, url, domain) {
 		url: url,
 		domain: domain
 	};
-  
+
 	request = $.post(host, message, function (data, status) {
     var json_data = "[" + data + "]";
     var response = $.parseJSON(json_data);
@@ -104,7 +103,7 @@ function sendDomain(tabId, html, url, domain) {
     console.log("Deleted Generated Receipt Item " + item_id);
     console.log(generated);
   }
-  
+
   // remove any new templates for deleted receipt item
   if (attributes.items != null && attributes.items.hasOwnProperty(item_id)) {
     delete attributes.items[item_id];
@@ -127,10 +126,10 @@ function receiptSetup() {
 	receipt_ports[currentTabId] = chrome.tabs.connect(currentTabId, {name: "receiptPort"});
   console.log(receipt_ports);
 	console.log("Connected to port " + receipt_ports[currentTabId].name + " for tab: " + currentTabId);
-	
+
   // prompt content.js for data if new receipt popup
   receipt_ports[currentTabId].postMessage({"request": "initializeReceipt"});
-	
+
 	receipt_ports[currentTabId].onMessage.addListener(function(msg) {
     if (msg.request) {
       console.log("Received message: " + msg.request + " for port: " + receipt_ports[currentTabId].name);
@@ -142,12 +141,51 @@ function receiptSetup() {
       //sendDomain(currentTabId, msg.html, msg.url, msg.domain);
     } else if (msg.request === "saveReceipt") {
       console.log(msg);
-      //sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
+      postReceiptToWebApp(msg.saved_data);
+      sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
       closeReceipt();
     } else if (msg.request === "closeReceipt") {
       closeReceipt();
     }
 	});
+}
+
+function postReceiptToWebApp(saved_data) {
+  var form_data = { receipt: saved_data };
+
+  form_data.receipt["receipt_items_attributes"] = form_data.receipt.items;
+  delete form_data.receipt.items;
+
+  // + in front of Date() makes it a number (timestamp divided by 1000)
+  form_data.receipt["numeric_date"] = +new Date(form_data.receipt["date"])/1000;
+  delete form_data.receipt["date"];
+
+  form_data.receipt["vendor_name"] = form_data.receipt["vendor"];
+  delete form_data.receipt["vendor"];
+
+  form_data.receipt["transaction_number"] = form_data.receipt["transaction"];
+  delete form_data.receipt["transaction"];
+
+  form_data.receipt["title"] = "";
+  form_data.receipt["currency_id"] = 1;
+  //form_data.receipt["purchase_type_id"] = 1;
+  // optional folder_id
+
+  console.log(form_data);
+
+  var receiptRequest = $.ajax({
+    url: localStorage["receiptPost"],
+    type: 'POST',
+    data : form_data,
+    dataType: 'json'
+  }).done(function(data){
+    alert("submitted");
+  }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+    console.error(
+      "The following error occurred: " + textStatus,
+      errorThrown);
+  });
 }
 
 function checkUrl(tab_id) {
@@ -182,13 +220,13 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
 
 	// tab created or refreshed (changeInfo.url only set if different from previous state - in loading status)
 	if (changeInfo.status === "complete" && changeInfo.url === undefined)
-	{	
+	{
     // if tabId contains receipt notification, disconnect port and remove key/value
     if (receipt_ports[tabId] !== undefined) {
       receipt_ports[tabId].disconnect();
       delete receipt_ports[tabId];
     }
-    
+
     // whenever page updates, check url with aServer for receipt page
     checkUrl(tabId);
   }
@@ -206,7 +244,7 @@ chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 
 function closeReceipt() {
   console.log("Receipt notification closed - Disconnected from receipt_port");
-  
+
   if (receipt_ports[currentTabId] !== undefined) {
     receipt_ports[currentTabId].disconnect();
     delete receipt_ports[currentTabId];
@@ -231,13 +269,13 @@ pull-...:
 	action: send content.js the requested pull state
 */
 
-// TODO: In the future we need to encapsulate this into it's own class. 
+// TODO: In the future we need to encapsulate this into it's own class.
 //       We should be able to "register" each of these cases in the switch
 //       statement and provide a callback.
 //       P.S probably better to utilize actual event pages as well.
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	console.log("onMessage:", request);
-	
+
 	switch (request.greeting)
 	{
 		// user tried to add receipt from popup
@@ -245,7 +283,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       // sets up message passing between eventPage and content script
       receiptSetup();
 			break;
-      
+
     // Facebook login flow
     case "FB_LOGIN_OAUTH":
       facebookAPI.StartLoginFlow();

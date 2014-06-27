@@ -5450,7 +5450,7 @@ Handsontable.SelectionPoint.prototype.arr = function (arr) {
     this.$htContainer.on('mouseenter', function () {
       that.$htContainer.handsontable('deselectCell');
     });
-    
+
     Handsontable.editors.HandsontableEditor.prototype.bindEvents.apply(this, arguments);
 
   };
@@ -5502,7 +5502,7 @@ Handsontable.SelectionPoint.prototype.arr = function (arr) {
 
     this.queryChoices(this.TEXTAREA.value);
   };
-  
+
   AutocompleteEditor.prototype.close = function () {
 
     this.$htContainer.handsontable('getInstance').removeHook('beforeKeyDown', onBeforeKeyDownInner);
@@ -13459,7 +13459,7 @@ Dragdealer.prototype =
 		this.wrapper = wrapper;
 		this.handle = handle;
 		this.options = options;
-		
+
 		this.disabled = this.getOption('disabled', false);
 		this.horizontal = this.getOption('horizontal', true);
 		this.vertical = this.getOption('vertical', false);
@@ -13470,10 +13470,10 @@ Dragdealer.prototype =
 		this.speed = this.getOption('speed', 10) / 100;
 		this.xPrecision = this.getOption('xPrecision', 0);
 		this.yPrecision = this.getOption('yPrecision', 0);
-		
+
 		this.callback = options.callback || null;
 		this.animationCallback = options.animationCallback || null;
-		
+
 		this.bounds = {
 			left: options.left || 0, right: -(options.right || 0),
 			top: options.top || 0, bottom: -(options.bottom || 0),
@@ -13493,7 +13493,7 @@ Dragdealer.prototype =
 			target: [0, 0]
 		};
 		this.change = [0, 0];
-		
+
 		this.activity = false;
 		this.dragging = false;
 		this.tapping = false;
@@ -13508,7 +13508,7 @@ Dragdealer.prototype =
 		this.setBoundsPadding();
 		this.setBounds();
 		this.setSteps();
-		
+
 		this.addListeners();
 	},
 	setWrapperOffset: function()
@@ -13533,11 +13533,11 @@ Dragdealer.prototype =
 		this.bounds.x0 = this.bounds.left;
 		this.bounds.x1 = this.wrapper.offsetWidth + this.bounds.right;
 		this.bounds.xRange = (this.bounds.x1 - this.bounds.x0) - this.handle.offsetWidth;
-		
+
 		this.bounds.y0 = this.bounds.top;
 		this.bounds.y1 = this.wrapper.offsetHeight + this.bounds.bottom;
 		this.bounds.yRange = (this.bounds.y1 - this.bounds.y0) - this.handle.offsetHeight;
-		
+
 		this.bounds.xStep = 1 / (this.xPrecision || Math.max(this.wrapper.offsetWidth, this.handle.offsetWidth));
 		this.bounds.yStep = 1 / (this.yPrecision || Math.max(this.wrapper.offsetHeight, this.handle.offsetHeight));
 	},
@@ -13555,7 +13555,7 @@ Dragdealer.prototype =
 	addListeners: function()
 	{
 		var self = this;
-		
+
 		this.wrapper.onselectstart = function()
 		{
 			return false;
@@ -13594,7 +13594,7 @@ Dragdealer.prototype =
 		{
 			return !self.activity;
 		}
-		
+
 		this.interval = setInterval(function(){ self.animate() }, 25);
 		self.animate(false, true);
 	},
@@ -13602,14 +13602,14 @@ Dragdealer.prototype =
 	{
 		this.activity = false;
 		Cursor.refresh(e);
-		
+
 		this.preventDefaults(e, true);
 		this.startDrag();
 	},
 	wrapperDownHandler: function(e)
 	{
 		Cursor.refresh(e);
-		
+
 		this.preventDefaults(e, true);
 		this.startTap();
 	},
@@ -13622,7 +13622,7 @@ Dragdealer.prototype =
 	{
 		this.setWrapperOffset();
 		this.setBounds();
-		
+
 		this.update();
 	},
 	enable: function()
@@ -13678,7 +13678,7 @@ Dragdealer.prototype =
 			return;
 		}
 		this.tapping = false;
-		
+
 		this.setTargetValue(this.value.current);
 		this.result();
 	},
@@ -13696,7 +13696,7 @@ Dragdealer.prototype =
 			Cursor.x - Position.get(this.handle)[0],
 			Cursor.y - Position.get(this.handle)[1]
 		];
-		
+
 		this.dragging = true;
 	},
 	stopDrag: function()
@@ -13706,7 +13706,7 @@ Dragdealer.prototype =
 			return;
 		}
 		this.dragging = false;
-		
+
 		var target = this.groupClone(this.value.current);
 		if(this.slide)
 		{
@@ -13749,13 +13749,13 @@ Dragdealer.prototype =
 		if(this.dragging)
 		{
 			var prevTarget = this.groupClone(this.value.target);
-			
+
 			var offset = [
 				Cursor.x - this.offset.wrapper[0] - this.offset.mouse[0],
 				Cursor.y - this.offset.wrapper[1] - this.offset.mouse[1]
 			];
 			this.setTargetOffset(offset, this.loose);
-			
+
 			this.change = [
 				this.value.target[0] - prevTarget[0],
 				this.value.target[1] - prevTarget[1]
@@ -13824,7 +13824,7 @@ Dragdealer.prototype =
 	setTargetValue: function(value, loose)
 	{
 		var target = loose ? this.getLooseValue(value) : this.getProperValue(value);
-		
+
 		this.groupCopy(this.value.target, target);
 		this.offset.target = this.getOffsetsByRatios(target);
 	},
@@ -13832,7 +13832,7 @@ Dragdealer.prototype =
 	{
 		var value = this.getRatiosByOffsets(offset);
 		var target = loose ? this.getLooseValue(value) : this.getProperValue(value);
-		
+
 		this.groupCopy(this.value.target, target);
 		this.offset.target = this.getOffsetsByRatios(target);
 	},
@@ -13929,7 +13929,7 @@ Dragdealer.prototype =
 			e.preventDefault();
 		}
 		e.returnValue = false;
-		
+
 		if(selection && document.selection)
 		{
 			document.selection.empty();

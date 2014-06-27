@@ -13,7 +13,7 @@
 		<link rel="stylesheet" href="../css/jquery-ui-1.9.2.custom.min.css">
 	</head>
 	<body id="readytoremove">
-    <form id="notification-form" method="post">
+    <form id="notification-form">
       <div id="receipt-container-upper" class="row">
         <div id="receipt-div-left" class="col-md-8">
           <div class="row">
@@ -51,10 +51,10 @@
               </div>
          </div>
           <div class="row">
-            <div class="form-group col-xs-7 col-md-7">
+            <!--<div class="form-group col-xs-7 col-md-7">
               <label for="address">Address</label>
               <input id="address" type="text" class="form-control" name="address" placeholder="Vendor Address">
-            </div>
+            </div>-->
             <div class="form-group col-xs-5 col-md-5">
               <label for="transaction">Invoice</label>
               <input id="transaction" type="text" class="form-control" name="transaction" placeholder="Invoice #">
@@ -83,14 +83,14 @@
             <label for="total">Total</label>
             <input id="total" type="text" class="form-control" name="total">
           </div>
-          <input id="receipt-submit" class="form-control" type="submit" name="submit">
+          <input id="receipt-submit" class="form-control" type="button" name="submit" value="Submit">
 
         </div>
         <div id="receipt-div-right" class="col-md-2">
           <div class="row">
             <div class="form-group col-xs-11 col-md-11">
-              <label for="notes">Notes</label>
-              <textarea id="notes" name="note" class="form-control"></textarea>
+              <label for="note">Notes</label>
+              <textarea id="note" name="note" class="form-control"></textarea>
             </div>
           </div>
         </div>

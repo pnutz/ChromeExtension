@@ -2,16 +2,16 @@ var request;
 var config;
 var b;
 
-var PopUp = 
+var PopUp =
 {
-  configurations: 
+  configurations:
   {
     host : "http://localhost:3000"
   },
-  
+
   initButtons: function()
   {
-    this.buttons = 
+    this.buttons =
     {
       fbLogin: $("#fb-login"),
       registration: $("#registration"),
@@ -28,6 +28,7 @@ var PopUp =
 
   init: function()
   {
+    var self = this;
     // Temporarily hard code webapp host
     localStorage["webAppHost"] = "http://localhost:3000";
     this.controllers = new ControllerUrls(this.configurations.host);
@@ -37,7 +38,7 @@ var PopUp =
     $("#login-div").hide();
     $("#main-div").hide();
     //If we have an auth Token, use it to login
-    if ("authToken" in localStorage) 
+    if ("authToken" in localStorage)
     {
       // Grab folders from server to check authentication
       $.get(this.controllers.GetUrl("folders"), function(data){
@@ -46,7 +47,7 @@ var PopUp =
         $("#main-div-user-email").text("Logged in as: " + localStorage["userEmail"]);
       })
       .fail(function(){
-        // Remove the auth token and reload so we can try and get a new one 
+        // Remove the auth token and reload so we can try and get a new one
         location.reload(true);
         delete localStorage["authToken"];
         console.log("Failed to retrieve folders on login.");
@@ -82,16 +83,16 @@ var PopUp =
       $("#login-div").show();
     }
   },
-  
+
   // Append credentials to a url
   appendCred: function(url)
   {
     var credUrl = "";
-    
+
     if ("userEmail" in localStorage &&
         "authToken" in localStorage) {
-      credUrl =  url + 
-          "?email=" + localStorage["userEmail"] + 
+      credUrl =  url +
+          "?email=" + localStorage["userEmail"] +
           "&token=" + localStorage["authToken"];
     } else {
       console.error("Missing credentials!");
@@ -105,20 +106,20 @@ var PopUp =
     var self = this;
 
     // facebook login
-    this.buttons.fbLogin.on("click", function() 
+    this.buttons.fbLogin.on("click", function()
     {
       chrome.runtime.sendMessage({greeting: "FB_LOGIN_OAUTH"});
     });
-    
+
     // Registration button
-    this.buttons.registration.on("click", function() 
+    this.buttons.registration.on("click", function()
     {
       chrome.tabs.create({url: registrationUrl});
       window.close();
     });
 
-    // Logout button 
-    this.buttons.logout.on("click", function() 
+    // Logout button
+    this.buttons.logout.on("click", function()
     {
       delete localStorage["authToken"];
       delete localStorage["fbAccessToken"];
@@ -127,22 +128,22 @@ var PopUp =
     });
 
     // Setup Folder link click action
-    this.buttons.folders.on("click", function() 
-    { 
+    this.buttons.folders.on("click", function()
+    {
       chrome.tabs.create({url: self.appendCred(self.configurations.host)});
       window.close();
     });
 
     // Setup vault link click action
-    this.buttons.vault.on("click", function() 
-    { 
+    this.buttons.vault.on("click", function()
+    {
       chrome.tabs.create({url: "vault/vault.html"});
       window.close();
     });
 
-  
+
     // HTML getter tool, saves HTML in datadump.txt
-    this.buttons.pullPage.on("click", function() 
+    this.buttons.pullPage.on("click", function()
     {
       chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
         console.log("GET HTML");
@@ -153,7 +154,7 @@ var PopUp =
             var blob = new Blob([response.data], {type:'text/plain'});
             var dl = document.getElementById("downloadLink");
             dl.download = textfile;
-            
+
             if (window.webkitURL !== null)
             {
               // Chrome allows the link to be clicked
@@ -168,7 +169,7 @@ var PopUp =
     });
 
     // Notification test-tool, displays current notification
-    this.buttons.showNotification.on("click", function() 
+    this.buttons.showNotification.on("click", function()
     {
       chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
         console.log("notification message");
@@ -177,13 +178,13 @@ var PopUp =
       });
     });
 
-    this.buttons.login.on("click", function() 
+    this.buttons.login.on("click", function()
     {
       if (request)
       {
         request.abort();
       }
-      
+
       //Form the url parameters
       var $form = $("#login-form");
       //Get form inputs to disable
@@ -207,6 +208,8 @@ var PopUp =
         localStorage["userEmail"] = $("#user-email").val();
         // store userID in localStorage
         localStorage["userID"] = data["user"];
+        // store receipt url in localStorage
+        localStorage["receiptPost"] = self.appendCred(self.controllers.GetUrl("receipts") + ".json");
       }).fail(function (jqXHR, textStatus, errorThrown){
       // log the error to the console
         console.error(
@@ -215,7 +218,7 @@ var PopUp =
       });
     });
 
-    this.buttons.showReceiptForm.on("click", function() 
+    this.buttons.showReceiptForm.on("click", function()
     {
       chrome.extension.sendMessage({greeting: "addReceipt"});
       window.close();
@@ -223,15 +226,15 @@ var PopUp =
   }
 };
 
-document.addEventListener('DOMContentLoaded', function() 
+document.addEventListener('DOMContentLoaded', function()
 {
   PopUp.init();
-    
+
 	// external message from web application - to receive message when login/logout in web app
 	/*chrome.runtime.onMessageExternal.addListener(
   function(request, sender, sendResponse) {
     if (request.openUrlInEditor)
       openUrl(request.openUrlInEditor);
   });*/
-	
+
 });

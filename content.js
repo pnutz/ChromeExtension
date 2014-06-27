@@ -9,25 +9,25 @@ $(document).ready(function () {
 	if (self === top) {
 		console.log("document ready");
 	}
-	
+
   document_text = initializeContentSearch();
   console.log(document_text);
-  
+
   // find how many instances of search_term exist in document
   /*var search_word = "order number:";
   console.log("OCCURRENCES 1");
   var count = occurrences(document_text, search_word, true);
-  
+
   if (count > 0) {
     console.log(count + " instances of " + search_word + " found in document");
-    
+
     console.log("CLEAN HIGHLIGHT");
     cleanHighlight();
     console.log("SEARCH TEXT");
     searchText(search_word, "vendor", count);
     console.log("FIND RELEVANT MATCHES");
     findRelevantMatches("vendor");
-    
+
     var field = "vendor";
     var index = "0";
     var element = getMatchElement(field, index),
@@ -35,7 +35,7 @@ $(document).ready(function () {
         end_index = getSearchTermProperty(field, "end", index),
         start_node_index = getSearchTermProperty(field, "start_node_index", index);
         var params = { "text": "", "trim": false };
-        
+
     // look for start and end index within element
     if ($(element).length > 0) {
       var children = $(element)[0].childNodes;
@@ -46,7 +46,7 @@ $(document).ready(function () {
       console.log("element " + field + " does not exist. text not highlighted");
     }
     console.log(params);
-    
+
     console.log("HIGHLIGHT");
     highlightMatchText("vendor", 0);
   } else {
@@ -56,24 +56,24 @@ $(document).ready(function () {
   /*search_word = "num";
   console.log("OCCURRENCES 2");
   count = occurrences(document_text, search_word, true);
-  
+
   if (count > 0) {
     console.log(count + " instances of " + search_word + " found in document");
-    
+
     console.log("CLEAN HIGHLIGHT");
     cleanHighlight();
     console.log("SEARCH TEXT");
     searchText(search_word, "vendor", count);
     console.log("FIND RELEVANT MATCHES");
     findRelevantMatches("vendor");
-    
+
     console.log("HIGHLIGHT");
     highlightMatchText("vendor", 0);
   } else {
     console.log("document search halted: " + count + " instances of " + search_word + " found in document");
   }*/
 
-  
+
 	// only run function when user prompts to start, so links keep working
 	/*$(document).click(function(event) {
 		lastClicked = $(event.target);
@@ -81,14 +81,14 @@ $(document).ready(function () {
 			var element = $(event.target);
       var element_text = element.text().trim();
 			console.log("Element Clicked: " + element_text);
-      
+
       var linkSelected;
       if (element[0].tagName === "BUTTON" || element[0].tagName === "A") {
         linkSelected = true;
       } else {
         linkSelected = false;
       }
-      
+
       // check a few parent levels up for a link or button
       var parentElement = element;
       if (parentElement !== null) {
@@ -103,24 +103,24 @@ $(document).ready(function () {
           }
         }
       }
-      
+
 			// only send message if nothing selected
 			if (linkSelected === true || window.getSelection().toString() === "" || element[0].tagName === "BODY")
 			{
 				element[0].className += " " + CLASS_NAME;
-				
+
         var message_domain;
         if (document.domain === null || document.domain === "") {
           message_domain = "DOMAIN";
         } else {
           message_domain = document.domain;
         }
-        
+
         var first_text_id = document.createTextNode(TEXT_ID);
         var second_text_id = document.createTextNode(TEXT_ID);
         $("." + CLASS_NAME).prepend(first_text_id);
         $("." + CLASS_NAME).append(second_text_id);
-        
+
 				var msg_data = {
 					response: htmlGet.substring(5),
 					selection: element_text.replace(/\n/g, ""),
@@ -129,28 +129,28 @@ $(document).ready(function () {
 					url: location.href,
 					domain: message_domain
 				};
-				
+
         // iframe, send it to main page content script
         if (self !== top) {
           window.parent.postMessage(JSON.stringify(msg_data), '*');
         } else {
           incomingPort.postMessage(msg_data);
         }
-				
+
         first_text_id.parentNode.removeChild(first_text_id);
         second_text_id.parentNode.removeChild(second_text_id);
-        
+
 				element[0].className = element[0].className.replace(" " + CLASS_NAME, "");
 			}
 			return false;
 		}
 	});
-	
+
 	// detect mousedown element
 	$(document).mousedown(function(event) {
 		mouseDownElement = $(event.target);
   });
-	
+
 	// get selected text on mouseup (and element)
 	$(document).mouseup(function(event) {
 		var textSelection = window.getSelection().toString();
@@ -170,13 +170,13 @@ $(document).ready(function () {
         }
       }
     }
-    
+
 		// only send message if text is selected or user did not click link
 		if (textSelection !== "" && mouseDownElement !== null && mouseDownElement[0].tagName !== "A" &&
           mouseDownElement[0].tagName !== "BUTTON" && mouseDownElement[0].tagName !== "BODY") {
 			if (htmlGet !== "pull-off") {
 				console.log("Mouse-Up: " + textSelection);
-				
+
 				var range = window.getSelection().getRangeAt(0);
 				var startContainer = range.startContainer;
 				var endContainer = range.endContainer;
@@ -200,16 +200,16 @@ $(document).ready(function () {
 				while (commonAncestorContainer.nodeType === Node.TEXT_NODE) {
 					commonAncestorContainer = commonAncestorContainer.parentElement;
 				}
-				
+
 				commonAncestorContainer.className += " " + CLASS_NAME;
-				
+
         var message_domain;
         if (document.domain === null || document.domain === "") {
           message_domain = "DOMAIN";
         } else {
           message_domain = document.domain;
         }
-        
+
 				var msg_data = {
 					response: htmlGet.substring(5),
 					selection: textSelection.replace(/\n/g, ""),
@@ -218,7 +218,7 @@ $(document).ready(function () {
 					url: location.href,
 					domain: message_domain
 				};
-				
+
 				console.log(msg_data);
         // iframe, send it to main page content script
         if (self !== top) {
@@ -226,9 +226,9 @@ $(document).ready(function () {
         } else {
           incomingPort.postMessage(msg_data);
         }
-				
+
 				commonAncestorContainer.className = commonAncestorContainer.className.replace(" " + CLASS_NAME, "");
-				
+
         var removeNode;
 				// startContainer deletion first so we can use existing endOffset
 				if (startContainer.nodeType === Node.TEXT_NODE) {
@@ -246,7 +246,7 @@ $(document).ready(function () {
 			}
 		}
 	});*/
-  
+
 	// "paypal" "pay with paypal" "bestbuy" don't work
 	/*var postButtons = $("form[method='post']").find(":input[type='submit']");
 	var length = postButtons.length;
@@ -257,7 +257,7 @@ $(document).ready(function () {
 		var text = submitElement.text().toLowerCase();
 		value = " " + value + " ";
 		text = " " + text + " ";
-		
+
 		if (value.indexOf(" order ") != -1 || text.indexOf(" order ") != -1 ||
 				value.indexOf(" buy ") != -1 || text.indexOf(" buy ") != -1 ||
 				value.indexOf(" checkout ") != -1 || text.indexOf(" checkout ") != -1 ||
@@ -289,14 +289,14 @@ $(document).ready(function () {
 		var text = submitElement.text().toLowerCase();
 		value = " " + value + " ";
 		text = " " + text + " ";
-		
+
 		var alt = "";
 		if (submitElement.attr("alt") != undefined)
 		{
 			alt = submitElement.attr("alt").toLowerCase();
 			alt = " " + alt + " ";
 		}
-		
+
 		if (value.indexOf(" order ") != -1 || text.indexOf(" order ") != -1 ||
 				value.indexOf(" buy ") != -1 || text.indexOf(" buy ") != -1 ||
 				value.indexOf(" checkout ") != -1 || text.indexOf(" checkout ") != -1 ||
@@ -317,13 +317,13 @@ $(document).ready(function () {
 			});
 		}
 	}
-	
+
 	// find out element that caused submit (possibly purchase) & parent form element
 	$('form').submit(function() {
 		if ($(this).has(lastClicked))
 		{
 			console.log($(this));
-			
+
 			//return lastClicked & $(this)
 		}
 	});
@@ -337,15 +337,15 @@ function createNotification() {
 		var notdiv = document.getElementById("notificationdiv");
 		notdiv.parentNode.removeChild(notdiv);
 	}
-	
+
 	// css for iframe
 	var style = document.createElement("style");
 	style.type = "text/css";
 	style.innerHTML = ".twoReceiptIFrame { width: 100%; }";
 	document.getElementsByTagName("head")[0].appendChild(style);
-	
+
   document.getElementsByTagName("body")[0].style.paddingTop = "500px";
-  
+
 	// append iframe notification within div to body
 	var div = document.createElement("div");
 	div.id = "notificationdiv";
@@ -373,14 +373,14 @@ chrome.runtime.onConnect.addListener(function(port) {
     if (port.name === "receiptPort") {
       incomingPort = port;
     }
-    
+
     var message_domain;
     if (document.domain === null || document.domain === "") {
       message_domain = "DOMAIN";
     } else {
       message_domain = document.domain;
     }
-    
+
     port.onMessage.addListener(function(msg) {
       console.log("Received msg: " + msg.request + " for port: " + port.name);
       // receive receipt notification-related messages
@@ -394,19 +394,19 @@ chrome.runtime.onConnect.addListener(function(port) {
             domain: message_domain
           };
           incomingPort.postMessage(msg_data);
-          
+
           createNotification();
         }
         // receive generated data
         else if (msg.request === "generatedData") {
           generated = msg.generated;
-          
+
           // send generated data to receipt notification
           receipt_notification.postMessage(msg, "*");
         }
       }
     });
-    
+
     port.onDisconnect.addListener(function() {
       console.log("Disconnected " + port.name + " port");
       if (port.name === "receiptPort") {
@@ -429,7 +429,7 @@ chrome.runtime.onMessage.addListener(
         } else {
           message_domain = document.domain;
         }
-      
+
         var msg_data = {
           response: request.greeting,
           url: location.href,
@@ -458,7 +458,7 @@ window.addEventListener("message", function(event) {
   if (event.origin.indexOf("chrome-extension://") !== -1)
   {
     console.log(event.data);
-    
+
     if (event.data.request !== undefined) {
       // user submitted receipt, send all data to eventPage
       if (event.data.request === "saveReceipt" && event.data.saved_data !== undefined)
@@ -470,24 +470,24 @@ window.addEventListener("message", function(event) {
       }
       // user requests search, respond with search data. unselect and unhighlight text for fieldName
       else if (event.data.request === "searchText" && event.data.fieldName !== undefined && event.data.text !== undefined) {
-      
+
         var field = event.data.fieldName;
         if (event.data.itemIndex !== undefined) {
           field += event.data.itemIndex;
         }
-        
+
         cleanHighlight();
         cleanElementData(field);
         cleanFieldText(event.data.fieldName, event.data.itemIndex);
-        
+
         var total = occurrences(document_text, event.data.text, true);
-        
-        if (total > 0 && total < 5) {
+
+        if (total > 0 /*&& total < 5*/) {
           console.log(total + " instances of " + event.data.text + " found in document");
-          
+
           searchText(event.data.text, field, total);
           findRelevantMatches(field);
-          
+
           var results = getMatches(event.data.fieldName, event.data.itemIndex);
           var message = { "response": "searchResults", "results": results, "fieldName": event.data.fieldName, "itemIndex": event.data.itemIndex };
           console.log(message);
@@ -509,18 +509,18 @@ window.addEventListener("message", function(event) {
       else if (event.data.request === "selectText" && event.data.fieldName !== undefined && event.data.value !== undefined) {
         cleanHighlight();
         cleanFieldText(event.data.fieldName, event.data.itemIndex);
-        
+
         var field = event.data.fieldName;
         if (event.data.itemIndex !== undefined) {
           field += event.data.itemIndex;
         }
-        
+
         var element = getMatchElement(field, event.data.value);
         var start = getSearchTermProperty(field, "start", event.data.value);
         var end = getSearchTermProperty(field, "end", event.data.value);
         var node = getSearchTermProperty(field, "start_node_index", event.data.value);
         setFieldText(element, start, end, event.data.fieldName, event.data.itemIndex, node);
-                
+
         highlightAttributeText(event.data.fieldName, event.data.itemIndex);
       }
       // user focuses on notification text field, highlight attribute data if it exists
@@ -537,8 +537,8 @@ window.addEventListener("message", function(event) {
         console.log("ack " + event.data.index + " deleted");
       }
       // user submitted receipt
-      else if (event.data.request === "saveReceipt" && event.data.saved_data !== undefined) {
-        sendReceipt(event.data.saved_data);
+      else if (event.data.request === "saveReceipt" && event.data.saved_data !== undefined && event.data.rows !== undefined) {
+        sendReceipt(event.data.saved_data, event.data.rows);
       }
       else
       {
@@ -552,19 +552,33 @@ window.addEventListener("message", function(event) {
   }
 });
 
-function sendReceipt(saved_data) {
+function sendReceipt(saved_data, rows) {
   if (incomingPort !== undefined && incomingPort !== null) {
     // clean html data
     cleanHighlight();
     cleanElementData();
-    
+
     var message_domain;
+    // default local html pages to DOMAIN (since no domain)
     if (document.domain === null || document.domain === "") {
       message_domain = "DOMAIN";
     } else {
       message_domain = document.domain;
     }
-    
+
+    // track deleted items for generated templates
+    if (generated !== {} && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items"))
+    {
+      $.each(generated.templates.items, function(key, value)
+      {
+        console.log(key + " " + value);
+        if (rows[key] === null)
+        {
+          generated.templates.items[key].deleted = true;
+        }
+      });
+    }
+
     // compose message
     var message = {
       request: "saveReceipt",
@@ -578,7 +592,7 @@ function sendReceipt(saved_data) {
     console.log(message);
     incomingPort.postMessage(message);
   }
-  
+
   // clean receipt data
   cleanFieldText();
 }
