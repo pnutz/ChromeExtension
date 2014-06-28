@@ -437,7 +437,37 @@ window.addEventListener("message", function(event) {
     // generated values for form fields
     if (event.data.request === "generatedData")
     {
+      $.each(event.data.generated, function(key, value)
+      {
+        if (key !== "templates" && key !== "items")
+        {
+          NotiBar.setFieldValue(key, value);
+        }
+        else if (key === "items")
+        {
+          $.each(value, function(item_key, item_value)
+          {
+            console.log(item_value);
+            var itemtype, quantity, cost;
+            if (item_value.hasOwnProperty("itemtype"))
+            {
+              itemtype = item_value["itemtype"];
+            }
 
+            if (item_value.hasOwnProperty("quantity"))
+            {
+              quantity = item_value["quantity"];
+            }
+
+            if (item_value.hasOwnProperty["cost"])
+            {
+              cost = item_value["cost"];
+            }
+
+            TwoReceiptHandsOnTable.addItemRow(itemtype, quantity, cost);
+          });
+        }
+      });
     }
     // interaction with highlighted data
     else if (event.data.request === "highlightSelected")

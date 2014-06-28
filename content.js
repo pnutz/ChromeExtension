@@ -1,7 +1,7 @@
 var incomingPort,
     lastClicked,
     mouseDownElement,
-    generated = {},
+    generated,
     receipt_notification,
     document_text;
 
@@ -402,7 +402,7 @@ chrome.runtime.onConnect.addListener(function(port) {
           generated = msg.generated;
 
           // send generated data to receipt notification
-          receipt_notification.postMessage(msg, "*");
+          document.getElementById('twoReceiptIFrame').contentWindow.postMessage(msg, "*");
         }
       }
     });
@@ -567,7 +567,7 @@ function sendReceipt(saved_data, rows) {
     }
 
     // track deleted items for generated templates
-    if (generated !== {} && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items"))
+    if (generated !== undefined && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items"))
     {
       $.each(generated.templates.items, function(key, value)
       {

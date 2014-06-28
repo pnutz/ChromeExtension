@@ -85,7 +85,7 @@ function sendDomain(tabId, html, url, domain) {
       }
     });
     // send content script generated data
-    receipt_ports[tabId].postMessage({"request": "generatedData", "data": generated});
+    receipt_ports[tabId].postMessage({"request": "generatedData", "generated": generated});
     console.log(generated);
 		alert("Data: " + json_data + "\nStatus: " + status);
 	})
@@ -137,8 +137,8 @@ function receiptSetup() {
       console.log("Received message: " + msg.response + " for port: " + receipt_ports[currentTabId].name);
     }
     // message node js server html & domain data
-		if (msg.response === "initializeData") {
-      //sendDomain(currentTabId, msg.html, msg.url, msg.domain);
+		if (msg.response === "initializeReceipt") {
+      sendDomain(currentTabId, msg.html, msg.url, msg.domain);
     } else if (msg.request === "saveReceipt") {
       console.log(msg);
       postReceiptToWebApp(msg.saved_data);
