@@ -159,10 +159,10 @@ var TwoReceiptHandsOnTable =
 
   coverRenderer : function (instance, td, row, col, prop, value, cellProperties)
   {
-    console.log(row);
+    //console.log(row);
     var self = this;
-    console.log(self);
-    console.log(instance);
+    //console.log(self);
+    //console.log(instance);
     var $anchor = $('<a>');
     // create span for delete icon
     var $deleteIcon = $('<span>');

@@ -27,11 +27,6 @@ var NotiBar =
                         id : "#vendor",
                         type : fieldTypes.TEXT
                       },
-                    /*"address" :
-                      {
-                        id : "#address",
-                        type : fieldTypes.TEXT
-                      },*/
                     "transaction" :
                       {
                         id : "#transaction",
@@ -80,8 +75,8 @@ var NotiBar =
       constrainInput: false
     });
     // set autocomplete ui element
+    // loop through all fields, apply to TEXT & NUMBER. except note??
     this.initAutoComplete("vendor");
-    //this.initAutoComplete("address");
     this.initAutoComplete("date");
     this.initAutoComplete("transaction");
     this.initAutoComplete("subtotal");
@@ -111,6 +106,7 @@ var NotiBar =
     $("input").bind("input propertychange", function() {
       var that = this;
       var delay = 150;
+      var type = self.configurations.formFields[this.name].type;
 
       clearTimeout($(that).data("timer"));
       $(that).data("timer", setTimeout(function() {
@@ -119,7 +115,14 @@ var NotiBar =
 
         self.setAutoCompleteOptions(that.id, []);
 
-        if (that.value.length > 2) {
+        // search for numeric field
+        console.log(type);
+        if (type === fieldTypes.NUMBER && $(that).valid() && that.value.length > 0) {
+          var message = { request: "searchNumber", "text": that.value, "fieldName": that.id };
+          window.parent.postMessage(message, "*");
+        }
+        // search for regular field
+        else if (type !== fieldTypes.NUMBER && that.value.length > 2) {
           var message = { request: "searchText", "text": that.value, "fieldName": that.id };
           window.parent.postMessage(message, "*");
         }
@@ -275,6 +278,105 @@ var NotiBar =
       switch(field.type)
       {
         case fieldTypes.NUMBER:
+          $(this.configurations.formFields[fieldName].id).autocomplete(
+            {
+              minLength: 1,
+              autoFocus: true,
+              //delay: 500, // default 300
+              source: [""],
+              // focus on selected option rather than autoFocus on 1st option if possible
+              open: function (event, ui)
+              {
+                var item;
+                var menu = $(this).data("ui-autocomplete").menu;
+                var dataValue = $(this).attr("data-value");
+                // select option if it exists in menu list
+                if (dataValue !== undefined && dataValue !== null)
+                {
+                  var $items = $("li", menu.element);
+                  var source = $(this).autocomplete("option", "source");
+                  var index = 0;
+
+                  $.each($items, function(item_index, item_value)
+                  {
+                    // find matching source with item
+                    while (item_value.innerText !== source[index].label && index < source.length)
+                    {
+                      index++;
+                    }
+
+                    // only take item if data-value matches source value
+                    if (dataValue === source[index].value)
+                    {
+                      item = $(item_value);
+                    }
+
+                    index++;
+
+                    if (item)
+                    {
+                      return false;
+                    }
+                  });
+                }
+
+                if (item)
+                {
+                  menu.focus(null, item);
+                }
+              },
+              focus: function (event, ui)
+              {
+                // highlight focus
+                var message = { request: "highlightSearchText", "fieldName": this.id, "value": ui.item.value };
+                window.parent.postMessage(message, "*");
+
+                return false;
+              },
+              select: function (event, ui)
+              {
+                $(this).val(ui.item.label);
+                $(this).attr("data-value", ui.item.value);
+
+                // highlight, set selected
+                var message = { request: "selectText", "fieldName": this.id, "value": $(this).attr("data-value") };
+                window.parent.postMessage(message, "*");
+
+                event.preventDefault();
+              }
+            })
+            .focus(function()
+            {
+              console.log("focus");
+              var $this = $(this);
+              // displays autocomplete list on form focus
+              if ($this.autocomplete("option", "source") !== null) {
+                setTimeout(function()
+                {
+                  $this.autocomplete("search");
+                }, 140);
+              }
+
+              // unhighlight other form text and highlight text (if it exists)
+              var message = { request: "highlightText", "fieldName": this.id };
+              window.parent.postMessage(message, "*");
+            })
+            .click(function()
+            {
+              // if form already focused, will re-open autocomplete on click
+              var $this = $(this);
+              if ($this.is(":focus") && $this.autocomplete("option", "source") !== null) {
+                console.log("click");
+                setTimeout(function()
+                {
+                  $this.autocomplete("search");
+                }, 140);
+              }
+            })
+            .blur(function() {
+              window.parent.postMessage({ request: "cleanHighlight" }, "*");
+            });
+          break;
         case fieldTypes.DATE:
         case fieldTypes.TEXT:
           $(this.configurations.formFields[fieldName].id).autocomplete(
@@ -423,7 +525,7 @@ var NotiBar =
 document.addEventListener('DOMContentLoaded', function() {
   NotiBar.init();
   TwoReceiptHandsOnTable.init();
-  TwoReceiptHandsOnTable.addItemRow("hello", 3, 43.2);
+  //TwoReceiptHandsOnTable.addItemRow("hello", 3, 43.2);
 });
 
 // send message using window.parent.postMessage("yes", '*')
@@ -448,7 +550,8 @@ window.addEventListener("message", function(event) {
           $.each(value, function(item_key, item_value)
           {
             console.log(item_value);
-            var itemtype, quantity, cost;
+            // errors out if undefined is sent to addItemRow
+            var itemtype = null, quantity = null, cost = null;
             if (item_value.hasOwnProperty("itemtype"))
             {
               itemtype = item_value["itemtype"];
@@ -459,7 +562,7 @@ window.addEventListener("message", function(event) {
               quantity = item_value["quantity"];
             }
 
-            if (item_value.hasOwnProperty["cost"])
+            if (item_value.hasOwnProperty("cost"))
             {
               cost = item_value["cost"];
             }

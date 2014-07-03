@@ -468,33 +468,13 @@ window.addEventListener("message", function(event) {
         document.getElementsByTagName("body")[0].style.paddingTop = "0px";
         notdiv.parentNode.removeChild(notdiv);
       }
-      // user requests search, respond with search data. unselect and unhighlight text for fieldName
+      // user requests search
       else if (event.data.request === "searchText" && event.data.fieldName !== undefined && event.data.text !== undefined) {
-
-        var field = event.data.fieldName;
-        if (event.data.itemIndex !== undefined) {
-          field += event.data.itemIndex;
-        }
-
-        cleanHighlight();
-        cleanElementData(field);
-        cleanFieldText(event.data.fieldName, event.data.itemIndex);
-
-        var total = occurrences(document_text, event.data.text, true);
-
-        if (total > 0 /*&& total < 5*/) {
-          console.log(total + " instances of " + event.data.text + " found in document");
-
-          searchText(event.data.text, field, total);
-          findRelevantMatches(field);
-
-          var results = getMatches(event.data.fieldName, event.data.itemIndex);
-          var message = { "response": "searchResults", "results": results, "fieldName": event.data.fieldName, "itemIndex": event.data.itemIndex };
-          console.log(message);
-          event.source.postMessage(message, event.origin);
-        } else {
-          console.log("document search halted: " + total + " instances of " + event.data.text + " found in document");
-        }
+        searchRequest(event.source, "text", event.data.fieldName, event.data.text, event.data.itemIndex);
+      }
+      // user requests numeric search
+      else if (event.data.request === "searchNumber" && event.data.fieldName !== undefined && event.data.text !== undefined) {
+        searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
       }
       // user focused on search, highlight selected area
       else if (event.data.request === "highlightSearchText" && event.data.fieldName !== undefined) {
@@ -551,6 +531,34 @@ window.addEventListener("message", function(event) {
     }
   }
 });
+
+// respond with search data. unselect and unhighlight text for fieldName
+function searchRequest(source, type, fieldName, text, itemIndex) {
+  var field = fieldName;
+  if (itemIndex !== undefined) {
+    field += itemIndex;
+  }
+
+  cleanHighlight();
+  cleanElementData(field);
+  cleanFieldText(fieldName, itemIndex);
+
+  var total = occurrences(document_text, text, true);
+
+  if (total > 0 /*&& total < 5*/) {
+    console.log(total + " instances of " + text + " found in document");
+
+    searchText(text, field, total);
+    findRelevantMatches(field, type);
+
+    var results = getMatches(fieldName, itemIndex, type);
+    var message = { "response": "searchResults", "results": results, "fieldName": fieldName, "itemIndex": itemIndex };
+    console.log(message);
+    source.postMessage(message, event.origin);
+  } else {
+    console.log("document search halted: " + total + " instances of " + text + " found in document");
+  }
+}
 
 function sendReceipt(saved_data, rows) {
   if (incomingPort !== undefined && incomingPort !== null) {
