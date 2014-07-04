@@ -5,7 +5,8 @@ var Vault =
 {
   data: 
   {
-    receipts : []
+    receipts : [],
+    dateFormat : "yy-mm-dd"
   },
   appendCred_: function(url)
   {
@@ -32,25 +33,43 @@ var Vault =
       $(this).tab('show');
     });
 
+    // For when user clicks the new folder button
     $('#new-folder-submit').click(function (e) {
       self.addFolder_();
       $("#add-folder-modal").modal("hide");
+      // Refresh folder list
       self.clearFolders_();
       self.getFolders_();
-
     });
-
 
     // If authentication token and email exist then grab receipt data.
     if ("authToken" in localStorage && "userEmail" in localStorage)
     {
       this.getReceipts_();
       this.getFolders_();
+      this.initDatePicker("#start-date");
+      this.initDatePicker("#end-date");
     }
     else
     {
       console.log("missing credentials");
     }
+  },
+  initDatePicker: function(dateFormId)
+  {
+    var self = this;
+    // Apply date picker
+    $(dateFormId).datepicker({
+      constrainInput: true 
+    });
+
+    $(dateFormId).change(function(){
+      // Clear previous filtering
+      $.fn.dataTableExt.afnFiltering.pop();
+      $("#vault-receipts").dataTable().fnDraw();
+      self.isWithinDate_(new Date($("#start-date").val()), new Date($("#end-date").val()))
+      $("#vault-receipts").dataTable().fnDraw();
+    });
   },
   getReceipts_: function()
   {
@@ -61,7 +80,31 @@ var Vault =
           dataType: 'json'
         }).done(function(data){
           self.data.receipts = data;
-          console.log("got data" + data[0].vendor_id);
+          // painfully convert each item to the desired date format before 
+          var earliestDate = new Date(data[0]["date"]);
+          var latestDate = new Date(data[0]["date"]);
+          $.each(data, function(index, value)
+          {
+            // create a date object for comparison
+            var thisDate = new Date(value["date"]);
+
+            // Update the end-date so that it has the latest date value
+            if (thisDate > latestDate)
+            {
+              latestDate = thisDate;
+              $("#end-date").datepicker("setDate", thisDate);
+            } 
+            else if (thisDate < earliestDate)
+            {
+              earliestDate = thisDate;
+              $("#start-date").datepicker("setDate", thisDate);
+            }
+
+            // In the mean time modify the date format for each date
+            value["date"] = $.datepicker.formatDate(self.data.dateFormat, new Date(value["date"])); 
+          });
+
+          // After getting all the dates, render the data table
           $('#vault-receipts').DataTable({
             "data" :  data,
             "columnDefs" : [
@@ -97,6 +140,7 @@ var Vault =
     if (folder_id !== null && folder_id !== undefined)
       searchVal = folder_id;
 
+    // search based on column 5 which are folders
     $('#vault-receipts').DataTable().columns(5).search(searchVal).draw()
   },
   getFolders_: function()
@@ -119,6 +163,10 @@ var Vault =
             errorThrown);
         });
   },
+  /**
+   * @brief creates a folder element and adds it to the folder
+   *  side bar
+   */ 
   addFolderToList_: function(name, database_id)
   {
     var newListItem = $("<li></li>");
@@ -126,6 +174,7 @@ var Vault =
     newListItem.addClass("requested");
     var newFolder = $("<a></a>")
     newFolder.text(name);
+    // Attribute is based on the id of the folder in the WebApp DB
     newFolder.attr("folder_database_id", database_id);
     newFolder.attr("href", "#vault-receipts-pane");
     newFolder.attr("data-toggle", "pill");
@@ -143,18 +192,20 @@ var Vault =
       folder_type_id : 5,
       folder_id : null
     };
+
     var request = $.ajax({
-          url: this.appendCred_(controllers.GetUrl("folders") + ".json"),
-          type: 'POST',
-          data: folderData,
-          dataType: 'json'
-        }).done(function(data){
-        }).fail(function (jqXHR, textStatus, errorThrown){
-        // log the error to the console
-          console.error(
-            "The following error occurred: " + textStatus,
-            errorThrown);
-        });
+      url: this.appendCred_(controllers.GetUrl("folders") + ".json"),
+      type: 'POST',
+      data: folderData,
+      dataType: 'json'
+    }).done(function(data){
+      // do stuff on success
+    }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
   },
   clearFolders_: function()
   {
@@ -169,6 +220,27 @@ var Vault =
       var folder = $(this)
       self.filterReceiptList_(folder.attr("folder_database_id"));
     });
+  },
+  /**
+   *@brief custom filtering of DataTale to filter 
+   * and show only dates that are within range
+   */
+  isWithinDate_: function(startDate, endDate)
+  {
+    $.fn.dataTableExt.afnFiltering.push(
+      function( oSettings, aData, iDataIndex ) 
+      {
+        var iMin = startDate.getTime();
+        var iMax = endDate.getTime();
+        var iCurr = new Date(aData[0]).getTime();
+        // Check that the data value is within the date range
+        if ( iMin <= iCurr && iCurr <= iMax )
+        {
+          return true;
+        }
+
+        return false;
+      });
   }
 };
 
