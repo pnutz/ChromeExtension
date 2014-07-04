@@ -258,10 +258,12 @@ var NotiBar =
     var formDict = {};
     $.each(this.configurations.formFields, function(key, value)
     {
-      console.log(key);
-      console.log(value);
-      var formItem = $(value.id);
-      formDict[formItem.attr('name')] = formItem.val();
+      if (value.type !== fieldTypes.TABLE) {
+        console.log(key);
+        console.log(value);
+        var formItem = $(value.id);
+        formDict[formItem.attr('name')] = formItem.val();
+      }
     });
 
     formDict[$(this.configurations.formFields.items.id).attr('name')] = TwoReceiptHandsOnTable.getReceiptItems();
@@ -524,7 +526,9 @@ var NotiBar =
 
 document.addEventListener('DOMContentLoaded', function() {
   NotiBar.init();
-  TwoReceiptHandsOnTable.init();
+  setTimeout(function() {
+    TwoReceiptHandsOnTable.init();
+  }, 200);
   //TwoReceiptHandsOnTable.addItemRow("hello", 3, 43.2);
 });
 

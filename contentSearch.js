@@ -324,7 +324,7 @@ function findMatchByElement(field, count, type) {
                             };
 
       // only consider valid search terms
-      if (isValidSearchTerm(new_search_term)) {
+      if (isValidSearchTerm(new_search_term, type)) {
         // check all existing search_terms for duplicates
         var duplicate = hasDuplicate(field, new_search_term);
 
@@ -401,7 +401,7 @@ function findMatchByNode(field, count, type) {
                             };
 
       // only consider valid search terms
-      if (isValidSearchTerm(new_search_term)) {
+      if (isValidSearchTerm(new_search_term, type)) {
         // check all existing search_terms for duplicates
         var duplicate = hasDuplicate(field, new_search_term);
 
@@ -481,7 +481,7 @@ function findMatchByWord(field, count, type) {
                             };
 
       // only consider valid search terms
-      if (isValidSearchTerm(new_search_term)) {
+      if (isValidSearchTerm(new_search_term, type)) {
         // check all existing search_terms for duplicates
         var duplicate = hasDuplicate(field, new_search_term);
 
@@ -506,14 +506,25 @@ function findMatchByWord(field, count, type) {
 }
 
 // returns true if new_search_term is valid
-function isValidSearchTerm(search_term) {
-  // selection length is not too long 200+ / short 3-
-  if (search_term.end - search_term.start >= 200 || search_term.end - search_term.start <= 3) {
-    return false;
-  } else if (search_term.start_node_index > search_term.end_node_index) {
-    return false;
+function isValidSearchTerm(search_term, type) {
+  if (type !== "number") {
+    // selection length is not too long 200+ / short 3-
+    if (search_term.end - search_term.start >= 200 || search_term.end - search_term.start <= 3) {
+      return false;
+    } else if (search_term.start_node_index > search_term.end_node_index) {
+      return false;
+    } else {
+      return true;
+    }
   } else {
-    return true;
+    // selection length is not too long 200+
+    if (search_term.end - search_term.start >= 200 || search_term.end - search_term.start <= 0) {
+      return false;
+    } else if (search_term.start_node_index > search_term.end_node_index) {
+      return false;
+    } else {
+      return true;
+    }
   }
 }
 
