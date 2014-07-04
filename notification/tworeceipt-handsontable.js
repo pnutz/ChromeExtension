@@ -16,12 +16,14 @@ var TwoReceiptHandsOnTable =
     // handsontable last focused index
     this.index = -1;
     // set handsontable width to the parent div width
+    console.log($("#receipt-items-container").width());
     var tableWidth = $("#receipt-items-container").width() - 100;
     console.log(tableWidth);
     // setup handsontable for receipt items
     this.receiptItemTable = $("#items");
 
     var TwoReceiptEditor = this.initTwoReceiptEditor();
+    var TwoReceiptNumericEditor = this.initTwoReceiptNumericEditor();
 
     this.receiptItemTable.handsontable({
       stretchH : 'last', // Setting this to 'all' causes resizing issues
@@ -32,7 +34,6 @@ var TwoReceiptHandsOnTable =
       manualColumnResize : true,
       minSpareRows : this.configurations.minSpareRows,
       columnSorting : true,
-      startRows: 0,
       afterCreateRow : function (index, data)
       {
         // add a row to the representation
@@ -82,7 +83,7 @@ var TwoReceiptHandsOnTable =
         },
         {
           data: 'quantity',
-          editor: TwoReceiptEditor,
+          editor: TwoReceiptNumericEditor,
           renderer: "numeric",
           validator: this.twoReceiptNumericValidator,
           //allowInvalid: false,
@@ -90,7 +91,7 @@ var TwoReceiptHandsOnTable =
         },
         {
           data: 'cost',
-          editor: TwoReceiptEditor,
+          editor: TwoReceiptNumericEditor,
           renderer: "numeric",
           validator: this.twoReceiptNumericValidator,
           //allowInvalid: false,
@@ -235,13 +236,19 @@ var TwoReceiptHandsOnTable =
           }
 
           var col_name = that.instance.colToProp(that.col);
-          // minimum 3 characters (NAME ONLY)
+          // minimum 3 characters
           if (newValue.length > 2) {
+            // if on spare row currently, add row
+            if (row === undefined)
+            {
+              self.rows.push(that.row);
+              row = self.rows.length - 1;
+            }
             var message = { request: "searchText", "fieldName": col_name, "itemIndex": row, "text": newValue };
             window.parent.postMessage(message, "*");
           }
-          // remove source? (NAME ONLY)
-          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name))
+          // remove source
+          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name) && row !== undefined)
           {
             self.source[row][col_name] = [];
 
@@ -361,7 +368,7 @@ var TwoReceiptHandsOnTable =
                   choiceIndex++;
                 }
               }
-              console.log(that.$htContainer);
+              //console.log(that.$htContainer);
               self.index = optionIndex;
               var message = { request: "highlightSearchText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row, "value": optionIndex };
               window.parent.postMessage(message, "*");
@@ -398,6 +405,155 @@ var TwoReceiptHandsOnTable =
     return TwoReceiptEditor;
   },
 
+  // returns TwoReceipt Numeric extension of handsontable AutocompleteEditor
+  initTwoReceiptNumericEditor: function()
+  {
+    var self = this;
+    var TwoReceiptNumericEditor = Handsontable.editors.AutocompleteEditor.prototype.extend();
+
+    TwoReceiptNumericEditor.prototype.createElements = function(){
+      Handsontable.editors.AutocompleteEditor.prototype.createElements.apply(this, arguments);
+
+      this.$htContainer.addClass('TwoReceiptNumericEditor');
+    };
+
+    TwoReceiptNumericEditor.prototype.bindEvents = function(){
+      Handsontable.editors.AutocompleteEditor.prototype.bindEvents.apply(this, arguments);
+
+      var that = this;
+      // cell textarea change event
+      $(this.TEXTAREA).bind("input propertychange", function() {
+        var temp_this = this;
+        var delay = 150;
+
+        clearTimeout($(temp_this).data("timer"));
+        $(temp_this).data("timer", setTimeout(function() {
+          $(temp_this).removeData("timer");
+          var newValue = temp_this.value.toString();
+
+          // retrieve actual row (including deleted)
+          var row;
+          for (var index = 0; index < self.rows.length; index++)
+          {
+            if (self.rows[index] === that.row)
+            {
+              row = index;
+              break;
+            }
+          }
+
+          var col_name = that.instance.colToProp(that.col);
+          // minimum 1 character and numeric
+          if (newValue.length > 0 && Handsontable.helper.isNumeric(newValue)) {
+            // if on spare row currently, add row
+            if (row === undefined)
+            {
+              self.rows.push(that.row);
+              row = self.rows.length - 1;
+            }
+
+            var message = { request: "searchNumber", "fieldName": col_name, "itemIndex": row, "text": newValue };
+            window.parent.postMessage(message, "*");
+          }
+          // remove source
+          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name) && row !== undefined)
+          {
+            self.source[row][col_name] = [];
+
+            // clear autocomplete list
+            self.updateTableSource(col_name, row);
+          }
+        }, delay));
+      });
+    };
+
+    var onBeforeKeyDownTR;
+
+    TwoReceiptNumericEditor.prototype.open = function () {
+      Handsontable.editors.AutocompleteEditor.prototype.open.apply(this, arguments);
+      console.log("open");
+
+      var row;
+      for (var index = 0; index < self.rows.length; index++)
+      {
+        if (self.rows[index] === this.row)
+        {
+          row = index;
+          break;
+        }
+      }
+
+      if (row !== undefined && Handsontable.helper.isArray(this.cellProperties.source))
+      {
+        (function (that) {
+          // mouseenter/mouseleave for main text area
+          $(that.$textarea).on('mouseenter', function()
+          {
+            window.parent.postMessage({ request: "highlightText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row }, "*");
+          })
+          .on('mouseleave', function()
+          {
+            window.parent.postMessage({ request: "cleanHighlight" }, "*");
+          });
+        })(this);
+
+        for (var index = 0; index < this.$htContainer.handsontable('countRows'); index++)
+        {
+          // optionIndex is selected option index in visible autocomplete list (choices)
+          (function (that, optionIndex) {
+            $(that.$htContainer.handsontable('getCell', optionIndex, 0))
+            .on('mouseenter', function()
+            {
+              // iterate through entire autocomplete source, matching with shown choices until optionIndex is found
+              var choiceIndex = 0;
+              for (var sourceIndex = 0; sourceIndex < that.cellProperties.source.length; sourceIndex++)
+              {
+                if (that.cellProperties.source[sourceIndex] === that.choices[choiceIndex])
+                {
+                  // change optionIndex to represent selected option in entire source
+                  if (choiceIndex === optionIndex)
+                  {
+                    optionIndex = sourceIndex;
+                    break;
+                  }
+                  choiceIndex++;
+                }
+              }
+              console.log(that.$htContainer);
+              self.index = optionIndex;
+              var message = { request: "highlightSearchText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row, "value": optionIndex };
+              window.parent.postMessage(message, "*");
+            })
+            .on('mouseleave', function()
+            {
+              self.index = -1;
+              window.parent.postMessage({ request: "cleanHighlight" }, "*");
+            });
+          })(this, index);
+        }
+      }
+    };
+
+    TwoReceiptNumericEditor.prototype.close = function () {
+      Handsontable.editors.AutocompleteEditor.prototype.close.apply(this, arguments);
+
+      console.log("close");
+
+      $(this.$textarea).off('mouseenter').off('mouseleave');
+
+      for (var index = 0; index < this.$htContainer.handsontable('countRows'); index++) {
+        (function (that, row) {
+          $(that.$htContainer.handsontable('getCell', row, 0)).off('mouseenter').off('mouseleave');
+        })(this, index);
+      }
+    };
+
+    Handsontable.editors.TwoReceiptNumericEditor = TwoReceiptNumericEditor;
+    Handsontable.editors.registerEditor('tworeceiptnumeric', TwoReceiptNumericEditor);
+
+    return TwoReceiptNumericEditor;
+  },
+
     /**
    * @brief Set entire table using a key value pair.
    *        key increments are assumed to start from 0
@@ -422,7 +578,19 @@ var TwoReceiptHandsOnTable =
 
   addItemRow: function(name, quantity, price)
   {
-    var rowNum = this.receiptItemTable.handsontable('countRows') - this.configurations.minSpareRows;
+    var lastRow = 0;
+    var rowNum = 0;
+    for (var index = this.rows.length - 1; index >= 0; index--)
+    {
+      if (this.rows[index] !== null)
+      {
+        lastRow = index + 1;
+        rowNum = this.rows[index] + 1;
+        break;
+      }
+    }
+    this.rows.push(lastRow);
+
     this.receiptItemTable.handsontable('setDataAtCell', rowNum, 0, name);
     this.receiptItemTable.handsontable('setDataAtCell', rowNum, 1, quantity);
     this.receiptItemTable.handsontable('setDataAtCell', rowNum, 2, price);
@@ -471,6 +639,6 @@ var TwoReceiptHandsOnTable =
 
   getRows: function()
   {
-    return self.rows;
+    return this.rows;
   }
 };

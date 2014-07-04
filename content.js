@@ -344,18 +344,18 @@ function createNotification() {
 	style.innerHTML = ".twoReceiptIFrame { width: 100%; }";
 	document.getElementsByTagName("head")[0].appendChild(style);
 
-  document.getElementsByTagName("body")[0].style.paddingTop = "500px";
+  document.getElementsByTagName("body")[0].style.paddingTop = "300px";
 
 	// append iframe notification within div to body
 	var div = document.createElement("div");
 	div.id = "notificationdiv";
-	div.setAttribute("style", "top: 0px; left: 0px; height: 500px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
+	div.setAttribute("style", "top: 0px; left: 0px; height: 300px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
 	var iframe = document.createElement("iframe");
 	iframe.id = "twoReceiptIFrame";
 	iframe.className = "twoReceiptIFrame";
 	iframe.scrolling = "no";
 	iframe.style.width = "100%";
-	iframe.setAttribute("style", 'height: 500px; border: 0px;');
+  iframe.setAttribute("style", 'height: 300px; border: 0px; overflow: visible;');
 	iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
 	div.appendChild(iframe);
 
@@ -393,9 +393,13 @@ chrome.runtime.onConnect.addListener(function(port) {
             url: location.href,
             domain: message_domain
           };
-          incomingPort.postMessage(msg_data);
 
           createNotification();
+
+          // delay response so generated data comes later (handsontable not fully generated yet)
+          setTimeout(function() {
+            incomingPort.postMessage(msg_data);
+          }, 400);
         }
         // receive generated data
         else if (msg.request === "generatedData") {
@@ -423,7 +427,7 @@ chrome.runtime.onMessage.addListener(
 		if (self === top) {
       // retrieve url & domain
       if (request.greeting === "checkUrl") {
-        var message_domain;
+        /*var message_domain;
         if (document.domain === null || document.domain === "") {
           message_domain = "DOMAIN";
         } else {
@@ -435,7 +439,7 @@ chrome.runtime.onMessage.addListener(
           url: location.href,
           domain: message_domain
         };
-        sendResponse(msg_data);
+        sendResponse(msg_data);*/
       }
       // get page html
       else if (request.greeting === "getHTML")	{
@@ -459,75 +463,81 @@ window.addEventListener("message", function(event) {
   {
     console.log(event.data);
 
-    if (event.data.request !== undefined) {
+    switch (event.data.request) {
+
       // user submitted receipt, send all data to eventPage
-      if (event.data.request === "saveReceipt" && event.data.saved_data !== undefined)
-      {
-        var notdiv = document.getElementById("notificationdiv");
-        sendReceipt(event.data.saved_data);
-        document.getElementsByTagName("body")[0].style.paddingTop = "0px";
-        notdiv.parentNode.removeChild(notdiv);
-      }
+      case "saveReceipt":
+        if (event.data.saved_data !== undefined) {
+          var notdiv = document.getElementById("notificationdiv");
+          sendReceipt(event.data.saved_data, event.data.rows);
+          document.getElementsByTagName("body")[0].style.paddingTop = "0px";
+          notdiv.parentNode.removeChild(notdiv);
+        }
+        break;
+
       // user requests search
-      else if (event.data.request === "searchText" && event.data.fieldName !== undefined && event.data.text !== undefined) {
-        searchRequest(event.source, "text", event.data.fieldName, event.data.text, event.data.itemIndex);
-      }
+      case "searchText":
+        if (event.data.fieldName !== undefined && event.data.text !== undefined) {
+          searchRequest(event.source, "text", event.data.fieldName, event.data.text, event.data.itemIndex);
+        }
+        break;
+
       // user requests numeric search
-      else if (event.data.request === "searchNumber" && event.data.fieldName !== undefined && event.data.text !== undefined) {
-        searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
-      }
+      case "searchNumber":
+        if (event.data.fieldName !== undefined && event.data.text !== undefined) {
+          searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
+        }
+        break;
+
       // user focused on search, highlight selected area
-      else if (event.data.request === "highlightSearchText" && event.data.fieldName !== undefined) {
-        cleanHighlight();
-        var field = event.data.fieldName;
-        if (event.data.itemIndex !== undefined) {
-          field += event.data.itemIndex;
+      case "highlightSearchText":
+        if (event.data.fieldName !== undefined) {
+          cleanHighlight();
+          var field = event.data.fieldName;
+          if (event.data.itemIndex !== undefined) {
+            field += event.data.itemIndex;
+          }
+          highlightMatchText(field, event.data.value);
         }
-        highlightMatchText(field, event.data.value);
-      }
+        break;
+
       // user selected search, highlight, and set field text
-      else if (event.data.request === "selectText" && event.data.fieldName !== undefined && event.data.value !== undefined) {
-        cleanHighlight();
-        cleanFieldText(event.data.fieldName, event.data.itemIndex);
+      case "selectText":
+        if (event.data.fieldName !== undefined && event.data.value !== undefined) {
+          cleanHighlight();
+          cleanFieldText(event.data.fieldName, event.data.itemIndex);
 
-        var field = event.data.fieldName;
-        if (event.data.itemIndex !== undefined) {
-          field += event.data.itemIndex;
+          var field = event.data.fieldName;
+          if (event.data.itemIndex !== undefined) {
+            field += event.data.itemIndex;
+          }
+
+          var element = getMatchElement(field, event.data.value);
+          var start = getSearchTermProperty(field, "start", event.data.value);
+          var end = getSearchTermProperty(field, "end", event.data.value);
+          var node = getSearchTermProperty(field, "start_node_index", event.data.value);
+          setFieldText(element, start, end, event.data.fieldName, event.data.itemIndex, node);
+
+          highlightAttributeText(event.data.fieldName, event.data.itemIndex);
         }
+        break;
 
-        var element = getMatchElement(field, event.data.value);
-        var start = getSearchTermProperty(field, "start", event.data.value);
-        var end = getSearchTermProperty(field, "end", event.data.value);
-        var node = getSearchTermProperty(field, "start_node_index", event.data.value);
-        setFieldText(element, start, end, event.data.fieldName, event.data.itemIndex, node);
-
-        highlightAttributeText(event.data.fieldName, event.data.itemIndex);
-      }
       // user focuses on notification text field, highlight attribute data if it exists
-      else if (event.data.request === "highlightText" && event.data.fieldName !== undefined) {
-        cleanHighlight();
-        highlightAttributeText(event.data.fieldName, event.data.itemIndex);
-      }
-      // user lost focus on notification text field, remove all highlighting
-      else if (event.data.request === "cleanHighlight") {
-        cleanHighlight();
-      }
-      // user deleted a receipt item, mark removed index in generated
-      else if (event.data.request === "delete"/* && event.data.index !== undefined*/) {
-        console.log("ack " + event.data.index + " deleted");
-      }
-      // user submitted receipt
-      else if (event.data.request === "saveReceipt" && event.data.saved_data !== undefined && event.data.rows !== undefined) {
-        sendReceipt(event.data.saved_data, event.data.rows);
-      }
-      else
-      {
-        if (self !== top)
-        {
-          /*console.log(event.data);
-          window.parent.postMessage(event.data, '*');*/
+      case "highlightText":
+        if (event.data.fieldName !== undefined) {
+          cleanHighlight();
+          highlightAttributeText(event.data.fieldName, event.data.itemIndex);
         }
-      }
+        break;
+
+      // user lost focus on notification text field, remove all highlighting
+      case "cleanHighlight":
+        cleanHighlight();
+        break;
+
+      default:
+        console.log("unable to handle message request");
+
     }
   }
 });
@@ -561,6 +571,7 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
 }
 
 function sendReceipt(saved_data, rows) {
+  console.log(rows);
   if (incomingPort !== undefined && incomingPort !== null) {
     // clean html data
     cleanHighlight();
@@ -579,8 +590,9 @@ function sendReceipt(saved_data, rows) {
     {
       $.each(generated.templates.items, function(key, value)
       {
-        console.log(key + " " + value);
-        if (rows[key] === null)
+        var int_key = parseInt(key);
+        console.log(rows);
+        if (!isNaN(int_key) && rows[int_key] === null)
         {
           generated.templates.items[key].deleted = true;
         }

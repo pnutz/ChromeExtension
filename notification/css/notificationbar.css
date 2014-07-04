@@ -1,5 +1,6 @@
 /* Overrides */
-.handsontable td {
+.handsontable td
+{
   word-wrap: break-word;  /* word wrapping*/
 }
 
@@ -12,4 +13,12 @@
 .deleteTd
 {
   text-align: center;
+}
+
+/*Handsontable CSS*/
+#items
+{
+  height: 100px;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
