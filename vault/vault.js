@@ -1,30 +1,45 @@
 var dummyArray = [];
 var controllers;
+var vData = null;
 
 var Vault = 
 {
   data: 
   {
     receipts : [],
-    dateFormat : "yy-mm-dd"
+    dateFormat : "yy-mm-dd",
+    dataTable : null,
+    rangePreset : null,
+    endDate : null,
+    startDate : null
   },
   appendCred_: function(url)
   {
     var credUrl = "";
     
-    if ("userEmail" in localStorage &&
-        "authToken" in localStorage) {
+    if ("userEmail" in localStorage && "authToken" in localStorage) 
+    {
       credUrl =  url + 
-          "?email=" + localStorage["userEmail"] + 
-          "&token=" + localStorage["authToken"];
-    } else {
+        "?email=" + localStorage["userEmail"] + 
+        "&token=" + localStorage["authToken"];
+    } 
+    else 
       console.error("Missing credentials!");
-    }
+
     return credUrl;
+  },
+  initMembers: function()
+  {
+    this.data.dataTable = $("#vault-receipts");
+    this.data.rangePreset = $("#vault-date-preset");
+    this.data.endDate = $("#end-date");
+    this.data.startDate = $("#start-date");
   },
   init: function ()
   {
     var self = this;
+    this.initMembers();
+    vData = this.data;
     // get the controller urls
     controllers = new ControllerUrls(localStorage["webAppHost"]);
     // initialize the tab navigation bar
@@ -49,11 +64,46 @@ var Vault =
       this.getFolders_();
       this.initDatePicker("#start-date");
       this.initDatePicker("#end-date");
+      this.data.rangePreset.change(this.presetChangedCallback);
+
     }
     else
-    {
       console.log("missing credentials");
+  },
+  presetChangedCallback: function()
+  {
+    var select = parseInt(vData.rangePreset.val());
+    if (select == 0)
+      return;
+
+    var thisDate = new Date();
+    vData.endDate.datepicker("setDate", new Date());
+
+    switch(parseInt(vData.rangePreset.val()))
+    {
+      case 1: //today
+        thisDate.setHours(0);
+        break;
+      case 2: //Yesterday
+        thisDate.setDate(thisDate.getDate() - 1);
+        break;
+      case 3: //this week
+        thisDate.setDate(thisDate.getDate() - thisDate.getDay());
+        break;
+      case 4: //last weeks 
+        //Get some day in last week
+        thisDate.setDate(thisDate.getDate() - 7 - thisDate.getDay()); 
+        break;
+      case 5: //this month
+        thisDate.setDate(1); 
+        break;
+      case 6: //last month
+        thisDate.setMonth(thisDate.getMonth() - 1); 
+        thisDate.setDate(1); 
+        break;
     }
+    thisDate.setHours(0);
+    vData.startDate.datepicker("setDate", thisDate);
   },
   initDatePicker: function(dateFormId)
   {
@@ -63,71 +113,72 @@ var Vault =
       constrainInput: true 
     });
 
+    // When date inputs change
     $(dateFormId).change(function(){
       // Clear previous filtering
       $.fn.dataTableExt.afnFiltering.pop();
-      $("#vault-receipts").dataTable().fnDraw();
+      self.data.dataTable.dataTable().fnDraw();
       self.isWithinDate_(new Date($("#start-date").val()), new Date($("#end-date").val()))
-      $("#vault-receipts").dataTable().fnDraw();
+      self.data.dataTable.dataTable().fnDraw();
     });
   },
   getReceipts_: function()
   {
     var self = this;
     var request = $.ajax({
-          url: this.appendCred_(controllers.GetUrl("receipts") + ".json"),
-          type: 'GET',
-          dataType: 'json'
-        }).done(function(data){
-          self.data.receipts = data;
-          // painfully convert each item to the desired date format before 
-          var earliestDate = new Date(data[0]["date"]);
-          var latestDate = new Date(data[0]["date"]);
-          $.each(data, function(index, value)
-          {
-            // create a date object for comparison
-            var thisDate = new Date(value["date"]);
+      url: this.appendCred_(controllers.GetUrl("receipts") + ".json"),
+      type: 'GET',
+      dataType: 'json'
+    }).done(function(data){
+      self.data.receipts = data;
+      // painfully convert each item to the desired date format before 
+      var earliestDate = new Date(data[0]["date"]);
+      var latestDate = new Date(data[0]["date"]);
+      $.each(data, function(index, value)
+      {
+        // create a date object for comparison
+        var thisDate = new Date(value["date"]);
 
-            // Update the end-date so that it has the latest date value
-            if (thisDate > latestDate)
-            {
-              latestDate = thisDate;
-              $("#end-date").datepicker("setDate", thisDate);
-            } 
-            else if (thisDate < earliestDate)
-            {
-              earliestDate = thisDate;
-              $("#start-date").datepicker("setDate", thisDate);
-            }
+        // Update the end-date so that it has the latest date value
+        if (thisDate > latestDate)
+        {
+          latestDate = thisDate;
+          $("#end-date").datepicker("setDate", thisDate);
+        } 
+        else if (thisDate < earliestDate)
+        {
+          earliestDate = thisDate;
+          $("#start-date").datepicker("setDate", thisDate);
+        }
 
-            // In the mean time modify the date format for each date
-            value["date"] = $.datepicker.formatDate(self.data.dateFormat, new Date(value["date"])); 
-          });
+        // In the mean time modify the date format for each date
+        value["date"] = $.datepicker.formatDate(self.data.dateFormat, new Date(value["date"])); 
+      });
 
-          // After getting all the dates, render the data table
-          $('#vault-receipts').DataTable({
-            "data" :  data,
-            "columnDefs" : [
-             { 
-                "targets" : [5], // hide folder ids since we only want them for filtering
-                "visible" : false
-              }
-            ],
-            "columns" : [
-              {"data" : "date"},
-              {"data" : "vendor_id"},
-              {"data" : "transaction_number"},
-              {"data" : "total"},
-              {"data" : "note"},
-              {"data" : "folder_id"},
-            ],
-          });
-        }).fail(function (jqXHR, textStatus, errorThrown){
-        // log the error to the console
-          console.error(
-            "The following error occurred: " + textStatus,
-            errorThrown);
-        });
+      // After getting all the dates, render the data table
+      self.data.dataTable.DataTable({
+        "data" :  data,
+        "columnDefs" : [
+         { 
+            "targets" : [5], // hide folder ids since we only want them for filtering
+            "visible" : false
+          }
+        ],
+        "columns" : [
+          {"data" : "date"},
+          {"data" : "vendor_id"},
+          {"data" : "transaction_number"},
+          {"data" : "total"},
+          {"data" : "note"},
+          {"data" : "folder_id"},
+        ],
+      });
+    }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
   },
   /**
    *@brief renders receipts in the data table
