@@ -281,10 +281,6 @@ function findMatchByElement(field, count, type) {
           element = $("[data-tworeceipt-" + field + "-search='" + field_value + "']");
 
       var element_text = getDocumentText(element);
-      if (type === "number" && !isNumeric(element_text)) {
-        console.log("search_term is not numeric");
-        return true;
-      }
 
       // current search_term is already the element match
       if (start_index === 0 && end_index === element_text.length) {
@@ -315,10 +311,31 @@ function findMatchByElement(field, count, type) {
         console.log(text_nodes[new_end_node_index]);
       }
 
+      var start_index = 0;
+      var end_index = element_text.length;
+
+      if (type === "number") {
+        if (element_text.indexOf("$") === 0) {
+          element_text = element_text.substring(1);
+          start_index++;
+        }
+
+        if (element_text.indexOf("$") === element_text.length - 1 || element_text.indexOf(".") === element_text.length - 1) {
+          element_text = element_text.substring(0, element_text.length - 1);
+          end_index--;
+        }
+
+
+        if (!isNumeric(element_text)) {
+          console.log("search_term is not numeric");
+          return true;
+        }
+      }
+
       var new_search_term = {
                               data: field_value,
-                              start: 0,
-                              end: element_text.length,
+                              start: start_index,
+                              end: end_index,
                               start_node_index: new_start_node_index,
                               end_node_index: new_end_node_index
                             };
@@ -386,6 +403,18 @@ function findMatchByNode(field, count, type) {
 
       if (type === "number") {
         var element_text = getDocumentText(element);
+
+        if (element_text.indexOf("$") === 0) {
+          element_text = element_text.substring(1);
+          start_index++;
+        }
+
+        if (element_text.indexOf("$") === element_text.length - 1 || element_text.indexOf(".") === element_text.length - 1) {
+          element_text = element_text.substring(0, element_text.length - 1);
+          end_index--;
+        }
+
+
         if (!isNumeric(element_text)) {
           console.log("search_term is not numeric");
           return true;
@@ -465,12 +494,24 @@ function findMatchByWord(field, count, type) {
 
       if (type === "number") {
         var final_text = element_text.substring(start_index, end_index);
-        //console.log(final_text);
+
+        if (final_text.indexOf("$") === 0) {
+          final_text = final_text.substring(1);
+          start_index++;
+        }
+
+        if (final_text.indexOf("$") === final_text.length - 1 || final_text.indexOf(".") === final_text.length - 1) {
+          final_text = final_text.substring(0, final_text.length - 1);
+          end_index--;
+        }
+
+
         if (!isNumeric(final_text)) {
           console.log("search_term is not numeric");
           return true;
         }
       }
+
 
       var new_search_term = {
                               data: field_value,
@@ -825,7 +866,6 @@ function initializeContentSearch() {
       params = iterateText(value, initTextNodes, params);
     });
     text_nodes = params.text_nodes;
-    console.log(text_nodes);
   } else {
     console.log("element does not exist. no text retrieved");
   }

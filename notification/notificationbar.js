@@ -285,7 +285,7 @@ var NotiBar =
               minLength: 1,
               autoFocus: true,
               //delay: 500, // default 300
-              source: [""],
+              source: [],
               // focus on selected option rather than autoFocus on 1st option if possible
               open: function (event, ui)
               {
@@ -352,11 +352,17 @@ var NotiBar =
               console.log("focus");
               var $this = $(this);
               // displays autocomplete list on form focus
-              if ($this.autocomplete("option", "source") !== null) {
+              if ($this.autocomplete("option", "source").length !== 0)
+              {
                 setTimeout(function()
                 {
                   $this.autocomplete("search");
                 }, 140);
+              }
+              else if ($this.val().length > 0)
+              {
+                var message = { request: "searchNumber", "text": $this.val(), "fieldName": $this.attr('id') };
+                window.parent.postMessage(message, "*");
               }
 
               // unhighlight other form text and highlight text (if it exists)
@@ -365,9 +371,9 @@ var NotiBar =
             })
             .click(function()
             {
-              // if form already focused, will re-open autocomplete on click
+              // if form already focused, will re-open autocomplete on click - THIS ALWAYS TRIGGERS ON FOCUS BY ORIGINAL CLICK
               var $this = $(this);
-              if ($this.is(":focus") && $this.autocomplete("option", "source") !== null) {
+              if ($this.is(":focus") && $this.autocomplete("option", "source").length !== 0) {
                 console.log("click");
                 setTimeout(function()
                 {
@@ -386,7 +392,7 @@ var NotiBar =
               minLength: 3,
               autoFocus: true,
               //delay: 500, // default 300
-              source: [""],
+              source: [],
               // focus on selected option rather than autoFocus on 1st option if possible
               open: function (event, ui)
               {
@@ -453,11 +459,16 @@ var NotiBar =
               console.log("focus");
               var $this = $(this);
               // displays autocomplete list on form focus
-              if ($this.autocomplete("option", "source") !== null) {
+              if ($this.autocomplete("option", "source").length !== 0) {
                 setTimeout(function()
                 {
                   $this.autocomplete("search");
                 }, 140);
+              }
+              else if ($this.val().length > 2)
+              {
+                var message = { request: "searchText", "text": $this.val(), "fieldName": $this.attr('id') };
+                window.parent.postMessage(message, "*");
               }
 
               // unhighlight other form text and highlight text (if it exists)
@@ -466,9 +477,9 @@ var NotiBar =
             })
             .click(function()
             {
-              // if form already focused, will re-open autocomplete on click
+              // if form already focused, will re-open autocomplete on click - THIS ALWAYS TRIGGERS ON FOCUS BY ORIGINAL CLICK
               var $this = $(this);
-              if ($this.is(":focus") && $this.autocomplete("option", "source") !== null) {
+              if ($this.is(":focus") && $this.autocomplete("option", "source").length !== 0) {
                 console.log("click");
                 setTimeout(function()
                 {

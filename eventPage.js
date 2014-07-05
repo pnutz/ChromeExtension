@@ -198,7 +198,7 @@ function checkUrl(tab_id) {
   });
 }
 
-// track latest active tab and store it if it isn't a chrome-extension OR addreceipt popup
+// track latest active tab and store it if it isn't a chrome-extension
 chrome.tabs.onActivated.addListener(function(activeInfo) {
 	chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
     // if active tab isn't a chrome-extension page
@@ -228,7 +228,7 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
     }
 
     // whenever page updates, check url with aServer for receipt page
-    checkUrl(tabId);
+    //checkUrl(tabId);
   }
 });
 

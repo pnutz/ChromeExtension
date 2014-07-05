@@ -19,7 +19,6 @@ var PopUp =
       vault: $("#view-vault"),
       logout: $("#logout"),
       pullPage: $("#pull-page"),
-      showNotification: $("#show-notification"),
       // ask background to show receipt submission form
       showReceiptForm: $("#receipt-form-show"),
       login: $("#login-button")
@@ -165,16 +164,6 @@ var PopUp =
           }
           window.close();
         });
-      });
-    });
-
-    // Notification test-tool, displays current notification
-    this.buttons.showNotification.on("click", function()
-    {
-      chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
-        console.log("notification message");
-        chrome.tabs.sendMessage(tab[0].id, {greeting: "showNotification"});
-        window.close();
       });
     });
 
