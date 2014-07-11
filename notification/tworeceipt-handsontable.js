@@ -603,6 +603,7 @@ var TwoReceiptHandsOnTable =
 
   getReceiptItems: function()
   {
+    // fieldName + itemIndex
     var receiptItems = {};
     // Minus one row since there is always an extra empty row
     var rowsToIterate = this.rows.length - this.configurations.minSpareRows;

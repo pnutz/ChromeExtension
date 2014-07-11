@@ -116,7 +116,6 @@ var NotiBar =
         self.setAutoCompleteOptions(that.id, []);
 
         // search for numeric field
-        console.log(type);
         if (type === fieldTypes.NUMBER && $(that).valid() && that.value.length > 0) {
           var message = { request: "searchNumber", "text": that.value, "fieldName": that.id };
           window.parent.postMessage(message, "*");
@@ -227,8 +226,8 @@ var NotiBar =
 
   /**
    * @brief set the selected option for <select> fields
-   * @params fieldId the id for the element
-   * @params value the id for the selected option
+   * @params fieldName the name for the element
+   * @params options the option id
    */
   setSelectFieldOptions: function(fieldName, options)
   {
@@ -258,7 +257,8 @@ var NotiBar =
     var formDict = {};
     $.each(this.configurations.formFields, function(key, value)
     {
-      if (value.type !== fieldTypes.TABLE) {
+      if (value.type !== fieldTypes.TABLE)
+      {
         console.log(key);
         console.log(value);
         var formItem = $(value.id);
@@ -549,14 +549,12 @@ window.addEventListener("message", function(event) {
   {
     console.log(event.data);
 
-    // event.source.postMessage("yes", event.origin);
-
     // generated values for form fields
     if (event.data.request === "generatedData")
     {
       $.each(event.data.generated, function(key, value)
       {
-        if (key !== "templates" && key !== "items")
+        if (key !== "templates" && key !== "element_paths" && key !== "items")
         {
           NotiBar.setFieldValue(key, value);
         }

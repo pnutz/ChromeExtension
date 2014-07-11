@@ -32,6 +32,7 @@ function searchText(search_term, field, total) {
   // iterate through all children of body element
   var children = $("body")[0].childNodes;
   $.each(children, function(index, value) {
+
     params = iterateText(value, findMatch, params);
     search_elements = params.search_elements;
 
@@ -56,6 +57,7 @@ function searchText(search_term, field, total) {
 *          result - set to false to break out of iterateText
 */
 function findMatch(node, params) {
+
   var node_value = node.nodeValue.trim(),
       node_index = params.node_index,
       search_term = params.search_term,
@@ -988,6 +990,72 @@ function cleanFieldText(field, index) {
     });
     attributes = { "items": {} };
   }
+}
+
+// returns a element that is a parent to all template fields
+function getParentElement(savedData, isItemField) {
+  var parentElement;
+
+  if (!isItemField) {
+    $.each(savedData, function(key, value) {
+      if (key !== "items") {
+        var selector = "[data-tworeceipt-" + key + "-start]";
+        var formItem = $(selector)[0];
+      } else {
+        var formItem = getParentElement(value, true);
+      }
+      console.log(formItem);
+
+      if (formItem != null) {
+        if (parentElement != null) {
+          parentElement = findParent(parentElement, formItem);
+        }
+        else {
+          parentElement = formItem;
+        }
+      }
+    });
+  } else {
+    $.each(savedData, function(itemIndex, itemValue) {
+      $.each(itemValue, function(itemAttr, value) {
+        if (value != null) {
+          var selector = "[data-tworeceipt-" + itemAttr + itemIndex + "-start]";
+          var formItem = $(selector)[0];
+          console.log(formItem);
+
+          if (formItem != null) {
+            if (parentElement != null) {
+              parentElement = findParent(parentElement, formItem);
+            }
+            else {
+              parentElement = formItem;
+            }
+          }
+        }
+      });
+    });
+  }
+
+  return parentElement;
+}
+
+// returns a parent element that contains both element1 and element2 (can be equal to the element)
+function findParent(element1, element2) {
+  // if element2 contains element1
+  if ($.contains(element2, element1)) {
+    element1 = element2;
+  }
+  // if element1 does not contain element2
+  else if (!$.contains(element1, element2)) {
+    // while element2 does not contain element1 and they are not equal
+    while (!$.contains(element2, element1) && element1 !== element2) {
+      element2 = element2.parentNode;
+    }
+
+    element1 = element2;
+  }
+
+  return element1;
 }
 
 // source: http://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string

@@ -8,13 +8,72 @@ var incomingPort,
 $(document).ready(function () {
 	if (self === top) {
 		console.log("document ready");
-	}
+  }
 
   // calculate a parent that encompasses every tworeceipt 'data-tworeceipt-field-start'
   // get field from the json message passed
-  /*html2canvas($("#js-repo-pjax-container"), {
+  // quality so shit - why?
+  /*
+    set image size to 1/3 original size OR set CSS sizes to 300% before rendering
+    http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
+  */
+
+  // send octet-stream to ruby on rails server as json POST to save as file
+  /*
+    data = data.replace(/^data:image\/(png|jpg);base64,/, "");
+    data = encodeURIComponent(data);
+    var json_data = "image=" + data + "&filedir=" + cur_path;
+
+    resize window to be print page format then save image
+    landscape/portrait?
+    -
+
+    receive data in text format
+
+    TO DO: save it in file format on server
+    learn how to save it, set filename
+  */
+
+  // data format
+  //data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACFUAAAMnCAYAAAD1NP9IAAAgAElEQ…CAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAiMQFIF55tGc0VEAAAAAElFTkSuQmCC
+  // converted to octet-stream
+  //data:image/octet-stream;base64,iVBORw0KGgoAAAANSUhEUgAACFUAAAMnCAYAAAD1NP9I…CAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAiMQFIF55tGc0VEAAAAAElFTkSuQmCC
+
+  // scaledElement does not work
+  /*var element = $("body");
+
+  var scaledElement = element.clone().css({
+    'transform': 'scale(3,3)',
+    '-ms-transform': 'scale(3,3)',
+    '-webkit-transform': 'scale(3,3)'
+  });
+
+  var oldWidth = element.width();
+  var oldHeight = element.height();
+
+  var newWidth = oldWidth * (1/3);
+  var newHeight = oldHeight * (1/3);
+  html2canvas(scaledElement, {
+     onrendered: function(canvasq) {
+       var img = document.createElement("img");
+       img.src = canvasq.toDataURL();
+       console.log(canvasq.toDataURL());
+       img.width = newWidth;
+       img.height = newHeight;
+       console.log(img);
+       //window.location.href = img;
+       //document.body.appendChild(img);
+       console.log("appended");
+    }
+  });*/
+
+  /*html2canvas($("body")[0], {
     onrendered: function(canvas) {
-      document.body.appendChild(canvas);
+      //var data = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+      //window.location.href = data;
+      console.log(canvas);
+      console.log(canvas.toDataURL());
+      //document.body.appendChild(canvas);
     }
   });*/
 
@@ -416,7 +475,7 @@ window.addEventListener("message", function(event) {
       case "saveReceipt":
         if (event.data.saved_data !== undefined) {
           var notdiv = document.getElementById("notificationdiv");
-          sendReceipt(event.data.saved_data, event.data.rows);
+          sendReceipt(event.data.saved_data, event.data.rows, event.data.parent);
           document.getElementsByTagName("body")[0].style.paddingTop = "0px";
           notdiv.parentNode.removeChild(notdiv);
         }
@@ -517,7 +576,7 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
   }
 }
 
-function sendReceipt(saved_data, rows) {
+function sendReceipt(saved_data, rows, parent) {
   console.log(rows);
   if (incomingPort !== undefined && incomingPort !== null) {
     // clean html data
@@ -533,18 +592,18 @@ function sendReceipt(saved_data, rows) {
     }
 
     // track deleted items for generated templates
-    if (generated !== undefined && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items"))
-    {
-      $.each(generated.templates.items, function(key, value)
-      {
+    if (generated !== undefined && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items")) {
+      $.each(generated.templates.items, function(key, value) {
         var int_key = parseInt(key);
-        console.log(rows);
-        if (!isNaN(int_key) && rows[int_key] === null)
-        {
+        if (!isNaN(int_key) && rows[int_key] === null) {
           generated.templates.items[key].deleted = true;
         }
       });
     }
+
+    // calculate parent element for all templates in saved_data
+    var parent = getParentElement(saved_data);
+    console.log(parent);
 
     // compose message
     var message = {
@@ -554,10 +613,21 @@ function sendReceipt(saved_data, rows) {
       domain: message_domain,
       attributes: attributes,
       generated: generated,
-      saved_data: saved_data
+      saved_data: saved_data,
+      parent: parent
     };
     console.log(message);
-    incomingPort.postMessage(message);
+
+    // this messes up the page dom, so only run at the end of the receipt submission
+    html2canvas(parent, {
+      onrendered: function(canvas) {
+        //var data = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+        //window.location.href = data;
+        document.body.appendChild(canvas);
+      }
+    });
+
+    //incomingPort.postMessage(message);
   }
 
   // clean receipt data
