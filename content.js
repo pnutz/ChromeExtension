@@ -10,69 +10,16 @@ $(document).ready(function () {
 		console.log("document ready");
 	}
 
-  document_text = initializeContentSearch();
-  console.log(document_text);
-
-  // find how many instances of search_term exist in document
-  /*var search_word = "order number:";
-  console.log("OCCURRENCES 1");
-  var count = occurrences(document_text, search_word, true);
-
-  if (count > 0) {
-    console.log(count + " instances of " + search_word + " found in document");
-
-    console.log("CLEAN HIGHLIGHT");
-    cleanHighlight();
-    console.log("SEARCH TEXT");
-    searchText(search_word, "vendor", count);
-    console.log("FIND RELEVANT MATCHES");
-    findRelevantMatches("vendor");
-
-    var field = "vendor";
-    var index = "0";
-    var element = getMatchElement(field, index),
-        start_index = getSearchTermProperty(field, "start", index),
-        end_index = getSearchTermProperty(field, "end", index),
-        start_node_index = getSearchTermProperty(field, "start_node_index", index);
-        var params = { "text": "", "trim": false };
-
-    // look for start and end index within element
-    if ($(element).length > 0) {
-      var children = $(element)[0].childNodes;
-      $.each(children, function(index, value) {
-        params = iterateText(value, addText, params);
-      });
-    } else {
-      console.log("element " + field + " does not exist. text not highlighted");
+  // calculate a parent that encompasses every tworeceipt 'data-tworeceipt-field-start'
+  // get field from the json message passed
+  /*html2canvas($("#js-repo-pjax-container"), {
+    onrendered: function(canvas) {
+      document.body.appendChild(canvas);
     }
-    console.log(params);
+  });*/
 
-    console.log("HIGHLIGHT");
-    highlightMatchText("vendor", 0);
-  } else {
-    console.log("document search halted: " + count + " instances of " + search_word + " found in document");
-  }
-  cleanHighlight();*/
-  /*search_word = "num";
-  console.log("OCCURRENCES 2");
-  count = occurrences(document_text, search_word, true);
-
-  if (count > 0) {
-    console.log(count + " instances of " + search_word + " found in document");
-
-    console.log("CLEAN HIGHLIGHT");
-    cleanHighlight();
-    console.log("SEARCH TEXT");
-    searchText(search_word, "vendor", count);
-    console.log("FIND RELEVANT MATCHES");
-    findRelevantMatches("vendor");
-
-    console.log("HIGHLIGHT");
-    highlightMatchText("vendor", 0);
-  } else {
-    console.log("document search halted: " + count + " instances of " + search_word + " found in document");
-  }*/
-
+  document_text = initializeContentSearch();
+  //console.log(document_text);
 
 	// only run function when user prompts to start, so links keep working
 	/*$(document).click(function(event) {
@@ -427,7 +374,7 @@ chrome.runtime.onMessage.addListener(
 		if (self === top) {
       // retrieve url & domain
       if (request.greeting === "checkUrl") {
-        /*var message_domain;
+        var message_domain;
         if (document.domain === null || document.domain === "") {
           message_domain = "DOMAIN";
         } else {
@@ -439,7 +386,7 @@ chrome.runtime.onMessage.addListener(
           url: location.href,
           domain: message_domain
         };
-        sendResponse(msg_data);*/
+        sendResponse(msg_data);
       }
       // get page html
       else if (request.greeting === "getHTML")	{

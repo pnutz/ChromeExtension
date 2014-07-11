@@ -5,7 +5,7 @@
   "description": "This extension demonstrates a 'browser action' with NIGGAS.",
   "version": "1.0",
 	// key is for enabling panels, remove if not using
-	"key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDsDApubb73tPfYlNIFxDu3K3/EHgV6/YOJXJkld1OZ20jW/cOht1j0NggnXhQYuu1mXFUufud4I2N7b5ydyg09gcM9Va3Zk17RhNV9smbPHOd4XlzJeXifX/9MgHPu4FzCen3CiSXsOeAELJIXEuT28xICriuUko/rNPwGeIB9VwIDAQAB",
+	//"key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDsDApubb73tPfYlNIFxDu3K3/EHgV6/YOJXJkld1OZ20jW/cOht1j0NggnXhQYuu1mXFUufud4I2N7b5ydyg09gcM9Va3Zk17RhNV9smbPHOd4XlzJeXifX/9MgHPu4FzCen3CiSXsOeAELJIXEuT28xICriuUko/rNPwGeIB9VwIDAQAB",
 
   "browser_action": {
     "default_icon": "icon.png",
@@ -14,13 +14,13 @@
 	"content_scripts": [
 		{
 			"matches": ["<all_urls>"],
-			"js":	["jquery-2.0.3.min.js", "content.js", "contentSearch.js"],
+			"js":	["jquery-2.0.3.min.js", "content.js", "contentSearch.js", "html2canvas.js"],
 			"all_frames": false,
       "run_at" : "document_start"
 		}
 	],
 	"background": {
-		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "FaceBookAPI.js", "ApiComm.js", "eventPage.js", "old-template.js"],
+		"scripts": ["jquery-2.0.3.min.js", "html-sanitizer-minified.js", "FaceBookAPI.js", "ApiComm.js", "eventPage.js"],
     "persistent": false
 	},
 	"web_accessible_resources": [
