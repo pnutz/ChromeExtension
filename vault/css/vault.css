@@ -22,3 +22,8 @@ a.tabHeader
 {
   padding: 10px;
 }
+
+#vault-folders-navbar > .subfolder > a 
+{
+  padding: 2px 15px;
+}
