@@ -540,7 +540,10 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     TwoReceiptHandsOnTable.init();
   }, 200);
-  //TwoReceiptHandsOnTable.addItemRow("hello", 3, 43.2);
+  /*
+  var data = { name: "hello", quantity: 3, cost: 43.2 };
+  TwoReceiptHandsOnTable.addItemRow(data);
+  */
 });
 
 // send message using window.parent.postMessage("yes", '*')
@@ -563,24 +566,7 @@ window.addEventListener("message", function(event) {
           $.each(value, function(item_key, item_value)
           {
             console.log(item_value);
-            // errors out if undefined is sent to addItemRow
-            var itemtype = null, quantity = null, cost = null;
-            if (item_value.hasOwnProperty("itemtype"))
-            {
-              itemtype = item_value["itemtype"];
-            }
-
-            if (item_value.hasOwnProperty("quantity"))
-            {
-              quantity = item_value["quantity"];
-            }
-
-            if (item_value.hasOwnProperty("cost"))
-            {
-              cost = item_value["cost"];
-            }
-
-            TwoReceiptHandsOnTable.addItemRow(itemtype, quantity, cost);
+            TwoReceiptHandsOnTable.addItemRow(item_value);
           });
         }
       });

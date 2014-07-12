@@ -1004,7 +1004,6 @@ function getParentElement(savedData, isItemField) {
       } else {
         var formItem = getParentElement(value, true);
       }
-      console.log(formItem);
 
       if (formItem != null) {
         if (parentElement != null) {
@@ -1016,20 +1015,18 @@ function getParentElement(savedData, isItemField) {
       }
     });
   } else {
+    console.log(savedData);
     $.each(savedData, function(itemIndex, itemValue) {
       $.each(itemValue, function(itemAttr, value) {
-        if (value != null) {
-          var selector = "[data-tworeceipt-" + itemAttr + itemIndex + "-start]";
-          var formItem = $(selector)[0];
-          console.log(formItem);
+        var selector = "[data-tworeceipt-" + itemAttr + itemIndex + "-start]";
+        var formItem = $(selector)[0];
 
-          if (formItem != null) {
-            if (parentElement != null) {
-              parentElement = findParent(parentElement, formItem);
-            }
-            else {
-              parentElement = formItem;
-            }
+        if (formItem != null) {
+          if (parentElement != null) {
+            parentElement = findParent(parentElement, formItem);
+          }
+          else {
+            parentElement = formItem;
           }
         }
       });
@@ -1056,6 +1053,65 @@ function findParent(element1, element2) {
   }
 
   return element1;
+}
+
+// calculates the element_path from param node
+function findElementPath(node) {
+  var elementPath = [];
+  var element = $(node);
+  var parentElement = element.parent();
+
+  while (parentElement.length > 0 && element[0].tagName !== "BODY") {
+    var order = parentElement.children().index(element);
+    elementPath.unshift(order);
+    element = parentElement;
+    parentElement = parentElement.parent();
+  }
+
+  elementPath.unshift(0);
+  return elementPath;
+}
+
+// returns DOM element node at the end of param elementPath
+function getElementFromElementPath(elementPath) {
+  var element = $("body");
+  $.each(elementPath, function(key, value) {
+    if (key !== 0) {
+      element = element.children();
+    }
+    element = element.eq(value);
+  });
+
+  return element[0];
+}
+
+// compares two element_paths and return an element_path representing the parent element
+function findParentElementPath(element_path1, element_path2) {
+  var element_path = [];
+
+  if (element_path1 == null && element_path2 == null) {
+    return element_path;
+  }
+  else if (element_path1 == null) {
+    return element_path2;
+  }
+  else if (element_path2 == null) {
+    return element_path1;
+  }
+
+  for (var i = 0; i < element_path1.length; i++) {
+    if (i < element_path2.length) {
+      if (element_path1[i] === element_path2[i]) {
+        element_path.push(element_path1[i]);
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  return element_path;
 }
 
 // source: http://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string

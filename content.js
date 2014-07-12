@@ -1,7 +1,7 @@
 var incomingPort,
     lastClicked,
     mouseDownElement,
-    generated,
+    generated = {},
     receipt_notification,
     document_text;
 
@@ -603,7 +603,44 @@ function sendReceipt(saved_data, rows, parent) {
 
     // calculate parent element for all templates in saved_data
     var parent = getParentElement(saved_data);
+    var path = [];
+    if (parent != null) {
+      path = findElementPath(parent);
+    }
+
+    // find parent element from generated element_paths
+    var parentElementPath;
+    $.each(generated, function(key, value) {
+      console.log(key);
+      console.log(generated[key]);
+      console.log(saved_data[key]);
+      if (key !== "items" && key !== "templates" && key !== "element_paths"
+          && generated[key] === saved_data[key]) {
+
+        if (parentElementPath != null) {
+          parentElementPath = findParentElementPath(parentElementPath, generated.element_paths[key]);
+        } else {
+          parentElementPath = generated.element_paths[key];
+        }
+      } else if (key === "items") {
+        $.each(generated.items, function(item_key, item_value) {
+          if (generated.templates.items[item_key].deleted == null) {
+
+            if (parentElementPath != null) {
+              parentElementPath = findParentElementPath(parentElementPath, generated.element_paths.items[item_key]);
+            } else {
+              parentElementPath = generated.element_paths.items[item_key];
+            }
+          }
+        });
+      }
+    });
+
+    path = findParentElementPath(parentElementPath, path);
+    parent = getElementFromElementPath(path);
     console.log(parent);
+
+    delete generated.element_paths;
 
     // compose message
     var message = {
