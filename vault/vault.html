@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<script src="vault.js"></script>
+		<script src="dataTable.js"></script>
 		<script src="../jquery-2.0.3.min.js"></script>
 		<script src="../js/jquery-ui-1.10.4.min.js"></script>
 		<script src="../js/bootstrap.js"></script>
@@ -31,6 +32,12 @@
           <div class="modal-body">
             <form role="form">
               <div class="form-group">
+                <label for="parent-folder">Create Under:</label>
+                <select id="parent-folder-select" name="parent-folder">
+                </select>
+              </div>
+
+              <div class="form-group">
                 <label for="folder-name">Name</label>
                 <input id="new-folder-name" name="folder-name" type="text" class="form-control"/>
               </div>
@@ -54,7 +61,6 @@
         <div class="col-md-2">
           <ul id="vault-folders-navbar" class="nav nav-pills nav-stacked">
             <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">Recent/All</a></li>
-            <li id="add-new-folder"><a href="#" data-toggle="modal" data-target="#add-folder-modal">+ New Folder...</a></li>
           </ul>
         </div>
         <div class="tab-content">

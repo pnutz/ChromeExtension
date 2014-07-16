@@ -1,14 +1,11 @@
 var dummyArray = [];
 var controllers;
 var vData = null;
-var colIndex = 
+var folderType =
 {
-  DATE : 0,
-  VENDOR: 1,
-  TRANSACTION: 2, 
-  TOTAL : 3,
-  NOTE : 4, 
-  FOLDER : 5
+  PARENT : 0,
+  SUBFOLDER : 1,
+  ADD_NEW_FOLDER : 2
 };
 
 var Vault = 
@@ -20,7 +17,11 @@ var Vault =
     dataTable : null,
     rangePreset : null,
     endDate : null,
-    startDate : null
+    startDate : null,
+    mClassNames : 
+    {
+      addNewFolder : "add-folder-button"
+    }
   },
   appendCred_: function(url)
   {
@@ -37,15 +38,14 @@ var Vault =
 
     return credUrl;
   },
-  initMembers: function()
-  {
-    this.mData.dataTable = $("#vault-receipts");
+  initMembers: function() {
+    this.mData.dataTable = new DataTable("#vault-receipts");
     this.mData.rangePreset = $("#vault-date-preset");
     this.mData.endDate = $("#end-date");
     this.mData.startDate = $("#start-date");
+    this.mData.modalParentSelect = $("#parent-folder-select");
   },
-  init: function ()
-  {
+  init: function () {
     var self = this;
     this.initMembers();
     vData = this.mData;
@@ -59,7 +59,9 @@ var Vault =
 
     // For when user clicks the new folder button
     $('#new-folder-submit').click(function (e) {
-      self.addFolder_();
+      var iParentId = 
+        $(this).hasOwnProperty("parent_id") ? parseInt($(this).attr("parent_id")) : null; 
+      self.addFolder_(iParentId);
       $("#add-folder-modal").modal("hide");
       // Refresh folder list
       self.clearFolders_();
@@ -67,16 +69,15 @@ var Vault =
     });
 
     // If authentication token and email exist then grab receipt data.
-    if ("authToken" in localStorage && "userEmail" in localStorage)
-    {
+    if ("authToken" in localStorage && "userEmail" in localStorage) {
       this.getReceipts_();
       this.getFolders_();
       this.initDatePicker("#start-date");
       this.initDatePicker("#end-date");
       this.mData.rangePreset.change(this.presetChangedCallback);
-    }
-    else
+    } else {
       console.log("missing credentials");
+    }
   },
   presetChangedCallback: function() {
     var select = parseInt(vData.rangePreset.val());
@@ -124,10 +125,7 @@ var Vault =
     $(dateFormId).change(function(){
       // Clear previous filtering
       console.log("changed");
-      $.fn.dataTableExt.afnFiltering.pop();
-      self.mData.dataTable.dataTable().fnDraw();
-      self.isWithinDate_(new Date($("#start-date").val()), new Date($("#end-date").val()))
-      self.mData.dataTable.dataTable().fnDraw();
+      vData.dataTable.ShowDateRange(new Date($("#start-date").val()), new Date($("#end-date").val()));
     });
   },
   getReceipts_: function() {
@@ -159,23 +157,7 @@ var Vault =
       });
 
       // After getting all the dates, render the data table
-      self.mData.dataTable.DataTable({
-        "data" :  data,
-        "columnDefs" : [
-         { 
-            "targets" : [5], // hide folder ids since we only want them for filtering
-            "visible" : false
-          }
-        ],
-        "columns" : [
-          {"data" : "date"},
-          {"data" : "vendor_id"},
-          {"data" : "transaction_number"},
-          {"data" : "total"},
-          {"data" : "note"},
-          {"data" : "folder_id"},
-        ],
-      });
+      vData.dataTable.Init(data);
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
@@ -197,56 +179,68 @@ var Vault =
       aFolders.push(parseInt($(this).attr("folder_database_id")));
     });
 
-    $.fn.dataTableExt.afnFiltering.pop();
-    this.mData.dataTable.dataTable().fnDraw();
-    this.filterFolders_(aFolders)
-    this.mData.dataTable.dataTable().fnDraw();
+    vData.dataTable.ShowFolders(aFolders);
   },
-  getFolders_: function()
-  {
+
+  getFolders_: function() {
     var self = this;
     var request = $.ajax({
-          url: this.appendCred_(controllers.GetUrl("folders") + ".json"),
-          type: 'GET',
-          dataType: 'json'
-        }).done(function(data) {
-          var folderDict = {};
-          // create a dictionary modelling the structure of the folders
-          $.each(data, function(index, value) {
-            // if this is an upper layer folder
-            if (value.folder_id === null) {
-              console.log(value.id);
-              // if it doesn't exist!
-              if (!(value.id in folderDict))
-                folderDict[value.id] = { subFolders : [], data: value };
-              else // somehow this parent folder's sub folder was read first
-                folderDict[value.id].data = value;
-            } else { // sub folder
-              // if parent folder in dictionary
-              if (value.folder_id in folderDict)
-                folderDict[value.folder_id].subFolders.push(value);
-              else // somehow this parent folder's sub folder was read first
-                folderDict[value.folder_id] = { subFolders : [value], data: null };
-            }
-          });
+      url: this.appendCred_(controllers.GetUrl("folders") + ".json"),
+      type: 'GET',
+      dataType: 'json'
+    }).done(function(data) {
+      // Create an empty option for the modal box's parent select 
+      vData.modalParentSelect.append("<option><None></option>");
+      var folderDict = {};
+      // create a dictionary modelling the structure of the folders
+      $.each(data, function(index, value) {
+        // if this is an upper layer folder
+        if (value.folder_id === null) {
+          value["type"] = folderType.PARENT;
+          console.log(value.id);
+          // if it doesn't exist!
+          if (!(value.id in folderDict))
+            folderDict[value.id] = { subFolders : [], data: value };
+          else // somehow this parent folder's sub folder was read first
+            folderDict[value.id].data = value;
 
-          console.log(folderDict);
-          $.each(folderDict, function(index, value) {
-            self.addFolderToList_(value.data);
-            $.each(value.subFolders, function(subIndex, subValue) {
-              self.addFolderToList_(subValue);
-            });
-          });
+          // While creating the folder structures, let's populate
+          // the modal box's parent folder options
+          var parentOption = $("<option></option>");
+          parentOption.attr("value", value.id);
+          parentOption.text(value.name);
+          vData.modalParentSelect.append(parentOption);
+        } else { // sub folder
+          value["type"] = folderType.SUBFOLDER;
+          // if parent folder in dictionary
+          if (value.folder_id in folderDict)
+            folderDict[value.folder_id].subFolders.push(value);
+          else // somehow this parent folder's sub folder was read first
+            folderDict[value.folder_id] = { subFolders : [value], data: null };
+        }
+      });
 
-          //Add hooks to all the folders
-          self.addFolderEventCallbacks_();
-
-        }).fail(function (jqXHR, textStatus, errorThrown) {
-        // log the error to the console
-          console.error(
-            "The following error occurred: " + textStatus,
-            errorThrown);
+      console.log(folderDict);
+      $.each(folderDict, function(index, value) {
+        self.addFolderToList_(value.data);
+        $.each(value.subFolders, function(subIndex, subValue) {
+          self.addFolderToList_(subValue);
         });
+        // add the "add new folder" button
+        self.addFolderToList_({ type : folderType.ADD_NEW_FOLDER, folder_id : value.data.id});
+      });
+      // Add the "add new folder" button for top level folders
+      self.addFolderToList_({ type : folderType.ADD_NEW_FOLDER, folder_id : null});
+
+      //Add hooks to all the folders
+      self.addFolderEventCallbacks_();
+
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+    // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
   },
   /**
    * @brief creates a folder element and adds it to the folder
@@ -257,6 +251,22 @@ var Vault =
     // Add class for later removal when adding new folders
     newListItem.addClass("requested");
     var newFolder = $("<a></a>")
+
+    // Check if folder type is ADD NEW FOLDER button
+    if (folderData.type === folderType.ADD_NEW_FOLDER) {
+      newListItem.addClass(vData.mClassNames.addNewFolder);
+      // open up modal window for adding receipts
+      newFolder.attr("data-toggle", "modal");
+      newFolder.attr("data-target", "#add-folder-modal");
+      newFolder.attr("href", "#");
+      folderData.name = "+ Add New Folder";
+    } else { // Actual folder type
+      // Attribute is based on the id of the folder in the WebApp DB
+      newFolder.attr("data-toggle", "pill");
+      newFolder.attr("href", "#vault-receipts-pane");
+      newFolder.attr("folder_database_id", folderData.id);
+    } 
+
     // sub folder specific data
     if (folderData.folder_id !== null) {
       newListItem.addClass("subfolder");
@@ -267,15 +277,13 @@ var Vault =
       newListItem.addClass("parent");
     }
 
+    // Common data all "folders" have
     newFolder.text(folderData.name);
-    // Attribute is based on the id of the folder in the WebApp DB
-    newFolder.attr("folder_database_id", folderData.id);
-    newFolder.attr("href", "#vault-receipts-pane");
-    newFolder.attr("data-toggle", "pill");
     newListItem.append(newFolder);
-    newListItem.insertBefore($("#add-new-folder"));
+    $("#vault-folders-navbar").append(newListItem);
   },
-  addFolder_: function() {
+
+  addFolder_: function(iParentId) {
     var self = this;
     folderData = {};
     folderData["folder"] = 
@@ -283,7 +291,7 @@ var Vault =
       description : $("#new-folder-description").val(),
       name : $("#new-folder-name").val(),
       folder_type_id : 5,
-      folder_id : null
+      folder_id : iParentId // null values would mean we are making a parent level folder
     };
 
     var request = $.ajax({
@@ -306,7 +314,7 @@ var Vault =
   addFolderEventCallbacks_: function() {
     var self = this;
     // Add hook for folder change, except the add new folder
-    $("#vault-folders-navbar > li > a").not("#add-new-folder > a").click(function(e) {
+    $("#vault-folders-navbar > li > a").not(".add-folder-button > a").click(function(e) {
       $("#folder-name").text(this.text); 
       var folder = $(this)
       self.filterReceiptList_(folder.attr("folder_database_id"));
@@ -320,33 +328,6 @@ var Vault =
       $("#vault-folders-navbar > li.subfolder[parent_id!='" + iFolderId +"']").hide();
     });
   },
-  /**
-   * @brief custom filtering of DataTale to filter 
-   * and show only dates that are within range
-   */
-  isWithinDate_: function(startDate, endDate) {
-    $.fn.dataTableExt.afnFiltering.push(function( oSettings, aData, iDataIndex ) {
-      var oMin= startDate.getTime();
-      var oMax = endDate.getTime();
-      var oCurr = new Date(aData[colIndex.DATE]).getTime();
-      // Check that the data value is within the date range
-      if ( oMin <= oCurr && oCurr <= oMax ) {
-        return true;
-      }
-
-      return false;
-    });
-  },
-  /**
-   * @brief custom filtering of DataTale to filter 
-   * and show only dates that are within range
-   */
-  filterFolders_: function(aFolders) {
-    console.log(aFolders);
-    $.fn.dataTableExt.afnFiltering.push(function( oSettings, aData, iDataIndex ) {
-      return $.inArray(aData[colIndex.FOLDER], aFolders) >= 0;
-    });
-  }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
