@@ -65,15 +65,16 @@ DataTable.prototype.IsWithinDate_ =  function(startDate, endDate) {
     return false;
   });
 };
+
 /**
  * @brief custom filtering of DataTale to filter 
  * and show only dates that are within range
  */
 DataTable.prototype.FilterFolders_ =  function(aFolders) {
-    console.log(aFolders);
-    $.fn.dataTableExt.afnFiltering.push(function( oSettings, aData, iDataIndex ) {
-      return $.inArray(aData[colIndex.FOLDER], aFolders) >= 0;
-    });
-  }
+  console.log(aFolders);
+  $.fn.dataTableExt.afnFiltering.push(function( oSettings, aData, iDataIndex ) {
+    return $.inArray(aData[colIndex.FOLDER], aFolders) >= 0;
+  });
+};
 
 
