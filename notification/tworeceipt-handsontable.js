@@ -169,10 +169,9 @@ var TwoReceiptHandsOnTable =
     // create span for delete icon
     var $deleteIcon = $('<span>');
     $deleteIcon.addClass('glyphicon glyphicon-remove');
-    $anchor.attr('href', '#');
-    $anchor.attr('row', row);
+    $deleteIcon.attr('row', row);
     $anchor.append($deleteIcon);
-    $anchor.click(function()
+    $deleteIcon.click(function()
     {
       instance.alter('remove_row', row);
     });
@@ -609,16 +608,20 @@ var TwoReceiptHandsOnTable =
     var rowsToIterate = this.rows.length - this.configurations.minSpareRows;
     for (var i = 0; i < rowsToIterate; i++)
     {
-      var thisRow = null;
+      var thisRow;
       // if position contains null then that means the element was removed
       if (this.rows[i] != null) {
         thisRow = {};
-        for (var j = 0; j < this.configurations.itemColumns.length; j++) {
+        for (var j = 0; j < this.configurations.itemColumns.length; j++)
+        {
           thisRow[this.configurations.itemColumns[j]] = this.receiptItemTable.handsontable('getDataAtRowProp', this.rows[i], this.configurations.itemColumns[j]);
         }
       }
 
-      receiptItems[i] = thisRow;
+      if (thisRow != null)
+      {
+        receiptItems[i] = thisRow;
+      }
     }
     return receiptItems;
   },

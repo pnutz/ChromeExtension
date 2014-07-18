@@ -122,13 +122,8 @@ function findMatch(node, params) {
     if (start_index !== -1) {
       // set parent as first element parent of text_node
       var end_parent = node.parentNode;
-      //console.log("end parent");
-      //console.log(end_parent);
 
       var start_parent = start_node.parentNode;
-      /*console.log(start_node);
-      console.log("start parent");
-      console.log(start_parent);*/
 
       var target_parent;
       // start and end parents are the same
@@ -1087,15 +1082,17 @@ function getElementFromElementPath(elementPath) {
 
 // compares two element_paths and return an element_path representing the parent element
 function findParentElementPath(element_path1, element_path2) {
+  console.log("compare parent element path");
+  console.log(element_path2);
   var element_path = [];
 
-  if (element_path1 == null && element_path2 == null) {
+  if ((element_path1 == null || element_path1.length === 0) && (element_path2 == null || element_path2.length === 0)) {
     return element_path;
   }
-  else if (element_path1 == null) {
+  else if (element_path1 == null || element_path1.length === 0) {
     return element_path2;
   }
-  else if (element_path2 == null) {
+  else if (element_path2 == null || element_path2.length === 0) {
     return element_path1;
   }
 
@@ -1110,6 +1107,9 @@ function findParentElementPath(element_path1, element_path2) {
       break;
     }
   }
+
+  console.log("returned parent element path");
+  console.log(element_path);
 
   return element_path;
 }

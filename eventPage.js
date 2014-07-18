@@ -2,6 +2,7 @@
 var receipt_ports = { /* tabId: receiptPort */ },
 // track last non chrome- url tab
 currentTabId,
+old_window_state,
 
 aServerHost = "http://localhost:8888",
 
@@ -9,23 +10,6 @@ facebookAPI = new FaceBookAPI();
 
 // this needs modification based on final receipt popup values
 function sendAttributeTemplate(html, url, domain, generated, attributes, saved_data) {
-  // formatting saved_data to match aServer defaults
-  /*saved_data.vendor = saved_data.vendor_name;
-  saved_data.transaction = saved_data.transaction_number;
-  saved_data.items = saved_data.receipt_items_attributes;
-  delete saved_data.vendor_name;
-  delete saved_data.transaction_number;
-  delete saved_data.receipt_items_attributes;
-  delete saved_data.note;
-  delete saved_data.title;
-  delete saved_data.purchase_type_id;
-
-  var keys = Object.keys(saved_data.items);
-  keys.forEach(function(key) {
-    saved_data.items[key].name = saved_data.items[key].itemtype;
-    delete saved_data.items[key].itemtype;
-  });*/
-
 	var host = aServerHost + "/template";
 	var message = {
 		token: localStorage["authToken"],
@@ -145,10 +129,16 @@ function receiptSetup() {
       sendDomain(currentTabId, msg.html, msg.url, msg.domain);
     } else if (msg.request === "saveReceipt") {
       console.log(msg);
-      postReceiptToWebApp(msg.saved_data);
-      sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
-      closeReceipt();
-    } else if (msg.request === "closeReceipt") {
+      //postReceiptToWebApp(msg.saved_data);
+      //sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
+
+      resizeToPrinterPage();
+      receipt_ports[currentTabId].postMessage({ request: "takeScreenshot", element_path: msg.element_path });
+
+    } else if (msg.request === "closeReceipt" || msg.response === "closeReceipt") {
+      if (old_window_state != null) {
+        resizeToOriginalPage();
+      }
       closeReceipt();
     }
 	});
@@ -189,6 +179,45 @@ function postReceiptToWebApp(saved_data) {
     console.error(
       "The following error occurred: " + textStatus,
       errorThrown);
+  });
+}
+
+function resizeToPrinterPage() {
+  chrome.windows.getCurrent(function(window) {
+    if (window.state === "minimized" || window.state === "maximized" || window.state === "fullscreen") {
+      old_window_state = {
+        state: window.state
+      };
+    } else {
+      old_window_state = {
+        width: window.width,
+        height: window.height,
+        left: window.left,
+        top: window.top,
+      };
+    }
+
+    console.log(old_window_state);
+    console.log(window.state);
+
+    var width = 1100;
+    var height = 1700;
+
+    var updateInfo = {
+      left: window.left,
+      top: window.top,
+      width: width,
+      height: height
+    };
+
+    chrome.windows.update(window.id, updateInfo);
+  });
+}
+
+function resizeToOriginalPage() {
+  chrome.windows.getCurrent(function(window) {
+    chrome.windows.update(window.id, old_window_state);
+    old_window_state = null;
   });
 }
 

@@ -162,7 +162,7 @@ var NotiBar =
       rules: {
         vendor: "required",
         date: { required: true, isDate: true },
-        total: { required: true, isMoney: true },
+        total: { /*required: true,*/ isMoney: true },
         subtotal: { isMoney: true },
         taxes: { isMoney: true }
       },
