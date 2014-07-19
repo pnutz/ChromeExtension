@@ -129,8 +129,8 @@ function receiptSetup() {
       sendDomain(currentTabId, msg.html, msg.url, msg.domain);
     } else if (msg.request === "saveReceipt") {
       console.log(msg);
-      //postReceiptToWebApp(msg.saved_data);
-      //sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
+      postReceiptToWebApp(msg.saved_data);
+      sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
 
       resizeToPrinterPage();
       receipt_ports[currentTabId].postMessage({ request: "takeScreenshot", element_path: msg.element_path });
@@ -230,6 +230,15 @@ function checkUrl(tab_id) {
     }
   });
 }
+
+// track latest active window and store it
+chrome.windows.onFocusChanged.addListener(function(windowId) {
+  if (windowId !== chrome.windows.WINDOW_ID_NONE) {
+    chrome.tabs.query({active: true, windowId: windowId}, function(tabs) {
+      currentTabId = tabs[0].id;
+    });
+  }
+});
 
 // track latest active tab and store it if it isn't a chrome-extension
 chrome.tabs.onActivated.addListener(function(activeInfo) {
