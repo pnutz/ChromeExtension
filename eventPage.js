@@ -22,16 +22,18 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, saved_d
     generated: {},
     saved_data: {}
 	};
+  // remove image from saved_data
+
   message.attributes = JSON.stringify(attributes);
   message.generated = JSON.stringify(generated);
   message.saved_data = JSON.stringify(saved_data);
 
-	request = $.post(host, message, function (data, status) {
+	/*var request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
-	});
+	});*/
 }
 
 // on start of receipt, send domain to aServer and receive generated values
@@ -124,21 +126,35 @@ function receiptSetup() {
     } else {
       console.log("Received message: " + msg.response + " for port: " + receipt_ports[currentTabId].name);
     }
+
     // message node js server html & domain data
 		if (msg.response === "initializeReceipt") {
       sendDomain(currentTabId, msg.html, msg.url, msg.domain);
-    } else if (msg.request === "saveReceipt") {
+    }
+    // resize window in preparation for snapshot
+    else if (msg.request === "resizeWindow") {
+      resizeToPrinterPage();
+      receipt_ports[currentTabId].postMessage({ request: "takeSnapshot" });
+    }
+    // send receipt information and clean up
+    else if (msg.response === "saveReceipt") {
       console.log(msg);
+
       postReceiptToWebApp(msg.saved_data);
       sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
 
-      resizeToPrinterPage();
-      receipt_ports[currentTabId].postMessage({ request: "takeScreenshot", element_path: msg.element_path });
-
-    } else if (msg.request === "closeReceipt" || msg.response === "closeReceipt") {
       if (old_window_state != null) {
         resizeToOriginalPage();
       }
+
+      closeReceipt();
+    }
+    // prompt to cloe receipt connection
+    else if (msg.request === "closeReceipt") {
+      if (old_window_state != null) {
+        resizeToOriginalPage();
+      }
+
       closeReceipt();
     }
 	});
@@ -167,7 +183,7 @@ function postReceiptToWebApp(saved_data) {
 
   console.log(form_data);
 
-  var receiptRequest = $.ajax({
+  /*var receiptRequest = $.ajax({
     url: localStorage["receiptPost"],
     type: 'POST',
     data : form_data,
@@ -179,7 +195,7 @@ function postReceiptToWebApp(saved_data) {
     console.error(
       "The following error occurred: " + textStatus,
       errorThrown);
-  });
+  });*/
 }
 
 function resizeToPrinterPage() {
