@@ -22,7 +22,6 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, saved_d
     generated: {},
     saved_data: {}
 	};
-  // remove image from saved_data
 
   message.attributes = JSON.stringify(attributes);
   message.generated = JSON.stringify(generated);
@@ -83,24 +82,6 @@ function sendDomain(tabId, html, url, domain) {
 		alert(xhr.responseText);
 	});
 }
-
-// when receipt item is deleted, makes note of this for any generated receipt items
-// do this in content script
-/*function processDeletedItem(item_id) {
-  // flags generated item as deleted
-  if (generated.items != null && generated.items.hasOwnProperty(item_id) && generated.templates.items.hasOwnProperty(item_id)) {
-    generated.templates.items[item_id].deleted = true;
-    console.log("Deleted Generated Receipt Item " + item_id);
-    console.log(generated);
-  }
-
-  // remove any new templates for deleted receipt item
-  if (attributes.items != null && attributes.items.hasOwnProperty(item_id)) {
-    delete attributes.items[item_id];
-    console.log("Deleted Template for Receipt Item " + item_id);
-    console.log(attributes);
-  }
-}*/
 
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
 function stringBetween(string, substring1, substring2) {
@@ -181,9 +162,12 @@ function postReceiptToWebApp(saved_data) {
   //form_data.receipt["purchase_type_id"] = 1;
   // optional folder_id
 
+  form_data.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: form_data.receipt["snapshot"] } };
+  delete form_data.receipt["snapshot"];
+
   console.log(form_data);
 
-  /*var receiptRequest = $.ajax({
+  var receiptRequest = $.ajax({
     url: localStorage["receiptPost"],
     type: 'POST',
     data : form_data,
@@ -195,7 +179,7 @@ function postReceiptToWebApp(saved_data) {
     console.error(
       "The following error occurred: " + textStatus,
       errorThrown);
-  });*/
+  });
 }
 
 function resizeToPrinterPage() {

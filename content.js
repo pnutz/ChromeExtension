@@ -366,7 +366,7 @@ chrome.runtime.onConnect.addListener(function(port) {
               //var data = canvas.toDataURL("image/gif").replace("image/jpeg", "image/octet-stream");
               //window.location.href = data;
               //document.body.appendChild(canvas);
-              saved_data.image = canvas.toDataURL("image/jpeg");
+              saved_data.snapshot = canvas.toDataURL("image/jpeg");
               sendReceipt();
             }
           });
@@ -604,7 +604,7 @@ function prepareReceipt(data, rows, parent) {
   cleanFieldText();
 }
 
-function sendReceipt(image) {
+function sendReceipt() {
   if (incomingPort != null) {
     var message_domain;
     // default local html pages to DOMAIN (since no domain)
