@@ -3,7 +3,10 @@ var incomingPort,
     mouseDownElement,
     generated = {},
     receipt_notification,
-    document_text;
+    document_text,
+    element_path,
+    saved_data,
+    html;
 
 $(document).ready(function () {
 	if (self === top) {
@@ -347,10 +350,9 @@ chrome.runtime.onConnect.addListener(function(port) {
           // send generated data to receipt notification
           document.getElementById('twoReceiptIFrame').contentWindow.postMessage(msg, "*");
         }
-        else if (msg.request === "takeScreenshot") {
-          console.log(msg);
+        else if (msg.request === "takeSnapshot") {
           // try hard-copying jquery to get parent isolated from DOM, so DOM is not messed up with canvas
-          var parent = getElementFromElementPath(msg.element_path);
+          var parent = getElementFromElementPath(element_path);
           console.log(parent);
 
           /*
@@ -361,13 +363,13 @@ chrome.runtime.onConnect.addListener(function(port) {
           // this messes up the page dom, so only run at the end of the receipt submission
           html2canvas(parent, {
             onrendered: function(canvas) {
-              //var data = canvas.toDataURL("image/gif").replace("image/gif", "image/octet-stream");
+              //var data = canvas.toDataURL("image/gif").replace("image/jpeg", "image/octet-stream");
               //window.location.href = data;
-              document.body.appendChild(canvas);
+              //document.body.appendChild(canvas);
+              saved_data.snapshot = canvas.toDataURL("image/jpeg");
+              sendReceipt();
             }
           });
-
-          incomingPort.postMessage({ response: "closeReceipt" });
         }
       }
     });
@@ -430,7 +432,7 @@ window.addEventListener("message", function(event) {
       case "saveReceipt":
         if (event.data.saved_data !== undefined) {
           var notdiv = document.getElementById("notificationdiv");
-          sendReceipt(event.data.saved_data, event.data.rows, event.data.parent);
+          prepareReceipt(event.data.saved_data, event.data.rows, event.data.parent);
           document.getElementsByTagName("body")[0].style.paddingTop = "0px";
           notdiv.parentNode.removeChild(notdiv);
         }
@@ -531,21 +533,13 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
   }
 }
 
-function sendReceipt(saved_data, rows, parent) {
-  console.log(rows);
-  console.log(incomingPort);
+function prepareReceipt(data, rows, parent) {
   if (incomingPort != null) {
     // clean html data
     cleanHighlight();
     cleanElementData();
 
-    var message_domain;
-    // default local html pages to DOMAIN (since no domain)
-    if (document.domain === null || document.domain === "") {
-      message_domain = "DOMAIN";
-    } else {
-      message_domain = document.domain;
-    }
+    saved_data = data;
 
     // track deleted items for generated templates
     if (generated !== undefined && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items")) {
@@ -597,26 +591,41 @@ function sendReceipt(saved_data, rows, parent) {
     });
 
     console.log("saved_data path comparison");
-    path = findParentElementPath(parentElementPath, path);
+    element_path = findParentElementPath(parentElementPath, path);
+    console.log(element_path);
 
     delete generated.element_paths;
 
+    html = document.body.outerHTML;
+    incomingPort.postMessage({ request: "resizeWindow" });
+  }
+
+  // clean receipt data
+  cleanFieldText();
+}
+
+function sendReceipt() {
+  if (incomingPort != null) {
+    var message_domain;
+    // default local html pages to DOMAIN (since no domain)
+    if (document.domain === null || document.domain === "") {
+      message_domain = "DOMAIN";
+    } else {
+      message_domain = document.domain;
+    }
+
     // compose message
     var message = {
-      request: "saveReceipt",
-      html: document.body.outerHTML,
+      response: "saveReceipt",
+      html: html,
       url: location.href,
       domain: message_domain,
       attributes: attributes,
       generated: generated,
-      saved_data: saved_data,
-      element_path: path
+      saved_data: saved_data
     };
     console.log(message);
 
     incomingPort.postMessage(message);
   }
-
-  // clean receipt data
-  cleanFieldText();
 }

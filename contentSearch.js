@@ -1069,13 +1069,14 @@ function findElementPath(node) {
 
 // returns DOM element node at the end of param elementPath
 function getElementFromElementPath(elementPath) {
-  var element = $("body");
-  $.each(elementPath, function(key, value) {
-    if (key !== 0) {
-      element = element.children();
-    }
-    element = element.eq(value);
-  });
+  var element = $("body").eq(0);
+  if (elementPath != null) {
+    $.each(elementPath, function(key, value) {
+      if (key !== 0) {
+        element = element.children().eq(value);
+      }
+    });
+  }
 
   return element[0];
 }

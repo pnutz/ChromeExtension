@@ -22,16 +22,17 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, saved_d
     generated: {},
     saved_data: {}
 	};
+
   message.attributes = JSON.stringify(attributes);
   message.generated = JSON.stringify(generated);
   message.saved_data = JSON.stringify(saved_data);
 
-	request = $.post(host, message, function (data, status) {
+	/*var request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
-	});
+	});*/
 }
 
 // on start of receipt, send domain to aServer and receive generated values
@@ -82,24 +83,6 @@ function sendDomain(tabId, html, url, domain) {
 	});
 }
 
-// when receipt item is deleted, makes note of this for any generated receipt items
-// do this in content script
-/*function processDeletedItem(item_id) {
-  // flags generated item as deleted
-  if (generated.items != null && generated.items.hasOwnProperty(item_id) && generated.templates.items.hasOwnProperty(item_id)) {
-    generated.templates.items[item_id].deleted = true;
-    console.log("Deleted Generated Receipt Item " + item_id);
-    console.log(generated);
-  }
-
-  // remove any new templates for deleted receipt item
-  if (attributes.items != null && attributes.items.hasOwnProperty(item_id)) {
-    delete attributes.items[item_id];
-    console.log("Deleted Template for Receipt Item " + item_id);
-    console.log(attributes);
-  }
-}*/
-
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
 function stringBetween(string, substring1, substring2) {
 	var first_index = string.indexOf(substring1);
@@ -124,21 +107,35 @@ function receiptSetup() {
     } else {
       console.log("Received message: " + msg.response + " for port: " + receipt_ports[currentTabId].name);
     }
+
     // message node js server html & domain data
 		if (msg.response === "initializeReceipt") {
       sendDomain(currentTabId, msg.html, msg.url, msg.domain);
-    } else if (msg.request === "saveReceipt") {
-      console.log(msg);
-      //postReceiptToWebApp(msg.saved_data);
-      //sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
-
+    }
+    // resize window in preparation for snapshot
+    else if (msg.request === "resizeWindow") {
       resizeToPrinterPage();
-      receipt_ports[currentTabId].postMessage({ request: "takeScreenshot", element_path: msg.element_path });
+      receipt_ports[currentTabId].postMessage({ request: "takeSnapshot" });
+    }
+    // send receipt information and clean up
+    else if (msg.response === "saveReceipt") {
+      console.log(msg);
 
-    } else if (msg.request === "closeReceipt" || msg.response === "closeReceipt") {
+      postReceiptToWebApp(msg.saved_data);
+      sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
+
       if (old_window_state != null) {
         resizeToOriginalPage();
       }
+
+      closeReceipt();
+    }
+    // prompt to cloe receipt connection
+    else if (msg.request === "closeReceipt") {
+      if (old_window_state != null) {
+        resizeToOriginalPage();
+      }
+
       closeReceipt();
     }
 	});
@@ -164,6 +161,9 @@ function postReceiptToWebApp(saved_data) {
   form_data.receipt["currency_id"] = 1;
   //form_data.receipt["purchase_type_id"] = 1;
   // optional folder_id
+
+  form_data.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: form_data.receipt["snapshot"] } };
+  delete form_data.receipt["snapshot"];
 
   console.log(form_data);
 
@@ -230,6 +230,15 @@ function checkUrl(tab_id) {
     }
   });
 }
+
+// track latest active window and store it
+chrome.windows.onFocusChanged.addListener(function(windowId) {
+  if (windowId !== chrome.windows.WINDOW_ID_NONE) {
+    chrome.tabs.query({active: true, windowId: windowId}, function(tabs) {
+      currentTabId = tabs[0].id;
+    });
+  }
+});
 
 // track latest active tab and store it if it isn't a chrome-extension
 chrome.tabs.onActivated.addListener(function(activeInfo) {
