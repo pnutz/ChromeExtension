@@ -10,73 +10,6 @@ $(document).ready(function () {
 		console.log("document ready");
   }
 
-  // calculate a parent that encompasses every tworeceipt 'data-tworeceipt-field-start'
-  // get field from the json message passed
-  // quality so shit - why?
-  /*
-    set image size to 1/3 original size OR set CSS sizes to 300% before rendering
-    http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
-  */
-
-  // send octet-stream to ruby on rails server as json POST to save as file
-  /*
-    data = data.replace(/^data:image\/(png|jpg);base64,/, "");
-    data = encodeURIComponent(data);
-    var json_data = "image=" + data + "&filedir=" + cur_path;
-
-    resize window to be print page format then save image
-    landscape/portrait?
-    -
-
-    receive data in text format
-
-    TO DO: save it in file format on server
-    learn how to save it, set filename
-  */
-
-  // data format
-  //data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACFUAAAMnCAYAAAD1NP9IAAAgAElEQ…CAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAiMQFIF55tGc0VEAAAAAElFTkSuQmCC
-  // converted to octet-stream
-  //data:image/octet-stream;base64,iVBORw0KGgoAAAANSUhEUgAACFUAAAMnCAYAAAD1NP9I…CAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAiMQFIF55tGc0VEAAAAAElFTkSuQmCC
-
-  // scaledElement does not work
-  /*var element = $("body");
-
-  var scaledElement = element.clone().css({
-    'transform': 'scale(3,3)',
-    '-ms-transform': 'scale(3,3)',
-    '-webkit-transform': 'scale(3,3)'
-  });
-
-  var oldWidth = element.width();
-  var oldHeight = element.height();
-
-  var newWidth = oldWidth * (1/3);
-  var newHeight = oldHeight * (1/3);
-  html2canvas(scaledElement, {
-     onrendered: function(canvasq) {
-       var img = document.createElement("img");
-       img.src = canvasq.toDataURL();
-       console.log(canvasq.toDataURL());
-       img.width = newWidth;
-       img.height = newHeight;
-       console.log(img);
-       //window.location.href = img;
-       //document.body.appendChild(img);
-       console.log("appended");
-    }
-  });*/
-
-  /*html2canvas($("body")[0], {
-    onrendered: function(canvas) {
-      //var data = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-      //window.location.href = data;
-      console.log(canvas);
-      console.log(canvas.toDataURL());
-      //document.body.appendChild(canvas);
-    }
-  });*/
-
   document_text = initializeContentSearch();
   //console.log(document_text);
 
@@ -414,6 +347,28 @@ chrome.runtime.onConnect.addListener(function(port) {
           // send generated data to receipt notification
           document.getElementById('twoReceiptIFrame').contentWindow.postMessage(msg, "*");
         }
+        else if (msg.request === "takeScreenshot") {
+          console.log(msg);
+          // try hard-copying jquery to get parent isolated from DOM, so DOM is not messed up with canvas
+          var parent = getElementFromElementPath(msg.element_path);
+          console.log(parent);
+
+          /*
+            set image size to 1/3 original size OR set CSS sizes to 300% before rendering
+            http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
+          */
+
+          // this messes up the page dom, so only run at the end of the receipt submission
+          html2canvas(parent, {
+            onrendered: function(canvas) {
+              //var data = canvas.toDataURL("image/gif").replace("image/gif", "image/octet-stream");
+              //window.location.href = data;
+              document.body.appendChild(canvas);
+            }
+          });
+
+          incomingPort.postMessage({ response: "closeReceipt" });
+        }
       }
     });
 
@@ -578,7 +533,8 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
 
 function sendReceipt(saved_data, rows, parent) {
   console.log(rows);
-  if (incomingPort !== undefined && incomingPort !== null) {
+  console.log(incomingPort);
+  if (incomingPort != null) {
     // clean html data
     cleanHighlight();
     cleanElementData();
@@ -621,6 +577,8 @@ function sendReceipt(saved_data, rows, parent) {
           parentElementPath = findParentElementPath(parentElementPath, generated.element_paths[key]);
         } else {
           parentElementPath = generated.element_paths[key];
+          console.log("set parent element path");
+          console.log(parentElementPath);
         }
       } else if (key === "items") {
         $.each(generated.items, function(item_key, item_value) {
@@ -630,15 +588,16 @@ function sendReceipt(saved_data, rows, parent) {
               parentElementPath = findParentElementPath(parentElementPath, generated.element_paths.items[item_key]);
             } else {
               parentElementPath = generated.element_paths.items[item_key];
+              console.log("set parent element path");
+              console.log(parentElementPath);
             }
           }
         });
       }
     });
 
+    console.log("saved_data path comparison");
     path = findParentElementPath(parentElementPath, path);
-    parent = getElementFromElementPath(path);
-    console.log(parent);
 
     delete generated.element_paths;
 
@@ -651,20 +610,11 @@ function sendReceipt(saved_data, rows, parent) {
       attributes: attributes,
       generated: generated,
       saved_data: saved_data,
-      parent: parent
+      element_path: path
     };
     console.log(message);
 
-    // this messes up the page dom, so only run at the end of the receipt submission
-    html2canvas(parent, {
-      onrendered: function(canvas) {
-        //var data = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-        //window.location.href = data;
-        document.body.appendChild(canvas);
-      }
-    });
-
-    //incomingPort.postMessage(message);
+    incomingPort.postMessage(message);
   }
 
   // clean receipt data

@@ -194,7 +194,7 @@ var Vault =
     {
       description : $("#new-folder-description").val(),
       name : $("#new-folder-name").val(),
-      folder_type_id : 5,
+      folder_type_id : null,
       folder_id : iParentId // null values would mean we are making a parent level folder
     };
 
