@@ -11,10 +11,7 @@ var Vault =
     rangePreset : null,
     endDate : null,
     startDate : null,
-    mClassNames : 
-    {
-      addNewFolder : "add-folder-button"
-    }
+    mClassNames : {}
   },
   appendCred_: function(url)
   {
@@ -37,7 +34,6 @@ var Vault =
     this.mData.rangePreset = $("#vault-date-preset");
     this.mData.endDate = $("#end-date");
     this.mData.startDate = $("#start-date");
-    this.mData.modalParentSelect = $("#parent-folder-select");
   },
   init: function () {
     var self = this;
@@ -53,9 +49,8 @@ var Vault =
 
     // For when user clicks the new folder button
     $('#new-folder-submit').click(function (e) {
-      var iParentId = 
-        $(this).hasOwnProperty("parent_id") ? parseInt($(this).attr("parent_id")) : null; 
-      self.addFolder_(iParentId);
+      console.log("idata = " + vData.foldersBar.GetModalSelectedParentFolder());
+      self.addFolder_(vData.foldersBar.GetModalSelectedParentFolder());
       $("#add-folder-modal").modal("hide");
       // Refresh folder list
       vData.foldersBar.ClearFolders();
@@ -174,8 +169,6 @@ var Vault =
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
-      // Create an empty option for the modal box's parent select 
-      vData.modalParentSelect.append("<option><None></option>");
       // Render the folder side bar with the received Data
       vData.foldersBar.Init(data);
       self.AddFolderEventCallbacks_();
@@ -220,6 +213,7 @@ var Vault =
       var folder = $(this)
       self.filterReceiptList_(folder.attr("folder_database_id"));
     });
+
   }
 };
 
