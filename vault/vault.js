@@ -1,9 +1,9 @@
 var dummyArray = [];
 var controllers;
 var vData = null;
-var Vault = 
+var Vault =
 {
-  mData: 
+  mData:
   {
     receipts : [],
     dateFormat : "yy-mm-dd",
@@ -16,18 +16,19 @@ var Vault =
   appendCred_: function(url)
   {
     var credUrl = "";
-    
-    if ("userEmail" in localStorage && "authToken" in localStorage) 
+
+    if ("userEmail" in localStorage && "authToken" in localStorage)
     {
-      credUrl =  url + 
-        "?email=" + localStorage["userEmail"] + 
+      credUrl =  url +
+        "?email=" + localStorage["userEmail"] +
         "&token=" + localStorage["authToken"];
-    } 
-    else 
+    }
+    else
       console.error("Missing credentials!");
 
     return credUrl;
   },
+
   initMembers: function() {
     this.mData.dataTable = new DataTable("#vault-receipts");
     this.mData.foldersBar = new FolderSideBar($("#vault-folders-navbar"));
@@ -86,16 +87,16 @@ var Vault =
       case 3: //this week
         thisDate.setDate(thisDate.getDate() - thisDate.getDay());
         break;
-      case 4: //last weeks 
+      case 4: //last weeks
         //Get some day in last week
-        thisDate.setDate(thisDate.getDate() - 7 - thisDate.getDay()); 
+        thisDate.setDate(thisDate.getDate() - 7 - thisDate.getDay());
         break;
       case 5: //this month
-        thisDate.setDate(1); 
+        thisDate.setDate(1);
         break;
       case 6: //last month
-        thisDate.setMonth(thisDate.getMonth() - 1); 
-        thisDate.setDate(1); 
+        thisDate.setMonth(thisDate.getMonth() - 1);
+        thisDate.setDate(1);
         break;
     }
 
@@ -107,7 +108,7 @@ var Vault =
     var self = this;
     // Apply date picker
     $(dateFormId).datepicker({
-      constrainInput: true 
+      constrainInput: true
     });
 
     // When date inputs change
@@ -125,7 +126,7 @@ var Vault =
       dataType: 'json'
     }).done(function(data) {
       self.mData.receipts = data;
-      // painfully convert each item to the desired date format before 
+      // painfully convert each item to the desired date format before
       var earliestDate = new Date(data[0]["date"]);
       var latestDate = new Date(data[0]["date"]);
       $.each(data, function(index, value) {
@@ -142,7 +143,7 @@ var Vault =
         }
 
         // In the mean time modify the date format for each date
-        value["date"] = $.datepicker.formatDate(self.mData.dateFormat, new Date(value["date"])); 
+        value["date"] = $.datepicker.formatDate(self.mData.dateFormat, new Date(value["date"]));
       });
 
       // After getting all the dates, render the data table
@@ -160,6 +161,40 @@ var Vault =
    */
   filterReceiptList_: function(iFolderId) {
     vData.dataTable.ShowFolders(vData.foldersBar.GetFolderIds(iFolderId));
+  },
+
+  /**
+   *@brief gets all snapshot/non-snapshot document information for user
+   */
+  getDocuments_: function(is_snapshot) {
+    var self = this;
+    $.ajax({
+      url: this.appendCred_(controllers.GetUrl("documents") + ".json") + "&is_snapshot=" + is_snapshot.toString(),
+      type: 'GET',
+      dataType: 'json'
+    }).done(function(data) {
+      // add image source to each receipt (by id) here
+      // possibly store data and calculate this by event?
+
+      //$("body").append("<img src = '" + self.appendStyle_(self.appendCred_(controllers.GetUrl("documents") + "/" + data[51].id)) + "'></img>");
+
+
+    }).fail(function(jqXHR, textStatus, errorThrown) {
+      // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
+  },
+
+  /**
+   *@brief appends thumbnail style to image source for rails server
+   *       source defaulted to original when appendStyle_ is not run
+   *       assumes appendCred_ is run prior to appending style
+   */
+  appendStyle_: function(url)
+  {
+    return url + "&style=thumb";
   },
 
   getFolders_: function() {
@@ -183,7 +218,7 @@ var Vault =
   addFolder_: function(iParentId) {
     var self = this;
     folderData = {};
-    folderData["folder"] = 
+    folderData["folder"] =
     {
       description : $("#new-folder-description").val(),
       name : $("#new-folder-name").val(),
@@ -209,7 +244,7 @@ var Vault =
     var self = this;
     // Add hook for folder change, except the add new folder
     $("#vault-folders-navbar > li > a").not(".add-folder-button > a").click(function(e) {
-      $("#folder-name").text(this.text); 
+      $("#folder-name").text(this.text);
       var folder = $(this)
       self.filterReceiptList_(folder.attr("folder_database_id"));
     });

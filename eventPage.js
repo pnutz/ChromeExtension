@@ -27,12 +27,12 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, saved_d
   message.generated = JSON.stringify(generated);
   message.saved_data = JSON.stringify(saved_data);
 
-	/*var request = $.post(host, message, function (data, status) {
+	var request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
-	});*/
+	});
 }
 
 // on start of receipt, send domain to aServer and receive generated values
@@ -164,6 +164,11 @@ function postReceiptToWebApp(saved_data) {
 
   form_data.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: form_data.receipt["snapshot"] } };
   delete form_data.receipt["snapshot"];
+
+  delete form_data.receipt["subtotal"];
+  delete form_data.receipt["taxes"];
+  delete form_data.receipt["profile"];
+  delete form_data.receipt["category"];
 
   console.log(form_data);
 
