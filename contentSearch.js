@@ -1084,6 +1084,7 @@ function getElementFromElementPath(elementPath) {
 // compares two element_paths and return an element_path representing the parent element
 function findParentElementPath(element_path1, element_path2) {
   console.log("compare parent element path");
+  console.log(element_path1);
   console.log(element_path2);
   var element_path = [];
 

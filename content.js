@@ -355,6 +355,8 @@ chrome.runtime.onConnect.addListener(function(port) {
           var parent = getElementFromElementPath(element_path);
           console.log(parent);
 
+          // check for parent element TD/TR/
+
           /*
             set image size to 1/3 original size OR set CSS sizes to 300% before rendering
             http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
@@ -366,6 +368,7 @@ chrome.runtime.onConnect.addListener(function(port) {
               //var data = canvas.toDataURL("image/gif").replace("image/jpeg", "image/octet-stream");
               //window.location.href = data;
               //document.body.appendChild(canvas);
+
               saved_data.snapshot = canvas.toDataURL("image/jpeg");
               sendReceipt();
             }

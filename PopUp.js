@@ -44,6 +44,9 @@ var PopUp =
         // success
         $("#main-div").show();
         $("#main-div-user-email").text("Logged in as: " + localStorage["userEmail"]);
+
+        // store receipt url in localStorage
+        localStorage["receiptPost"] = self.appendCred(self.controllers.GetUrl("receipts") + ".json");
       })
       .fail(function(){
         // Remove the auth token and reload so we can try and get a new one
@@ -197,8 +200,6 @@ var PopUp =
         localStorage["userEmail"] = $("#user-email").val();
         // store userID in localStorage
         localStorage["userID"] = data["user"];
-        // store receipt url in localStorage
-        localStorage["receiptPost"] = self.appendCred(self.controllers.GetUrl("receipts") + ".json");
       }).fail(function (jqXHR, textStatus, errorThrown){
       // log the error to the console
         console.error(

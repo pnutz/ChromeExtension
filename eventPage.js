@@ -184,6 +184,7 @@ function postReceiptToWebApp(saved_data) {
     console.error(
       "The following error occurred: " + textStatus,
       errorThrown);
+    alert(jqXHR.responseText);
   });
 }
 
