@@ -117,7 +117,7 @@ var NotiBar =
 
         // search for numeric field
         if (type === fieldTypes.NUMBER && $(that).valid() && that.value.length > 0) {
-          var message = { request: "searchNumber", "text": that.value, "fieldName": that.id };
+          var message = { request: "searchMoney", "text": that.value, "fieldName": that.id };
           window.parent.postMessage(message, "*");
         }
         // search for regular field

@@ -24,7 +24,8 @@ var TwoReceiptHandsOnTable =
     this.receiptItemTable = $("#items");
 
     var TwoReceiptEditor = this.initTwoReceiptEditor();
-    var TwoReceiptNumericEditor = this.initTwoReceiptNumericEditor();
+    var TwoReceiptNumericEditor = this.initTwoReceiptNumericEditor("numeric");
+    var TwoReceiptMoneyEditor = this.initTwoReceiptNumericEditor("money");
 
     this.receiptItemTable.handsontable({
       stretchH : 'last', // Setting this to 'all' causes resizing issues
@@ -92,7 +93,7 @@ var TwoReceiptHandsOnTable =
         },
         {
           data: 'cost',
-          editor: TwoReceiptNumericEditor,
+          editor: TwoReceiptMoneyEditor,
           renderer: "numeric",
           validator: this.twoReceiptNumericValidator,
           //allowInvalid: false,
@@ -406,7 +407,7 @@ var TwoReceiptHandsOnTable =
   },
 
   // returns TwoReceipt Numeric extension of handsontable AutocompleteEditor
-  initTwoReceiptNumericEditor: function()
+  initTwoReceiptNumericEditor: function(type)
   {
     var self = this;
     var TwoReceiptNumericEditor = Handsontable.editors.AutocompleteEditor.prototype.extend();
@@ -452,7 +453,12 @@ var TwoReceiptHandsOnTable =
               row = self.rows.length - 1;
             }
 
-            var message = { request: "searchNumber", "fieldName": col_name, "itemIndex": row, "text": newValue };
+            var message = { "fieldName": col_name, "itemIndex": row, "text": newValue };
+            if (type === "money") {
+              message.request = "searchMoney";
+            } else {
+              message.request = "searchNumber";
+            }
             window.parent.postMessage(message, "*");
           }
           // remove source

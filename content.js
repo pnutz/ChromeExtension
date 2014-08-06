@@ -355,7 +355,8 @@ chrome.runtime.onConnect.addListener(function(port) {
           var parent = getElementFromElementPath(element_path);
           console.log(parent);
 
-          // check for parent element TD/TR/
+          parent = getParentContainer(parent);
+          console.log(parent);
 
           /*
             set image size to 1/3 original size OR set CSS sizes to 300% before rendering
@@ -363,14 +364,16 @@ chrome.runtime.onConnect.addListener(function(port) {
           */
 
           // this messes up the page dom, so only run at the end of the receipt submission
-          html2canvas(parent, {
+          html2canvas(parent[0], {
             onrendered: function(canvas) {
               //var data = canvas.toDataURL("image/gif").replace("image/jpeg", "image/octet-stream");
               //window.location.href = data;
               //document.body.appendChild(canvas);
 
-              saved_data.snapshot = canvas.toDataURL("image/jpeg");
+              saved_data.snapshot = canvas.toDataURL("image/png");
               sendReceipt();
+
+
             }
           });
         }
@@ -433,7 +436,7 @@ window.addEventListener("message", function(event) {
 
       // user submitted receipt, send all data to eventPage
       case "saveReceipt":
-        if (event.data.saved_data !== undefined) {
+        if (event.data.saved_data != null) {
           var notdiv = document.getElementById("notificationdiv");
           prepareReceipt(event.data.saved_data, event.data.rows, event.data.parent);
           document.getElementsByTagName("body")[0].style.paddingTop = "0px";
@@ -443,24 +446,30 @@ window.addEventListener("message", function(event) {
 
       // user requests search
       case "searchText":
-        if (event.data.fieldName !== undefined && event.data.text !== undefined) {
+        if (event.data.fieldName != null && event.data.text != null) {
           searchRequest(event.source, "text", event.data.fieldName, event.data.text, event.data.itemIndex);
         }
         break;
 
       // user requests numeric search
       case "searchNumber":
-        if (event.data.fieldName !== undefined && event.data.text !== undefined) {
+        if (event.data.fieldName != null && event.data.text != null) {
           searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
+        }
+        break;
+
+      case "searchMoney":
+        if (event.data.fieldName != null && event.data.text != null) {
+          searchRequest(event.source, "money", event.data.fieldName, event.data.text, event.data.itemIndex);
         }
         break;
 
       // user focused on search, highlight selected area
       case "highlightSearchText":
-        if (event.data.fieldName !== undefined) {
+        if (event.data.fieldName != null) {
           cleanHighlight();
           var field = event.data.fieldName;
-          if (event.data.itemIndex !== undefined) {
+          if (event.data.itemIndex != null) {
             field += event.data.itemIndex;
           }
           highlightMatchText(field, event.data.value);
@@ -469,12 +478,12 @@ window.addEventListener("message", function(event) {
 
       // user selected search, highlight, and set field text
       case "selectText":
-        if (event.data.fieldName !== undefined && event.data.value !== undefined) {
+        if (event.data.fieldName != null && event.data.value != null) {
           cleanHighlight();
           cleanFieldText(event.data.fieldName, event.data.itemIndex);
 
           var field = event.data.fieldName;
-          if (event.data.itemIndex !== undefined) {
+          if (event.data.itemIndex != null) {
             field += event.data.itemIndex;
           }
 
@@ -490,7 +499,7 @@ window.addEventListener("message", function(event) {
 
       // user focuses on notification text field, highlight attribute data if it exists
       case "highlightText":
-        if (event.data.fieldName !== undefined) {
+        if (event.data.fieldName != null) {
           cleanHighlight();
           highlightAttributeText(event.data.fieldName, event.data.itemIndex);
         }
@@ -511,7 +520,7 @@ window.addEventListener("message", function(event) {
 // respond with search data. unselect and unhighlight text for fieldName
 function searchRequest(source, type, fieldName, text, itemIndex) {
   var field = fieldName;
-  if (itemIndex !== undefined) {
+  if (itemIndex != null) {
     field += itemIndex;
   }
 
@@ -527,10 +536,11 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
     searchText(text, field, total);
     findRelevantMatches(field, type);
 
-    var results = getMatches(fieldName, itemIndex, type);
+    var results = getMatches(field, itemIndex, type);
     var message = { "response": "searchResults", "results": results, "fieldName": fieldName, "itemIndex": itemIndex };
     console.log(message);
     source.postMessage(message, event.origin);
+    console.log(search_terms);
   } else {
     console.log("document search halted: " + total + " instances of " + text + " found in document");
   }
@@ -545,7 +555,7 @@ function prepareReceipt(data, rows, parent) {
     saved_data = data;
 
     // track deleted items for generated templates
-    if (generated !== undefined && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items")) {
+    if (generated != null && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items")) {
       $.each(generated.templates.items, function(key, value) {
         var int_key = parseInt(key);
         if (!isNaN(int_key) && rows[int_key] === null) {
