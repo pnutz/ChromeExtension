@@ -21,3 +21,21 @@ ControllerUrls.prototype.GetUrl = function(controller)
   return url;
 };
 
+// TODO: refactor appendCred to be internal and doesn't need
+// to be called externally
+ControllerUrls.prototype.AppendCred = function(url)
+{
+  if ("userEmail" in localStorage && "authToken" in localStorage)
+  {
+    credUrl =  url +
+      "?email=" + localStorage["userEmail"] +
+      "&token=" + localStorage["authToken"];
+  }
+  else
+    console.error("Missing credentials!");
+
+  return credUrl;
+};
+
+
+

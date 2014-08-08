@@ -169,6 +169,7 @@ function postReceiptToWebApp(saved_data) {
   delete form_data.receipt["taxes"];
   delete form_data.receipt["profile"];
   delete form_data.receipt["category"];
+  form_data.receipt["tag_names"] = [ "test1", "test2", "test3" ];
 
   console.log(form_data);
 
