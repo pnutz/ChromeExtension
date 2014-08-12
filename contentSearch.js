@@ -69,9 +69,11 @@ function findMatch(node, params) {
   } else {
     text += " " + node_value;
   }
+  console.log(text);
 
   // if search_term is found, current text node is the end node for one count
   var index = text.toLowerCase().indexOf(search_term.toLowerCase(), current_index + 1);
+
   // if there is multiple instances of search_term in text (loops through while loop), use old_start_index to calculate start_index
   var old_start_index, start_node_index;
 
@@ -91,10 +93,10 @@ function findMatch(node, params) {
 
     // set text_selection to contain prevSibling text nodes until the current search_term matches
     while (text_selection.length < characters_from_end) {
-      //console.log("text_selection.length: " + text_selection.length + " < " + characters_from_end);
-      //console.log("old text_selection: " + text_selection);
+      console.log("text_selection.length: " + text_selection.length + " < " + characters_from_end);
+      console.log("old text_selection: " + text_selection);
       text_selection = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + text_selection;
-      //console.log("space added: " + text_selection);
+      console.log("space added: " + text_selection);
       text_nodes_back_index--;
     }
 
@@ -113,12 +115,20 @@ function findMatch(node, params) {
     var start_node_index = text_nodes_back_index + 1;
     // possibly null parentNode because highlighted text before, adding MARK tag and then removed it
     start_node = text_nodes[start_node_index];
-    //console.log("final text_selection: " + text_selection);
+    console.log("end node index: " + node_index);
+    console.log(text_nodes[node_index + 1]);
+    console.log(node_value);
+    console.log("start node index: " + start_node_index);
+    console.log("final text_selection: " + text_selection);
 
     if (start_index !== -1) {
       // set parent as first element parent of text_node
+      console.log("end parent");
+      console.log(node);
       var end_parent = node.parentNode;
 
+      console.log("start parent");
+      console.log(start_node);
       var start_parent = start_node.parentNode;
 
       var target_parent;
@@ -140,14 +150,18 @@ function findMatch(node, params) {
       // neither parents contain one another
       else {
         console.log("neither parent contains the other");
+        console.log(end_parent);
+        console.log("first start parent");
+        console.log(start_parent);
         // iterate upwards until start_parent contains end_parent
         while (!$.contains(start_parent, end_parent) && start_parent !== end_parent) {
           start_parent = start_parent.parentNode;
+          console.log(start_parent);
         }
         target_parent = start_parent;
       }
-      /*console.log("target parent");
-      console.log(target_parent);*/
+      console.log("target parent");
+      console.log(target_parent);
 
       // set start_node to node before the parent we are calculating with
       if (text_nodes_back_index !== -1) {
@@ -191,6 +205,7 @@ function findMatch(node, params) {
           end_node_index: node_index
         };
         $(target_parent).attr(data_field, count);
+        console.log($(target_parent));
       }
 
       count++;
@@ -206,6 +221,8 @@ function findMatch(node, params) {
     if (count === total) {
       console.log("Completed calculations for all matched search_terms");
       node_index++;
+      console.log(node_index);
+      console.log(text_nodes[node_index]);
       return {
               "node_index": node_index,
               "search_term": search_term,
@@ -220,6 +237,8 @@ function findMatch(node, params) {
     }
   }
   node_index++;
+  console.log(node_index);
+  console.log(text_nodes[node_index]);
   return {
             "node_index": node_index,
             "search_term": search_term,
@@ -237,9 +256,9 @@ function findMatch(node, params) {
 function findRelevantMatches(field, type) {
   if (search_terms.hasOwnProperty(field) && Object.keys(search_terms[field]).length > 0) {
     var count = search_terms[field].count;
-    console.log(findMatchByWord(field, count, type));
-    console.log(findMatchByNode(field, count, type));
-    console.log(findMatchByElement(field, count, type));
+    //console.log(findMatchByWord(field, count, type));
+    //console.log(findMatchByNode(field, count, type));
+    //console.log(findMatchByElement(field, count, type));
   }
 }
 
@@ -302,7 +321,6 @@ function findMatchByElement(field, count, type) {
               $.contains(element[0], text_nodes[new_end_node_index].parentNode) &&
               text_nodes[new_end_node_index].parentNode !== element[0]) {
         new_end_node_index++;
-        console.log(new_end_node_index);
         console.log(text_nodes[new_end_node_index]);
       }
 

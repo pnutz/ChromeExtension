@@ -3,18 +3,15 @@ var incomingPort,
     mouseDownElement,
     generated = {},
     receipt_notification,
-    document_text,
-    element_path,
-    saved_data,
+    documentText,
+    elementPath,
+    savedData,
     html;
 
 $(document).ready(function () {
 	if (self === top) {
 		console.log("document ready");
   }
-
-  document_text = initializeContentSearch();
-  //console.log(document_text);
 
 	// only run function when user prompts to start, so links keep working
 	/*$(document).click(function(event) {
@@ -273,6 +270,12 @@ $(document).ready(function () {
 });
 
 function createNotification() {
+
+  if (documentText == null) {
+    documentText = initializeContentSearch();
+    console.log(documentText);
+  }
+
 	// remove element if it already exists
 	if ($('#notificationdiv').length > 0)
 	{
@@ -352,10 +355,10 @@ chrome.runtime.onConnect.addListener(function(port) {
         }
         else if (msg.request === "takeSnapshot") {
           // try hard-copying jquery to get parent isolated from DOM, so DOM is not messed up with canvas
-          var parent = getElementFromElementPath(element_path);
+          var parent = elementPath.element;
           console.log(parent);
 
-          parent = getParentContainer(parent);
+          parent = ElementPath.getParentContainer(parent);
           console.log(parent);
 
           /*
@@ -370,10 +373,8 @@ chrome.runtime.onConnect.addListener(function(port) {
               //window.location.href = data;
               //document.body.appendChild(canvas);
 
-              saved_data.snapshot = canvas.toDataURL("image/png");
+              savedData.snapshot = canvas.toDataURL("image/png");
               sendReceipt();
-
-
             }
           });
         }
@@ -528,7 +529,7 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
   cleanElementData(field);
   cleanFieldText(fieldName, itemIndex);
 
-  var total = occurrences(document_text, text, true);
+  var total = occurrences(documentText, text, true);
 
   if (total > 0 /*&& total < 5*/) {
     console.log(total + " instances of " + text + " found in document");
@@ -552,8 +553,6 @@ function prepareReceipt(data, rows, parent) {
     cleanHighlight();
     cleanElementData();
 
-    saved_data = data;
-
     // track deleted items for generated templates
     if (generated != null && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items")) {
       $.each(generated.templates.items, function(key, value) {
@@ -564,50 +563,42 @@ function prepareReceipt(data, rows, parent) {
       });
     }
 
-    // calculate parent element for all templates in saved_data
-    var parent = getParentElement(saved_data);
-    var path = [];
-    if (parent != null) {
-      path = findElementPath(parent);
-    }
+    // calculate ElementPath for all templates in savedData
+    var savedPath = new ElementPath();
+    // path is calculated in element setter
+    savedPath.element = ElementPath.getParentElement(data);
 
     // find parent element from generated element_paths
-    var parentElementPath;
+    var generatedElementPath;
     $.each(generated, function(key, value) {
       console.log(key);
       console.log(generated[key]);
-      console.log(saved_data[key]);
+      console.log(data[key]);
       if (key !== "items" && key !== "templates" && key !== "element_paths"
-          && generated[key] === saved_data[key]) {
+          && generated[key] === data[key]) {
 
-        if (parentElementPath != null) {
-          parentElementPath = findParentElementPath(parentElementPath, generated.element_paths[key]);
-        } else {
-          parentElementPath = generated.element_paths[key];
-          console.log("set parent element path");
-          console.log(parentElementPath);
-        }
+        generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.element_paths[key]);
+        console.log("set parent element path");
+        console.log(generatedElementPath);
       } else if (key === "items") {
         $.each(generated.items, function(item_key, item_value) {
           if (generated.templates.items[item_key].deleted == null) {
-
-            if (parentElementPath != null) {
-              parentElementPath = findParentElementPath(parentElementPath, generated.element_paths.items[item_key]);
-            } else {
-              parentElementPath = generated.element_paths.items[item_key];
-              console.log("set parent element path");
-              console.log(parentElementPath);
-            }
+            generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.element_paths.items[item_key]);
+            console.log("set parent element path");
+            console.log(generatedElementPath);
           }
         });
       }
     });
 
-    console.log("saved_data path comparison");
-    element_path = findParentElementPath(parentElementPath, path);
-    console.log(element_path);
+    console.log("savedData path comparison");
+    savedPath.path = ElementPath.findParentElementPath(savedPath.path, generatedElementPath);
+    console.log(savedPath);
+    elementPath = savedPath;
 
     delete generated.element_paths;
+
+    savedData = data;
 
     html = document.body.outerHTML;
     incomingPort.postMessage({ request: "resizeWindow" });
@@ -635,7 +626,7 @@ function sendReceipt() {
       domain: message_domain,
       attributes: attributes,
       generated: generated,
-      saved_data: saved_data
+      saved_data: savedData
     };
     console.log(message);
 
