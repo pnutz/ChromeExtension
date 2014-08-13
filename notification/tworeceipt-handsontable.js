@@ -591,7 +591,7 @@ var TwoReceiptHandsOnTable =
       if (this.rows[index] !== null)
       {
         lastRow = index + 1;
-        rowNum = this.rows[index] + 1;
+        rowNum = this.rows[index];
         break;
       }
     }

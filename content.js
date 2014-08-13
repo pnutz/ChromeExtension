@@ -1,12 +1,12 @@
 var incomingPort,
     lastClicked,
     mouseDownElement,
+    itemRowGen,
     generated = {},
-    receipt_notification,
     documentText,
     elementPath,
     savedData,
-    html;
+    receipt;
 
 $(document).ready(function () {
 	if (self === top) {
@@ -373,7 +373,7 @@ chrome.runtime.onConnect.addListener(function(port) {
               //window.location.href = data;
               //document.body.appendChild(canvas);
 
-              savedData.snapshot = canvas.toDataURL("image/png");
+              receipt.saved_data.snapshot = canvas.toDataURL("image/png");
               sendReceipt();
             }
           });
@@ -485,6 +485,10 @@ window.addEventListener("message", function(event) {
 
           var field = event.data.fieldName;
           if (event.data.itemIndex != null) {
+            // initialize itemRowGen
+            if (itemRowGen == null) {
+              itemRowGen = new ItemRowGen(event.data.itemIndex);
+            }
             field += event.data.itemIndex;
           }
 
@@ -493,6 +497,10 @@ window.addEventListener("message", function(event) {
           var end = getSearchTermProperty(field, "end", event.data.value);
           var node = getSearchTermProperty(field, "start_node_index", event.data.value);
           setFieldText(element, start, end, event.data.fieldName, event.data.itemIndex, node);
+
+          if (event.data.itemIndex != null) {
+            itemRowGen.setAttrElement(event.data.fieldName, element);
+          }
 
           highlightAttributeText(event.data.fieldName, event.data.itemIndex);
         }
@@ -511,9 +519,20 @@ window.addEventListener("message", function(event) {
         cleanHighlight();
         break;
 
+      // generate new receipt item using itemRowGen
+      case "getItemRows":
+        console.log(itemRowGen);
+        if (itemRowGen != null) {
+          var message = itemRowGen.generateNextRow();
+          if (message != null) {
+            message.response = "newItemRows";
+            event.source.postMessage(message, event.origin);
+          }
+        }
+        break;
+
       default:
         console.log("unable to handle message request");
-
     }
   }
 });
@@ -531,7 +550,7 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
 
   var total = occurrences(documentText, text, true);
 
-  if (total > 0 /*&& total < 5*/) {
+  if (total > 0) {
     console.log(total + " instances of " + text + " found in document");
 
     searchText(text, field, total);
@@ -598,18 +617,6 @@ function prepareReceipt(data, rows, parent) {
 
     delete generated.element_paths;
 
-    savedData = data;
-
-    html = document.body.outerHTML;
-    incomingPort.postMessage({ request: "resizeWindow" });
-  }
-
-  // clean receipt data
-  cleanFieldText();
-}
-
-function sendReceipt() {
-  if (incomingPort != null) {
     var message_domain;
     // default local html pages to DOMAIN (since no domain)
     if (document.domain === null || document.domain === "") {
@@ -619,17 +626,26 @@ function sendReceipt() {
     }
 
     // compose message
-    var message = {
+    receipt = {
       response: "saveReceipt",
-      html: html,
+      html: document.body.outerHTML,
       url: location.href,
       domain: message_domain,
       attributes: attributes,
       generated: generated,
-      saved_data: savedData
+      saved_data: data
     };
-    console.log(message);
 
-    incomingPort.postMessage(message);
+    incomingPort.postMessage({ request: "resizeWindow" });
+  }
+
+  // clean receipt data
+  cleanFieldText();
+}
+
+function sendReceipt() {
+  if (incomingPort != null) {
+    console.log(receipt);
+    incomingPort.postMessage(receipt);
   }
 }

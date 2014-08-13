@@ -3,15 +3,30 @@ ElementPath.DATA_ATTR = "data-tworeceipt-row";
 ElementPath.CONTAINER_TAGS = ["BODY", "DIV", "P", "TABLE", "UL", "SPAN", "SECTION", "ARTICLE"];
 ElementPath.ROW_TAGS = ["TR", "LI"];
 
-function ElementPath(rowIndex) {
-  this._element = null;
-  this._path = [];
-  if (rowIndex != null) {
+function ElementPath(rowIndex, element, path, topElement) {
+  if (element != null) {
+    this._element = element;
+  } else {
+    this._element = null;
+  }
+
+  if (path != null) {
+    this._path = path;
+  } else {
+    this._path = [];
+  }
+
+  if (topElement != null) {
+    this._topElement = topElement;
+    if (rowIndex != null) {
+      this.rowIndex = rowIndex;
+    }
+  } else if (rowIndex != null) {
     this.rowIndex = rowIndex;
 
-    var topElement = $("[" + ElementPath.DATA_ATTR + this.rowIndex + "='" + this.rowIndex + "']");
-    if (topElement.length > 0) {
-      this._topElement = topElement.eq(0);
+    var top = $("[" + ElementPath.DATA_ATTR + this.rowIndex + "='" + this.rowIndex + "']");
+    if (top.length > 0) {
+      this._topElement = top.eq(0);
     } else {
       this._topElement = null;
     }
@@ -19,6 +34,8 @@ function ElementPath(rowIndex) {
     this._topElement = $("body").eq(0);
   }
 }
+
+
 
 // get/set path
 Object.defineProperty(ElementPath.prototype, "path", {
@@ -42,7 +59,10 @@ Object.defineProperty(ElementPath.prototype, "path", {
 Object.defineProperty(ElementPath.prototype, "element", {
   get: function() {
     // lazy loads element if path exists
-    return this.getEndOfPath();
+    if (this._element == null) {
+      this._element = this.getEndOfPath();
+    }
+    return this._element;
   },
   set: function(value) {
     this._element = value;
@@ -88,17 +108,16 @@ ElementPath.prototype.copy = function() {
     this._path = this.findElementPath();
   }
   var newPath = $.extend(true, {}, this);
-  return newPath;
+  return new ElementPath(newPath.rowIndex, newPath._element, newPath._path, newPath._topElement);
 };
 
-// modifies path by change at index and returns if it succeeded or failed
+// modifies path by change at index
 ElementPath.prototype.alterPath = function(index, change) {
   if (this._path.length > index) {
     this._element = null;
     this._path[index] = this._path[index] + change;
-    return true;
   }
-  return false;
+  return this;
 };
 
 // find closest row element, compare with any existing elements with attr
@@ -111,7 +130,7 @@ ElementPath.prototype.findClosestRowElement = function() {
     var tag = element.prop("tagName");
     var matchFound = $.inArray(tag, ElementPath.ROW_TAGS);
 
-    while (match_found === -1 && element.parent().length > 0) {
+    while (matchFound === -1 && element.parent().length > 0) {
       element = element.parent();
       tag = element.prop("tagName");
       matchFound = $.inArray(tag, ElementPath.ROW_TAGS);
@@ -168,31 +187,27 @@ ElementPath.prototype.findElementPath = function() {
 
 // returns DOM element node at the end of path
 ElementPath.prototype.getEndOfPath = function() {
-  if (this._element == null) {
-    var elementPath = this._path;
+  var elementPath = this._path;
+  var element = this.top;
 
-    if (elementPath.length !== 0) {
-      var element;
-      if (this.rowIndex != null) {
-        element = $(this.selector).eq(0);
-      } else {
-        element = $("body").eq(0);
-      }
-
-      for (var i = 0; i < elementPath.length; i++) {
-        // first entry in elementPath is always body/row tag
-        if (i !== 0) {
-          element = element.children().eq(elementPath[i]);
+  if (elementPath.length > 0) {
+    for (var i = 0; i < elementPath.length; i++) {
+      // first entry in elementPath is always body/row tag
+      if (i !== 0) {
+        element = element.children();
+        if (element.length > elementPath[i]) {
+          element = element.eq(elementPath[i]);
+        } else {
+          element = null;
+          break;
         }
       }
-
-      this._element = element;
-    } else {
-      this._element = null;
     }
+  } else {
+    element = null;
   }
 
-  return this._element;
+  return element;
 };
 
 // compares two paths and returns a path representing the parent element
@@ -207,12 +222,15 @@ ElementPath.findParentElementPath = function(path1, path2) {
   else if (path1 == null || path1.length === 0) {
     return path2;
   }
-  else if (path2 == null || path2.length === 0) {
+  else if (path1 === path2 || path2 == null || path2.length === 0) {
     return path1;
   }
 
   var finalIndex = 0;
   for (var i = 0; i < path1.length; i++) {
+    console.log("comparison " + i);
+    console.log(path1[i]);
+    console.log(path2[i]);
     if (i < path2.length && path1[i] === path2[i]) {
       finalIndex = i;
     } else {
@@ -220,7 +238,8 @@ ElementPath.findParentElementPath = function(path1, path2) {
     }
   }
 
-  return path1.splice(finalIndex, path1.length - finalIndex - 1);
+  path1.splice(finalIndex, path1.length - finalIndex - 1);
+  return path1;
 };
 
 // returns a DOM element that is a parent topElement to all receipt item attributes
@@ -250,16 +269,18 @@ ElementPath.setParentRow = function(elementPaths) {
 // returns a DOM element that is a parent to all template fields
 ElementPath.getParentElement = function(savedData, isItemField) {
   var parentElement;
+  var keys = Object.keys(savedData);
 
-  if (!isItemField) {
-    var keys = Object.keys(savedData);
+  if (isItemField == null) {
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
       var formItem;
 
       if (key !== "items") {
-        var selector = "[data-tworeceipt-" + key + "-start]";
-        formItem = $(selector).eq(0);
+        var keyElement = $("[data-tworeceipt-" + key + "-start]");
+        if (keyElement.length > 0) {
+          formItem = keyElement.eq(0);
+        }
       } else {
         formItem = ElementPath.getParentElement(savedData[key], true);
       }
@@ -274,16 +295,18 @@ ElementPath.getParentElement = function(savedData, isItemField) {
       }
     }
   } else {
-    var keys = Object.keys(savedData);
     for (var i = 0; i < keys.length; i++) {
       var itemIndex = keys[i];
-      var itemValue = savedData[key];
+      var itemValue = savedData[itemIndex];
 
       var itemKeys = Object.keys(itemValue);
       for (var j = 0; j < itemKeys.length; j++) {
         var itemAttr = itemKeys[j];
-        var selector = "[data-tworeceipt-" + itemAttr + itemIndex + "-start]";
-        var formItem = $(selector).eq(0);
+        var keyElement = $("[data-tworeceipt-" + itemAttr + itemIndex + "-start]");
+        var formItem;
+        if (keyElement.length > 0) {
+          formItem = keyElement.eq(0);
+        }
 
         if (formItem != null) {
           if (parentElement != null) {
@@ -322,7 +345,7 @@ ElementPath.getParentContainer = function(element) {
   var tag = element.prop("tagName");
   var matchFound = $.inArray(tag, ElementPath.CONTAINER_TAGS);
 
-  while (match_found === -1 && element.parent().length > 0) {
+  while (matchFound === -1 && element.parent().length > 0) {
     element = element.parent();
     tag = element.prop("tagName");
     matchFound = $.inArray(tag, ElementPath.CONTAINER_TAGS);

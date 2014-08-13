@@ -69,7 +69,6 @@ function findMatch(node, params) {
   } else {
     text += " " + node_value;
   }
-  console.log(text);
 
   // if search_term is found, current text node is the end node for one count
   var index = text.toLowerCase().indexOf(search_term.toLowerCase(), current_index + 1);
@@ -93,10 +92,10 @@ function findMatch(node, params) {
 
     // set text_selection to contain prevSibling text nodes until the current search_term matches
     while (text_selection.length < characters_from_end) {
-      console.log("text_selection.length: " + text_selection.length + " < " + characters_from_end);
-      console.log("old text_selection: " + text_selection);
+      //console.log("text_selection.length: " + text_selection.length + " < " + characters_from_end);
+      //console.log("old text_selection: " + text_selection);
       text_selection = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + text_selection;
-      console.log("space added: " + text_selection);
+      //console.log("space added: " + text_selection);
       text_nodes_back_index--;
     }
 
@@ -115,11 +114,7 @@ function findMatch(node, params) {
     var start_node_index = text_nodes_back_index + 1;
     // possibly null parentNode because highlighted text before, adding MARK tag and then removed it
     start_node = text_nodes[start_node_index];
-    console.log("end node index: " + node_index);
-    console.log(text_nodes[node_index + 1]);
-    console.log(node_value);
-    console.log("start node index: " + start_node_index);
-    console.log("final text_selection: " + text_selection);
+    //console.log("final text_selection: " + text_selection);
 
     if (start_index !== -1) {
       // set parent as first element parent of text_node
@@ -150,18 +145,18 @@ function findMatch(node, params) {
       // neither parents contain one another
       else {
         console.log("neither parent contains the other");
-        console.log(end_parent);
-        console.log("first start parent");
-        console.log(start_parent);
+        //console.log(end_parent);
+        //console.log("first start parent");
+        //console.log(start_parent);
         // iterate upwards until start_parent contains end_parent
         while (!$.contains(start_parent, end_parent) && start_parent !== end_parent) {
           start_parent = start_parent.parentNode;
-          console.log(start_parent);
+          //console.log(start_parent);
         }
         target_parent = start_parent;
       }
-      console.log("target parent");
-      console.log(target_parent);
+      //console.log("target parent");
+      //console.log(target_parent);
 
       // set start_node to node before the parent we are calculating with
       if (text_nodes_back_index !== -1) {
@@ -221,8 +216,6 @@ function findMatch(node, params) {
     if (count === total) {
       console.log("Completed calculations for all matched search_terms");
       node_index++;
-      console.log(node_index);
-      console.log(text_nodes[node_index]);
       return {
               "node_index": node_index,
               "search_term": search_term,
@@ -237,8 +230,6 @@ function findMatch(node, params) {
     }
   }
   node_index++;
-  console.log(node_index);
-  console.log(text_nodes[node_index]);
   return {
             "node_index": node_index,
             "search_term": search_term,
@@ -256,9 +247,9 @@ function findMatch(node, params) {
 function findRelevantMatches(field, type) {
   if (search_terms.hasOwnProperty(field) && Object.keys(search_terms[field]).length > 0) {
     var count = search_terms[field].count;
-    //console.log(findMatchByWord(field, count, type));
-    //console.log(findMatchByNode(field, count, type));
-    //console.log(findMatchByElement(field, count, type));
+    console.log(findMatchByWord(field, count, type));
+    console.log(findMatchByNode(field, count, type));
+    console.log(findMatchByElement(field, count, type));
   }
 }
 
@@ -343,7 +334,6 @@ function findMatchByElement(field, count, type) {
             console.log("search_term is not numeric");
             continue;
           }
-
         case "number":
           if (!isNumeric(element_text)) {
             console.log("search_term is not numeric");
@@ -991,9 +981,9 @@ function iterateText(node, method, method_params) {
 // set attributes field, index implies receipt item
 function setFieldText(element, start, end, field, index, start_node_index) {
   var data_field = "data-tworeceipt-" + field;
-  if (index !== undefined) {
+  if (index != null) {
     data_field += index;
-    if (attributes.items[index] === undefined) {
+    if (attributes.items[index] == null) {
       attributes.items[index] = {};
     }
     attributes.items[index][field] = true;
@@ -1011,7 +1001,7 @@ function setFieldText(element, start, end, field, index, start_node_index) {
 function cleanFieldText(field, index) {
   if (field) {
     var data_field = "data-tworeceipt-" + field;
-    if (index !== undefined) {
+    if (index != null) {
       data_field += index;
 
       if (attributes.items.hasOwnProperty(index) && attributes.items[index].hasOwnProperty(field)) {
@@ -1025,7 +1015,7 @@ function cleanFieldText(field, index) {
     }
 
     var element = $("[" + data_field + "-start]");
-    if (element.length > 0 && element[0] !== undefined) {
+    if (element.length > 0) {
       element.attr(data_field + "-start", null);
       element.attr(data_field + "-end", null);
       element.attr(data_field + "-node", null);
@@ -1040,15 +1030,15 @@ function cleanFieldText(field, index) {
       if (field === "items") {
         var item_keys = Object.keys(attributes.items);
         for (var j = 0; j < item_keys.length; j++) {
-          var item_key = item_keys[j];
-          var item_value = attributes.items[item_key];
+          var item_index = item_keys[j];
+          var item_value = attributes.items[item_index];
 
           var item_attribute_keys = Object.keys(item_value);
           for (var k = 0; k < item_attribute_keys.length; k++) {
             var item_attribute = item_attribute_keys[k];
             var data_field = "data-tworeceipt-" + item_attribute + item_index + "-start";
             var element = $("[" + data_field + "]");
-            if (element.length > 0 && element[0] !== undefined) {
+            if (element.length > 0) {
               element.attr(data_field + "-start", null);
               element.attr(data_field + "-end", null);
               element.attr(data_field + "-node", null);
@@ -1060,7 +1050,7 @@ function cleanFieldText(field, index) {
       } else {
         var data_field = "data-tworeceipt-" + field + "-start";
         var element = $("[" + data_field + "]");
-        if (element.length > 0 && element[0] !== undefined) {
+        if (element.length > 0) {
           element.attr(data_field + "-start", null);
           element.attr(data_field + "-end", null);
           element.attr(data_field + "-node", null);

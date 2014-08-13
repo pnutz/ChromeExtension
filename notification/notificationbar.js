@@ -5,8 +5,8 @@ var fieldTypes  =
   DATE : 3,
   SELECT : 4,
   TABLE : 5
-
 };
+
 var NotiBar =
 {
   configurations:
@@ -100,6 +100,13 @@ var NotiBar =
         var message = { request: "saveReceipt", "saved_data": savedData, "rows": rows };
         window.parent.postMessage(message, "*");
       }
+    });
+
+    $("#receipt-items-add").click(function() {
+      // hide button if table row doesn't exist?
+      // for now, assume its valid
+      var message = { request: "getItemRows" };
+      window.parent.postMessage(message, "*");
     });
 
     // on text form propertychange, send form text and fieldName to content script for search (not triggered on autocomplete select)
@@ -597,6 +604,10 @@ window.addEventListener("message", function(event) {
         // update table autocomplete source and open TwoReceiptEditor
         TwoReceiptHandsOnTable.updateTableSource(event.data.fieldName, event.data.itemIndex);
       }
+    }
+    // generated item row
+    else if (event.data.response === "newItemRows") {
+      TwoReceiptHandsOnTable.addItemRow(event.data.item);
     }
     else
     {
