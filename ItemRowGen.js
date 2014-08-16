@@ -9,75 +9,105 @@ function ItemRowGen(rowIndex) {
   // index defining ItemRow
   this.rowIndex = rowIndex;
   this.rowsGenerated = 0;
+  this.generatedIndex = 0;
+  this.totalRows = 0;
   // element path to each itemColumn from ItemRow's parent & tagName of child element
-  this.data = [];
+  this.elementData = [];
+  this.textData = [];
   for (var i = 0; i < ItemRowGen.ITEM_COLUMNS.length; i++) {
-    this.data.push(new ElementPath(rowIndex));
+    this.elementData.push(new ElementPath(rowIndex));
+    this.textData.push(null);
   }
 }
 
-ItemRowGen.prototype.getElementPaths = function() {
-  return this.data;
-};
-
-ItemRowGen.prototype.setAttrElement = function(attribute, element) {
-  var pathIndex = $.inArray(attribute, ItemRowGen.ITEM_COLUMNS);
-  if (pathIndex !== -1) {
-    this.data[pathIndex].element = element;
+ItemRowGen.prototype.setRowData = function(attribute, rowIndex, element, start, end, startNodeIndex, endNodeIndex) {
+  if (this.rowIndex === rowIndex) {
+    var attributeIndex = ItemRowGen.getAttributeIndex(attribute);
+    if (attributeIndex !== -1) {
+      this.elementData[attributeIndex].element = element;
+      this.textData[attributeIndex] = new RelativeText(element, start, end, startNodeIndex, endNodeIndex);
+      ElementPath.setParentRow(this.elementData);
+      // # of indices the selected row child is
+      var originalRowIndex = this.elementData[attributeIndex].path[ItemRowGen.PATH_ROW_INDEX] + 1;
+      // total # of row children - row child indices #
+      this.totalRows = this.elementData[attributeIndex].top.children().length - originalRowIndex - 1;
+    } else {
+      console.log("Invalid receipt item attribute " + attribute);
+    }
   } else {
-    console.err("Invalid receipt item attribute " + attribute);
+    console.log("Row index does not match ItemRowGen index");
   }
 };
 
-// return generated row data if it exists
+// return generated row data in an array if it exists. returns false if no row was generated. returns true if there are no more rows to generate
 ItemRowGen.prototype.generateNextRow = function() {
-  ElementPath.setParentRow(this.getElementPaths());
+  if (this.rowsGenerated <= this.totalRows) {
+    this.rowsGenerated++;
+    this.generatedIndex++;
 
-  this.rowsGenerated++;
-
-  var item = {};
-  var tempData = [];
-  for (var i = 0; i < this.data.length; i++) {
-    tempData[i] = this.data[i].copy().alterPath(ItemRowGen.PATH_ROW_INDEX, this.rowsGenerated);
-    if (tempData[i].element == null) {
-      if (ItemRowGen.ITEM_COLUMNS[i] !== "itemtype") {
-        item[ItemRowGen.ITEM_COLUMNS[i]] = ItemRowGen.DEFAULT_VALUES[i];
+    var item = {};
+    var tempData = [];
+    var fieldData = [];
+    for (var i = 0; i < this.elementData.length; i++) {
+      tempData[i] = this.elementData[i].copy().alterPath(ItemRowGen.PATH_ROW_INDEX, this.rowsGenerated);
+      fieldData[i] = null;
+      if (tempData[i].element == null) {
+        // use default value if there is no template for attributes that are not itemtype
+        if (ItemRowGen.ITEM_COLUMNS[i] !== "itemtype") {
+          item[ItemRowGen.ITEM_COLUMNS[i]] = ItemRowGen.DEFAULT_VALUES[i];
+        } else {
+          this.generatedIndex--;
+          console.log("element is null =Z");
+          return false;
+        }
       } else {
-        console.log("element is null =Z");
-        return null;
+        // evaluate text as element text for now
+        var textResult = this.textData[i].calculateElementText(tempData[i].element);
+        console.log(textResult);
+        if (textResult) {
+          item[ItemRowGen.ITEM_COLUMNS[i]] = textResult.text;
+          fieldData[i] = textResult;
+        } else {
+          this.generatedIndex--;
+          console.log("textNodes did not match =Z");
+          return false;
+        }
       }
-    } else {
-      // evaluate text as element text for now
-      var text = tempData[i].element.text().trim();
+    }
 
-      // perform more text validation here
-      if (ItemRowGen.ITEM_COLUMNS[i] === "cost") {
-        text = ItemRowGen.moneyToNumber(text);
+    // set field data after row generation is confirmed
+    for (var i = 0; i < fieldData.length; i++) {
+      if (fieldData[i] != null) {
+        setFieldText(tempData[i].element, fieldData[i].start, fieldData[i].end, ItemRowGen.ITEM_COLUMNS[i], this.rowIndex + this.generatedIndex, fieldData[i].startNodeIndex);
       }
-      item[ItemRowGen.ITEM_COLUMNS[i]] = text;
+    }
+
+    return { items: [item] };
+  } else {
+    console.log("no more rows to generate");
+    return true;
+  }
+};
+
+// returns generated row data in an array if it exists. returns false if no rows were generated.
+ItemRowGen.prototype.generateAllNextRows = function() {
+  var items = [];
+  var result = false;
+  while (result !== true) {
+    result = this.generateNextRow();
+    if (result !== false && result !== true) {
+      items.push(result.items[0]);
+      console.log(items);
     }
   }
 
-  return { item: item };
+  if (items.length === 0) {
+    return false;
+  } else {
+    return { items: items };
+  }
 };
 
-ItemRowGen.moneyToNumber = function(value) {
-  if (value.indexOf("$") === 0) {
-    value = value.substring(1);
-  }
-
-  // money value must contain a decimal
-  if (value.indexOf("$") === value.length - 1 || value.indexOf(".") === value.length - 1) {
-    value = value.substring(0, value.length - 1);
-  }
-  return value;
-}
-
-// saving template data - check if attr is one in itemColumns
-
-// need to track row deletes and modify attr value to match...
-
-// validation - if incomplete row [no template data], just set default values - mandatory itemtype
-// default values for quantity/cost.. - money/numeric validation
-
-// surrounding text stuff..
+ItemRowGen.getAttributeIndex = function(attribute) {
+  return $.inArray(attribute, ItemRowGen.ITEM_COLUMNS);
+};

@@ -35,8 +35,6 @@ function ElementPath(rowIndex, element, path, topElement) {
   }
 }
 
-
-
 // get/set path
 Object.defineProperty(ElementPath.prototype, "path", {
   get: function() {
@@ -65,8 +63,10 @@ Object.defineProperty(ElementPath.prototype, "element", {
     return this._element;
   },
   set: function(value) {
-    this._element = value;
-    this._path = [];
+    if (value != null) {
+      this._element = value;
+      this._path = [];
+    }
   }
 });
 
@@ -93,10 +93,12 @@ Object.defineProperty(ElementPath.prototype, "top", {
     return this._topElement;
   },
   set: function(value) {
-    this._topElement = value;
-    this._path = [];
-    if (this.rowIndex != null) {
-      this.setRowElement();
+    if (value != null) {
+      this._topElement = value;
+      this._path = [];
+      if (this.rowIndex != null) {
+        this.setRowElement();
+      }
     }
   }
 });

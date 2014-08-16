@@ -1,13 +1,13 @@
 // searching methods for content script
 
     // search_terms = { field: { 0: { data: index, start: 3, end: 6, start_node_index: 3, end_node_index: 4 } } };
-    // start_node_index / end_node_index is the index of start/end node in text_nodes
+    // start_node_index / end_node_index is the index of start/end node in textNodes
     // data-tworeceipt-field-search=index
 var search_terms = {},
     // attributes = { field: true, items: { 0: { item_field: true } } };
     attributes = { "items": {} },
     // array of each non-whitespace text node in the document
-    text_nodes = [];
+    textNodes = [];
 
 // issue: hidden elements - $.is(":visible")
 // list of parent elements, when checking which to allow selection for, check if visible before displaying on list
@@ -42,7 +42,7 @@ function searchText(search_term, field, total) {
   return params.search_elements;
 }
 
-/* params: node_index - index in text_nodes iterated through
+/* params: node_index - index in textNodes iterated through
 *          search_term - search term to match
 *          search_elements - parent elements of found search terms
 *          field - text field we are matching for
@@ -83,8 +83,8 @@ function findMatch(node, params) {
   while (index !== -1) {
     current_index = index;
 
-    // remember how many text nodes before current node we are pulling from text_nodes
-    var text_nodes_back_index = node_index - 1;
+    // remember how many text nodes before current node we are pulling from textNodes
+    var textNodes_back_index = node_index - 1;
 
     // text_selection will contain a combined string of all text nodes where current search_term spans over
     var text_selection = node_value;
@@ -94,15 +94,15 @@ function findMatch(node, params) {
     while (text_selection.length < characters_from_end) {
       //console.log("text_selection.length: " + text_selection.length + " < " + characters_from_end);
       //console.log("old text_selection: " + text_selection);
-      text_selection = text_nodes[text_nodes_back_index].nodeValue.trim() + " " + text_selection;
+      text_selection = textNodes[textNodes_back_index].nodeValue.trim() + " " + text_selection;
       //console.log("space added: " + text_selection);
-      text_nodes_back_index--;
+      textNodes_back_index--;
     }
 
     // use old start_node_index value before re-calculating it if its the same as new start_node_index
     // start_index needs to ignore previous instances of text
     var start_index;
-    if (start_node_index != null && start_node_index === text_nodes_back_index + 1) {
+    if (start_node_index != null && start_node_index === textNodes_back_index + 1) {
       // find index search_term starts on in text node (or prevSibling)
       start_index = text_selection.toLowerCase().indexOf(search_term.toLowerCase(), old_start_index + 1);
     } else {
@@ -111,9 +111,9 @@ function findMatch(node, params) {
     old_start_index = start_index;
 
     // start_node contains beginning of search_term and node contains end of search_term
-    var start_node_index = text_nodes_back_index + 1;
+    var start_node_index = textNodes_back_index + 1;
     // possibly null parentNode because highlighted text before, adding MARK tag and then removed it
-    start_node = text_nodes[start_node_index];
+    start_node = textNodes[start_node_index];
     //console.log("final text_selection: " + text_selection);
 
     if (start_index !== -1) {
@@ -159,17 +159,17 @@ function findMatch(node, params) {
       //console.log(target_parent);
 
       // set start_node to node before the parent we are calculating with
-      if (text_nodes_back_index !== -1) {
-        start_node = text_nodes[text_nodes_back_index];
-        text_nodes_back_index--;
+      if (textNodes_back_index !== -1) {
+        start_node = textNodes[textNodes_back_index];
+        textNodes_back_index--;
 
         var start_element = start_node.parentNode;
 
         // continue adding text length to start_index until parent elements are not contained in target_parent
-        while (($.contains(target_parent, start_element) || target_parent === start_element) && text_nodes_back_index !== -1) {
+        while (($.contains(target_parent, start_element) || target_parent === start_element) && textNodes_back_index !== -1) {
           start_index += start_node.nodeValue.trim().length + 1;
-          start_node = text_nodes[text_nodes_back_index];
-          text_nodes_back_index--;
+          start_node = textNodes[textNodes_back_index];
+          textNodes_back_index--;
           start_element = start_node.parentNode;
         }
       }
@@ -295,24 +295,24 @@ function findMatchByElement(field, count, type) {
 
       // calculating for new search_term node_index
       var new_start_node_index = start_node_index;
-      //console.log(text_nodes[new_start_node_index]);
-      // keep iterating backwards until start of text_nodes, or text_node is not within element, or text node parent is not equal to element
+      //console.log(textNodes[new_start_node_index]);
+      // keep iterating backwards until start of textNodes, or text_node is not within element, or text node parent is not equal to element
       while (new_start_node_index !== 0 &&
-              $.contains(element[0], text_nodes[new_start_node_index].parentNode) &&
-              text_nodes[new_start_node_index].parentNode !== element[0]) {
+              $.contains(element[0], textNodes[new_start_node_index].parentNode) &&
+              textNodes[new_start_node_index].parentNode !== element[0]) {
         new_start_node_index--;
         console.log(new_start_node_index);
-        console.log(text_nodes[new_start_node_index]);
+        console.log(textNodes[new_start_node_index]);
       }
 
       var new_end_node_index = end_node_index;
-      //console.log(text_nodes[new_end_node_index]);
-      // keep iterating forwards until end of text_nodes, or text_node is not within element, or text node parent is not equal to element
-      while (new_end_node_index !== text_nodes.length - 1 &&
-              $.contains(element[0], text_nodes[new_end_node_index].parentNode) &&
-              text_nodes[new_end_node_index].parentNode !== element[0]) {
+      //console.log(textNodes[new_end_node_index]);
+      // keep iterating forwards until end of textNodes, or text_node is not within element, or text node parent is not equal to element
+      while (new_end_node_index !== textNodes.length - 1 &&
+              $.contains(element[0], textNodes[new_end_node_index].parentNode) &&
+              textNodes[new_end_node_index].parentNode !== element[0]) {
         new_end_node_index++;
-        console.log(text_nodes[new_end_node_index]);
+        console.log(textNodes[new_end_node_index]);
       }
 
       var start_index = 0;
@@ -400,20 +400,20 @@ function findMatchByNode(field, count, type) {
       var node_index = start_node_index - 1;
       var char_count = 0;
       while (node_index > -1 &&
-              ($.contains(element[0], text_nodes[node_index].parentNode) ||
-              text_nodes[node_index].parentNode === element[0])) {
-        char_count += text_nodes[node_index].nodeValue.trim().length + 1;
+              ($.contains(element[0], textNodes[node_index].parentNode) ||
+              textNodes[node_index].parentNode === element[0])) {
+        char_count += textNodes[node_index].nodeValue.trim().length + 1;
         node_index--;
       }
       var start_index = char_count;
 
-      // iterate through text_nodes from start_node to end of end_node, counting characters
+      // iterate through textNodes from start_node to end of end_node, counting characters
       node_index = start_node_index;
-      while (node_index < end_node_index && node_index < text_nodes.length) {
-        char_count += text_nodes[node_index].nodeValue.trim().length + 1;
+      while (node_index < end_node_index && node_index < textNodes.length) {
+        char_count += textNodes[node_index].nodeValue.trim().length + 1;
         node_index++;
       }
-      var end_index = char_count + text_nodes[end_node_index].nodeValue.trim().length;
+      var end_index = char_count + textNodes[end_node_index].nodeValue.trim().length;
 
       var element_text = getDocumentText(element);
 
@@ -776,7 +776,7 @@ function highlightAttributeText(field, index) {
 /* params:  start_index - the character index where the highlighting should start
 *           end_index - the character index where the highlighting should end before
 *           current_index - placeholder for how many indices have been passed so far
-*           node_index - placeholder for index in text_nodes (only updates on match)
+*           node_index - placeholder for index in textNodes (only updates on match)
 *           result - set to false to break out of iterateText
 */
 function highlightText(node, params) {
@@ -875,8 +875,8 @@ function cleanHighlight() {
       node.parentNode.insertBefore(text_node, node);
       node.parentNode.removeChild(node);
 
-      // set text_nodes reference to new text node
-      text_nodes[node_index] = text_node;
+      // set textNodes reference to new text node
+      textNodes[node_index] = text_node;
     });
   }
 }
@@ -910,10 +910,10 @@ function cleanElementData(field, key) {
   }
 }
 
-// initializes text_nodes and retrieves document text
+// initializes textNodes and retrieves document text
 function initializeContentSearch() {
   var selector = "body",
-      params = { "text": "", "trim": true, "text_nodes": [] };
+      params = { "text": "", "trim": true, "textNodes": [] };
 
   // iterate through all children of body element
   if ($(selector).length > 0) {
@@ -922,16 +922,16 @@ function initializeContentSearch() {
       var child = children[i];
       params = iterateText(child, initTextNodes, params);
     }
-    text_nodes = params.text_nodes;
+    textNodes = params.textNodes;
   } else {
     console.log("element does not exist. no text retrieved");
   }
   return params.text;
 }
 
-// stores text node in param text_nodes and calls addText
+// stores text node in param textNodes and calls addText
 function initTextNodes(node, params) {
-  params.text_nodes.push(node);
+  params.textNodes.push(node);
   params = addText(node, params);
   return params;
 }

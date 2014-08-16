@@ -122,7 +122,7 @@ var TwoReceiptHandsOnTable =
           }
 
           // highlight, set selected
-          var message = { request: "selectText", "fieldName": arr[0][1], "itemIndex": row , "value": self.index };
+          var message = { request: "selectText", "fieldName": arr[0][1], "itemIndex": row, "value": self.index };
           window.parent.postMessage(message, "*");
 
           self.index = -1;
@@ -139,15 +139,7 @@ var TwoReceiptHandsOnTable =
             break;
           }
         }
-
-        if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(this.colToProp(col)))
-        {
-          window.parent.postMessage({ request: "highlightText", "fieldName": this.colToProp(col), "itemIndex": row }, "*");
-        }
-        else
-        {
-          window.parent.postMessage({ request: "cleanHighlight" }, "*");
-        }
+        window.parent.postMessage({ request: "highlightText", "fieldName": this.colToProp(col), "itemIndex": row }, "*");
       },
       afterDeselect: function()
       {
@@ -171,12 +163,6 @@ var TwoReceiptHandsOnTable =
     var $deleteIcon = $('<span>');
     $deleteIcon.addClass('glyphicon glyphicon-remove');
     $deleteIcon.attr('row', row);
-    $anchor.append($deleteIcon);
-    $deleteIcon.click(function()
-    {
-      instance.alter('remove_row', row);
-    });
-    // Add class to center the icon
     $(td).addClass("deleteTd");
     $(td).empty().append($anchor); //empty is needed because you are rendering to an existing cell
   },
@@ -240,7 +226,7 @@ var TwoReceiptHandsOnTable =
           // minimum 3 characters
           if (newValue.length > 2) {
             // if on spare row currently, add row
-            if (row === undefined)
+            if (row == null)
             {
               self.rows.push(that.row);
               row = self.rows.length - 1;
@@ -249,7 +235,7 @@ var TwoReceiptHandsOnTable =
             window.parent.postMessage(message, "*");
           }
           // remove source
-          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name) && row !== undefined)
+          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name) && row != null)
           {
             self.source[row][col_name] = [];
 
@@ -333,7 +319,7 @@ var TwoReceiptHandsOnTable =
         }
       }
 
-      if (row !== undefined && Handsontable.helper.isArray(this.cellProperties.source))
+      if (row != null && Handsontable.helper.isArray(this.cellProperties.source))
       {
         (function (that) {
           // mouseenter/mouseleave for main text area
@@ -447,13 +433,13 @@ var TwoReceiptHandsOnTable =
           // minimum 1 character and numeric
           if (newValue.length > 0 && Handsontable.helper.isNumeric(newValue)) {
             // if on spare row currently, add row
-            if (row === undefined)
+            if (row == null)
             {
               self.rows.push(that.row);
               row = self.rows.length - 1;
             }
 
-            var message = { "fieldName": col_name, "itemIndex": row, "text": newValue };
+            var message = { fieldName: col_name, itemIndex: row, text: newValue/*, rowData: self.getDataAtRow(row)*/ };
             if (type === "money") {
               message.request = "searchMoney";
             } else {
@@ -462,7 +448,7 @@ var TwoReceiptHandsOnTable =
             window.parent.postMessage(message, "*");
           }
           // remove source
-          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name) && row !== undefined)
+          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name) && row != null)
           {
             self.source[row][col_name] = [];
 
@@ -489,7 +475,7 @@ var TwoReceiptHandsOnTable =
         }
       }
 
-      if (row !== undefined && Handsontable.helper.isArray(this.cellProperties.source))
+      if (row != null && Handsontable.helper.isArray(this.cellProperties.source))
       {
         (function (that) {
           // mouseenter/mouseleave for main text area
@@ -630,6 +616,20 @@ var TwoReceiptHandsOnTable =
       }
     }
     return receiptItems;
+  },
+
+  getDataAtRow: function(rowIndex) {
+    var rowData = { index: rowIndex };
+    // Minus one row since there is always an extra empty row
+    var rowsToIterate = this.rows.length - this.configurations.minSpareRows;
+    for (var i = 0; i < rowsToIterate; i++) {
+      if (this.rows[i] === rowIndex) {
+        for (var j = 0; j < this.configurations.itemColumns.length; j++) {
+          rowData[this.configurations.itemColumns[j]] = this.receiptItemTable.handsontable('getDataAtRowProp', this.rows[i], this.configurations.itemColumns[j]);
+        }
+      }
+    }
+    return rowData;
   },
 
   updateTableSource: function(fieldName, itemIndex)

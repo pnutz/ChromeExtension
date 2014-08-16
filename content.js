@@ -273,7 +273,6 @@ function createNotification() {
 
   if (documentText == null) {
     documentText = initializeContentSearch();
-    console.log(documentText);
   }
 
 	// remove element if it already exists
@@ -457,12 +456,19 @@ window.addEventListener("message", function(event) {
         if (event.data.fieldName != null && event.data.text != null) {
           searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
         }
+        // problem with this is the user can still be typing.. for now the user needs to create template for each field in row
+        /*if (event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
+          generateRows(event.data.rowData);
+        }*/
         break;
 
       case "searchMoney":
         if (event.data.fieldName != null && event.data.text != null) {
           searchRequest(event.source, "money", event.data.fieldName, event.data.text, event.data.itemIndex);
         }
+        /*if (event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
+          generateRows(event.data.rowData);
+        }*/
         break;
 
       // user focused on search, highlight selected area
@@ -485,8 +491,8 @@ window.addEventListener("message", function(event) {
 
           var field = event.data.fieldName;
           if (event.data.itemIndex != null) {
-            // initialize itemRowGen
-            if (itemRowGen == null) {
+            // initialize itemRowGen if it doesn't exist or if selected field is 'newer' than existing
+            if (itemRowGen == null || event.data.itemIndex > itemRowGen.rowIndex) {
               itemRowGen = new ItemRowGen(event.data.itemIndex);
             }
             field += event.data.itemIndex;
@@ -495,11 +501,15 @@ window.addEventListener("message", function(event) {
           var element = getMatchElement(field, event.data.value);
           var start = getSearchTermProperty(field, "start", event.data.value);
           var end = getSearchTermProperty(field, "end", event.data.value);
-          var node = getSearchTermProperty(field, "start_node_index", event.data.value);
-          setFieldText(element, start, end, event.data.fieldName, event.data.itemIndex, node);
+          var startNodeIndex = getSearchTermProperty(field, "start_node_index", event.data.value);
+          setFieldText(element, start, end, event.data.fieldName, event.data.itemIndex, startNodeIndex);
 
-          if (event.data.itemIndex != null) {
-            itemRowGen.setAttrElement(event.data.fieldName, element);
+          if (event.data.itemIndex != null && event.data.itemIndex === itemRowGen.rowIndex) {
+            var endNodeIndex = getSearchTermProperty(field, "end_node_index", event.data.value);
+            itemRowGen.setRowData(event.data.fieldName, event.data.itemIndex, element, start, end, startNodeIndex, endNodeIndex);
+
+            // before generating rows, make sure current handsontable row is filled out
+            event.source.postMessage({ request: "getRowData", itemIndex: event.data.itemIndex }, event.origin);
           }
 
           highlightAttributeText(event.data.fieldName, event.data.itemIndex);
@@ -508,8 +518,8 @@ window.addEventListener("message", function(event) {
 
       // user focuses on notification text field, highlight attribute data if it exists
       case "highlightText":
+        cleanHighlight();
         if (event.data.fieldName != null) {
-          cleanHighlight();
           highlightAttributeText(event.data.fieldName, event.data.itemIndex);
         }
         break;
@@ -519,15 +529,23 @@ window.addEventListener("message", function(event) {
         cleanHighlight();
         break;
 
+      // DEPRECIATED WITH AUTOMATIC GENERATION IMPLEMENTED
       // generate new receipt item using itemRowGen
-      case "getItemRows":
+      /*case "getItemRows":
         console.log(itemRowGen);
         if (itemRowGen != null) {
           var message = itemRowGen.generateNextRow();
-          if (message != null) {
+          if (message !== false && message !== true) {
             message.response = "newItemRows";
             event.source.postMessage(message, event.origin);
           }
+        }
+        break;*/
+
+      // returned item row to ensure it is filled out before generating item rows
+      case "returnRowData":
+        if (event.data.data != null && event.data.data.index === itemRowGen.rowIndex) {
+          generateRows(event.data.data);
         }
         break;
 
@@ -536,6 +554,24 @@ window.addEventListener("message", function(event) {
     }
   }
 });
+
+// check if all row attributes are filled out and return generated rows to handsontable
+function generateRows(row) {
+  var keys = Object.keys(event.data.data);
+  var rowValid = true;
+  for (var i = 0; i < keys.length; i++) {
+    if (event.data.data[keys[i]] == null || event.data.data[keys[i]].length === 0) {
+      rowValid = false;
+      break;
+    }
+  }
+
+  if (rowValid) {
+    var message = itemRowGen.generateAllNextRows();
+    message.response = "newItemRows";
+    event.source.postMessage(message, event.origin);
+  }
+}
 
 // respond with search data. unselect and unhighlight text for fieldName
 function searchRequest(source, type, fieldName, text, itemIndex) {

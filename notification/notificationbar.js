@@ -102,12 +102,11 @@ var NotiBar =
       }
     });
 
-    $("#receipt-items-add").click(function() {
-      // hide button if table row doesn't exist?
-      // for now, assume its valid
+    // DEPRECIATED WITH AUTOMATED ROW GENERATION
+    /*$("#receipt-items-add").click(function() {
       var message = { request: "getItemRows" };
       window.parent.postMessage(message, "*");
-    });
+    });*/
 
     // on text form propertychange, send form text and fieldName to content script for search (not triggered on autocomplete select)
     $("input").bind("input propertychange", function() {
@@ -587,7 +586,7 @@ window.addEventListener("message", function(event) {
     else if (event.data.response === "searchResults")
     {
       // regular form
-      if (event.data.itemIndex === undefined)
+      if (event.data.itemIndex == null)
       {
         NotiBar.setAutoCompleteOptions(event.data.fieldName, event.data.results);
       }
@@ -606,8 +605,19 @@ window.addEventListener("message", function(event) {
       }
     }
     // generated item row
-    else if (event.data.response === "newItemRows") {
-      TwoReceiptHandsOnTable.addItemRow(event.data.item);
+    else if (event.data.response === "newItemRows")
+    {
+      for (var i = 0; i < event.data.items.length; i++)
+      {
+        TwoReceiptHandsOnTable.addItemRow(event.data.items[i]);
+      }
+    }
+    //
+    else if (event.data.request === "getRowData")
+    {
+      var row = TwoReceiptHandsOnTable.getDataAtRow(event.data.itemIndex);
+      var message = { request: "returnRowData", data: row };
+      window.parent.postMessage(message, "*");
     }
     else
     {
