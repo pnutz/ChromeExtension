@@ -13,9 +13,13 @@ $(document).ready(function () {
 		console.log("document ready");
   }
 
+  // document text can be of visible elements/both visible/hidden
+  // issue is that element might become visible when user searches?
+  // can we assume not?
+
 	// only run function when user prompts to start, so links keep working
 	/*$(document).click(function(event) {
-		lastClicked = $(event.target);
+		lastClicked = $(event.target);`
 		if (htmlGet !== "pull-off")	{
 			var element = $(event.target);
       var element_text = element.text().trim();
@@ -357,25 +361,29 @@ chrome.runtime.onConnect.addListener(function(port) {
           var parent = elementPath.element;
           console.log(parent);
 
-          parent = ElementPath.getParentContainer(parent);
-          console.log(parent);
+          if (parent != null) {
+            parent = ElementPath.getParentContainer(parent);
+            console.log(parent);
 
-          /*
+            /*
             set image size to 1/3 original size OR set CSS sizes to 300% before rendering
             http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
           */
 
-          // this messes up the page dom, so only run at the end of the receipt submission
-          html2canvas(parent[0], {
-            onrendered: function(canvas) {
-              //var data = canvas.toDataURL("image/gif").replace("image/jpeg", "image/octet-stream");
-              //window.location.href = data;
-              //document.body.appendChild(canvas);
+            // this messes up the page dom, so only run at the end of the receipt submission
+            html2canvas(parent[0], {
+              onrendered: function(canvas) {
+                //var data = canvas.toDataURL("image/gif").replace("image/jpeg", "image/octet-stream");
+                //window.location.href = data;
+                //document.body.appendChild(canvas);
 
-              receipt.saved_data.snapshot = canvas.toDataURL("image/png");
-              sendReceipt();
-            }
-          });
+                receipt.saved_data.snapshot = canvas.toDataURL("image/png");
+                sendReceipt();
+              }
+            });
+          } else {
+            console.log("parent element is null");
+          }
         }
       }
     });
@@ -559,11 +567,16 @@ window.addEventListener("message", function(event) {
 function generateRows(row) {
   var keys = Object.keys(event.data.data);
   var rowValid = true;
-  for (var i = 0; i < keys.length; i++) {
-    if (event.data.data[keys[i]] == null || event.data.data[keys[i]].length === 0) {
-      rowValid = false;
-      break;
+  if (keys.length > 1) {
+    for (var i = 0; i < keys.length; i++) {
+      if (event.data.data[keys[i]] == null || event.data.data[keys[i]].length === 0) {
+        rowValid = false;
+        console.log(keys[i] + " blank");
+        break;
+      }
     }
+  } else {
+    rowValid = false;
   }
 
   if (rowValid) {
@@ -623,22 +636,22 @@ function prepareReceipt(data, rows, parent) {
     // path is calculated in element setter
     savedPath.element = ElementPath.getParentElement(data);
 
-    // find parent element from generated element_paths
+    // find parent element from generated elementPaths
     var generatedElementPath;
     $.each(generated, function(key, value) {
       console.log(key);
       console.log(generated[key]);
       console.log(data[key]);
-      if (key !== "items" && key !== "templates" && key !== "element_paths"
+      if (key !== "items" && key !== "templates" && key !== "elementPaths"
           && generated[key] === data[key]) {
 
-        generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.element_paths[key]);
+        generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths[key]);
         console.log("set parent element path");
         console.log(generatedElementPath);
       } else if (key === "items") {
         $.each(generated.items, function(item_key, item_value) {
           if (generated.templates.items[item_key].deleted == null) {
-            generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.element_paths.items[item_key]);
+            generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths.items[item_key]);
             console.log("set parent element path");
             console.log(generatedElementPath);
           }
@@ -651,7 +664,7 @@ function prepareReceipt(data, rows, parent) {
     console.log(savedPath);
     elementPath = savedPath;
 
-    delete generated.element_paths;
+    delete generated.elementPaths;
 
     var message_domain;
     // default local html pages to DOMAIN (since no domain)

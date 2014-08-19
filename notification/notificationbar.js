@@ -545,11 +545,10 @@ document.addEventListener('DOMContentLoaded', function() {
   NotiBar.init();
   setTimeout(function() {
     TwoReceiptHandsOnTable.init();
+    /*var data = { itemtype: "hello", quantity: 3, cost: 43.2 };
+    TwoReceiptHandsOnTable.addItemRow(data);
+    TwoReceiptHandsOnTable.addItemRow(data);*/
   }, 200);
-  /*
-  var data = { name: "hello", quantity: 3, cost: 43.2 };
-  TwoReceiptHandsOnTable.addItemRow(data);
-  */
 });
 
 // send message using window.parent.postMessage("yes", '*')
@@ -563,7 +562,7 @@ window.addEventListener("message", function(event) {
     {
       $.each(event.data.generated, function(key, value)
       {
-        if (key !== "templates" && key !== "element_paths" && key !== "items")
+        if (key !== "templates" && key !== "elementPaths" && key !== "items")
         {
           NotiBar.setFieldValue(key, value);
         }
@@ -609,7 +608,7 @@ window.addEventListener("message", function(event) {
     {
       for (var i = 0; i < event.data.items.length; i++)
       {
-        TwoReceiptHandsOnTable.addItemRow(event.data.items[i]);
+        TwoReceiptHandsOnTable.addItemRow(event.data.items[i], true);
       }
     }
     //

@@ -200,12 +200,14 @@ ElementPath.prototype.getEndOfPath = function() {
         if (element.length > elementPath[i]) {
           element = element.eq(elementPath[i]);
         } else {
+          console.log("element had less children than element path index");
           element = null;
           break;
         }
       }
     }
   } else {
+    console.log("element path does not exist");
     element = null;
   }
 
@@ -230,9 +232,6 @@ ElementPath.findParentElementPath = function(path1, path2) {
 
   var finalIndex = 0;
   for (var i = 0; i < path1.length; i++) {
-    console.log("comparison " + i);
-    console.log(path1[i]);
-    console.log(path2[i]);
     if (i < path2.length && path1[i] === path2[i]) {
       finalIndex = i;
     } else {

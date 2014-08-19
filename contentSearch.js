@@ -965,13 +965,17 @@ function iterateText(node, method, method_params) {
   }
   // iterateText through children of non-style/script elements
   else if (node.nodeType === 1 && node.childNodes.length > 0 && !/(style|script)/i.test(node.tagName)) {
-    var children = node.childNodes;
-    for (var i = 0; i < children.length; i++) {
-      var child = children[i];
+    var style = window.getComputedStyle(node);
+    // ignore hidden elements
+    if (style.visibility !== "hidden" && style.display !== "none") {
+      var children = node.childNodes;
+      for (var i = 0; i < children.length; i++) {
+        var child = children[i];
 
-      method_params = iterateText(child, method, method_params);
-      if (method_params.result != null && method_params.result === false) {
-        break;
+        method_params = iterateText(child, method, method_params);
+        if (method_params.result != null && method_params.result === false) {
+          break;
+        }
       }
     }
   }

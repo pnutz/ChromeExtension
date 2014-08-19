@@ -163,6 +163,11 @@ var TwoReceiptHandsOnTable =
     var $deleteIcon = $('<span>');
     $deleteIcon.addClass('glyphicon glyphicon-remove');
     $deleteIcon.attr('row', row);
+    $anchor.append($deleteIcon);
+    $anchor.click(function() {
+      instance.alter('remove_row', row);
+    });
+    // Add class to center the icon
     $(td).addClass("deleteTd");
     $(td).empty().append($anchor); //empty is needed because you are rendering to an existing cell
   },
@@ -568,7 +573,7 @@ var TwoReceiptHandsOnTable =
     this.receiptItemTable.handsontable('loadData', itemsArray);
   },
 
-  addItemRow: function(data)
+  addItemRow: function(data, init)
   {
     var lastRow = 0;
     var rowNum = 0;
@@ -581,7 +586,20 @@ var TwoReceiptHandsOnTable =
         break;
       }
     }
+
     this.rows.push(lastRow);
+
+    // optional param init if table has been initialized fully. expects a blank row for the last row
+    if (init == null) {
+      if (this.rows.length === 1) {
+        rowNum = 0;
+      } else {
+        rowNum++;
+      }
+    }
+
+    console.log(this.rows);
+    console.log("row index: " + rowNum);
 
     for (var i = 0; i < this.configurations.itemColumns.length; i++) {
       this.receiptItemTable.handsontable('setDataAtCell', rowNum, i, data[this.configurations.itemColumns[i]]);
