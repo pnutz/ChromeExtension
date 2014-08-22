@@ -5,7 +5,8 @@ var colIndex =
   TRANSACTION: 2, 
   TOTAL : 3,
   TITLE : 4, 
-  FOLDER : 5
+  FOLDER : 5,
+  RECEIPT : 6
 };
 
 function DataTable (sId)
@@ -13,15 +14,18 @@ function DataTable (sId)
   this.oElem = $(sId);
   this.oDataTable = null;
   this.sDateFormat = "yy-mm-dd";
+  this.sTagsFieldClass = "tags-field";
   this.oEarliestDate = new Date(0);
   this.oLatestDate = new Date(0);
   this.oControllers = null;
+  this.mReceiptsData = null;
 };
 
 DataTable.prototype.Init = function(controllers)
 {
   this.oControllers = controllers;
   this.GetReceipts_();
+  
 };
 
 DataTable.prototype.ShowFolders = function (aFolders) {
@@ -40,11 +44,12 @@ DataTable.prototype.ShowDateRange = function (oStartDate, oEndDate) {
 
 DataTable.prototype.PopulateTableData_ = function(data) {
   var self = this;
+  this.mReceiptsData = data;
   this.oDataTable = this.oElem.DataTable({
-    "data" :  data,
+    "data" :  this.mReceiptsData,
     "columnDefs" : [
      { 
-        "targets" : [5], // hide folder ids since we only want them for filtering
+        "targets" : [5, 6], // hide folder ids since we only want them for filtering
         "visible" : false
      },
      { // For formatting the date column
@@ -62,6 +67,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       {"data" : "total"},
       {"data" : "title"},
       {"data" : "folder_id"},
+      {"data" : "id"}
     ],
   });
 
@@ -79,6 +85,12 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       oRow.child(self.FormatData_(oRow.data())).show();
       $(this).addClass("shown");
       $(this).addClass("selected");
+
+      //Set up the enter key binding event for when enter key pressed
+      $("input").keyup(function(e) {
+        if (e.keyCode == 13)
+          self.AddTag_($(this).attr("id"), $(this).val());
+      });
     }
   });
 };
@@ -105,8 +117,8 @@ DataTable.prototype.GetReceipts_ = function() {
         }
       });
 
-     self.PopulateTableData_(data);
-      // After getting all the dates, render the data table
+      self.PopulateTableData_(data);
+            // After getting all the dates, render the data table
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
@@ -150,12 +162,60 @@ DataTable.prototype.FilterFolders_ =  function(aFolders) {
  * @note: https://datatables.net/examples/api/row_details.html
  */
 DataTable.prototype.FormatData_ = function(mRowData) {
-  return '<table>' + 
-         '<tr><td>Transaction Number</td><td>' + mRowData.transaction_number +'<td></tr>' +
-         '<tr><td>Note</td><td>' + mRowData.note +'<td></tr>' +
-         '</table>';
+  var self = this;
+  var sDetailsFormat =
+    '<tr><td>Transaction Number</td><td>' + mRowData.transaction_number +'</td></tr>' +
+    '<tr><td>Note</td><td>' + mRowData.note +'</td></tr>';
+  var sReceiptItemsList = '<ul>';
+  $.each(mRowData.receipt_items, function(index, value) {
+    sReceiptItemsList += '<li>Item ' + index + ' Name: ' + value["item_name"] + ' Cost: ' + value["cost"];
+
+    //Add tags if they exist for this receipt item
+    if ("tags" in value) {
+      sReceiptItemsList += " Tags: "
+      $.each(value["tags"], function(index, value) {
+        sReceiptItemsList += value["name"] + ", "; 
+      });
+    }
+    sReceiptItemsList += "<input type='text' class='" + self.sTagsFieldClass + "' id='receipt-item-" + value["id"] + "'/></li>";
+  });
+
+  sReceiptItemsList += '</ul>'
+  var sFormat = 
+    '<table><tr><td>' + sDetailsFormat + '</td><td>' + sReceiptItemsList + '</td></tr></table>';
+  console.log(sFormat);
+  return sFormat;
 };
 
+/**
+ * @brief sends a POST request to the server to add a tag
+ * @param sElementId the id of the receipt or receipt_item
+ * @param sName the name of the tag
+ */
+DataTable.prototype.AddTag_ = function(sElementId, sName) {
+  var self = this;
+  var aIdSplit = sElementId.split("-");
+  var sType = aIdSplit.length > 2 ? "receipt_item" : "receipt";
+  var mData = { name : sName};
+  var sUrl = self.oControllers.AppendCred(
+    self.oControllers.GetUrl("tags") + 
+    "/" + sType + 
+    "/" + aIdSplit[aIdSplit.length - 1]+".json");
+
+  var request = $.ajax({
+      url: sUrl,
+      type: 'POST',
+      data: mData,
+      dataType: 'json'
+    }).done(function(data) {
+      console.log("Successfully set tag");
+    }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
+};
 
 
 

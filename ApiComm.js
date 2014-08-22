@@ -8,7 +8,8 @@ function ControllerUrls(host)
                        "purchase_types" : "/purchase_types",
                        "folders" : "/folders",
                        "documents" : "/documents",
-                       "registration" : "/users/sign_up"
+                       "registration" : "/users/sign_up",
+                       "tags" : "/tags"
                      };
 }
 
