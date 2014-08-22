@@ -5,8 +5,8 @@ var fieldTypes  =
   DATE : 3,
   SELECT : 4,
   TABLE : 5
-
 };
+
 var NotiBar =
 {
   configurations:
@@ -101,6 +101,12 @@ var NotiBar =
         window.parent.postMessage(message, "*");
       }
     });
+
+    // DEPRECIATED WITH AUTOMATED ROW GENERATION
+    /*$("#receipt-items-add").click(function() {
+      var message = { request: "getItemRows" };
+      window.parent.postMessage(message, "*");
+    });*/
 
     // on text form propertychange, send form text and fieldName to content script for search (not triggered on autocomplete select)
     $("input").bind("input propertychange", function() {
@@ -539,11 +545,10 @@ document.addEventListener('DOMContentLoaded', function() {
   NotiBar.init();
   setTimeout(function() {
     TwoReceiptHandsOnTable.init();
+    /*var data = { itemtype: "hello", quantity: 3, cost: 43.2 };
+    TwoReceiptHandsOnTable.addItemRow(data);
+    TwoReceiptHandsOnTable.addItemRow(data);*/
   }, 200);
-  /*
-  var data = { name: "hello", quantity: 3, cost: 43.2 };
-  TwoReceiptHandsOnTable.addItemRow(data);
-  */
 });
 
 // send message using window.parent.postMessage("yes", '*')
@@ -557,7 +562,7 @@ window.addEventListener("message", function(event) {
     {
       $.each(event.data.generated, function(key, value)
       {
-        if (key !== "templates" && key !== "element_paths" && key !== "items")
+        if (key !== "templates" && key !== "elementPaths" && key !== "items")
         {
           NotiBar.setFieldValue(key, value);
         }
@@ -580,7 +585,7 @@ window.addEventListener("message", function(event) {
     else if (event.data.response === "searchResults")
     {
       // regular form
-      if (event.data.itemIndex === undefined)
+      if (event.data.itemIndex == null)
       {
         NotiBar.setAutoCompleteOptions(event.data.fieldName, event.data.results);
       }
@@ -597,6 +602,21 @@ window.addEventListener("message", function(event) {
         // update table autocomplete source and open TwoReceiptEditor
         TwoReceiptHandsOnTable.updateTableSource(event.data.fieldName, event.data.itemIndex);
       }
+    }
+    // generated item row
+    else if (event.data.response === "newItemRows")
+    {
+      for (var i = 0; i < event.data.items.length; i++)
+      {
+        TwoReceiptHandsOnTable.addItemRow(event.data.items[i], true);
+      }
+    }
+    //
+    else if (event.data.request === "getRowData")
+    {
+      var row = TwoReceiptHandsOnTable.getDataAtRow(event.data.itemIndex);
+      var message = { request: "returnRowData", data: row };
+      window.parent.postMessage(message, "*");
     }
     else
     {

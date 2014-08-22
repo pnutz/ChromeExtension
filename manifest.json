@@ -14,7 +14,7 @@
 	"content_scripts": [
 		{
 			"matches": ["<all_urls>"],
-			"js":	["jquery-2.0.3.min.js", "content.js", "contentSearch.js", "contentElementPath.js", "html2canvas.js"],
+			"js":	["jquery-2.0.3.min.js", "content.js", "contentSearch.js", "ElementPath.js", "RelativeText.js", "ItemRowGen.js", "html2canvas.js"],
 			"all_frames": false,
       "run_at" : "document_start"
 		}

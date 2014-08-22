@@ -53,22 +53,22 @@ function sendDomain(tabId, html, url, domain) {
     var response = $.parseJSON(json_data);
     var generated = {};
     generated.templates = {};
-    generated.element_paths = {};
+    generated.elementPaths = {};
     // message attribute field text to receipt popup
     $.each(response[0], function(key, value) {
-      if (key !== "items" && key !== "templates" && key !== "element_paths") {
+      if (key !== "items" && key !== "templates" && key !== "elementPaths") {
         generated[key] = value;
         generated.templates[key] = response[0].templates[key];
-        generated.element_paths[key] = response[0].element_paths[key];
+        generated.elementPaths[key] = response[0].elementPaths[key];
       } else if (key === "items") {
         generated.items = {};
         generated.templates.items = {};
-        generated.element_paths.items = {};
+        generated.elementPaths.items = {};
         var item_index = 0;
         $.each(value, function(key2, item_attributes) {
           generated.items[item_index] = item_attributes;
           generated.templates.items[item_index] = response[0].templates.items[key2];
-          generated.element_paths.items[item_index] = response[0].element_paths.items[key2];
+          generated.elementPaths.items[item_index] = response[0].elementPaths.items[key2];
           item_index++;
         });
       }
