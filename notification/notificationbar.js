@@ -97,7 +97,7 @@ var NotiBar =
       {
         var savedData = self.getAllValues();
         var rows = TwoReceiptHandsOnTable.getRows();
-        var message = { request: "saveReceipt", "saved_data": savedData, "rows": rows };
+        var message = { request: "saveReceipt", "savedData": savedData, "rows": rows };
         window.parent.postMessage(message, "*");
       }
     });
@@ -305,10 +305,10 @@ var NotiBar =
                   var source = $(this).autocomplete("option", "source");
                   var index = 0;
 
-                  $.each($items, function(item_index, item_value)
+                  $.each($items, function(itemIndex, itemValue)
                   {
                     // find matching source with item
-                    while (item_value.innerText !== source[index].label && index < source.length)
+                    while (itemValue.innerText !== source[index].label && index < source.length)
                     {
                       index++;
                     }
@@ -316,7 +316,7 @@ var NotiBar =
                     // only take item if data-value matches source value
                     if (dataValue === source[index].value)
                     {
-                      item = $(item_value);
+                      item = $(itemValue);
                     }
 
                     index++;
@@ -412,10 +412,10 @@ var NotiBar =
                   var source = $(this).autocomplete("option", "source");
                   var index = 0;
 
-                  $.each($items, function(item_index, item_value)
+                  $.each($items, function(itemIndex, itemValue)
                   {
                     // find matching source with item
-                    while (item_value.innerText !== source[index].label && index < source.length)
+                    while (itemValue.innerText !== source[index].label && index < source.length)
                     {
                       index++;
                     }
@@ -423,7 +423,7 @@ var NotiBar =
                     // only take item if data-value matches source value
                     if (dataValue === source[index].value)
                     {
-                      item = $(item_value);
+                      item = $(itemValue);
                     }
 
                     index++;
@@ -568,10 +568,10 @@ window.addEventListener("message", function(event) {
         }
         else if (key === "items")
         {
-          $.each(value, function(item_key, item_value)
+          $.each(value, function(itemKey, itemValue)
           {
-            console.log(item_value);
-            TwoReceiptHandsOnTable.addItemRow(item_value);
+            console.log(itemValue);
+            TwoReceiptHandsOnTable.addItemRow(itemValue);
           });
         }
       });
@@ -608,7 +608,7 @@ window.addEventListener("message", function(event) {
     {
       for (var i = 0; i < event.data.items.length; i++)
       {
-        TwoReceiptHandsOnTable.addItemRow(event.data.items[i], true);
+        TwoReceiptHandsOnTable.addItemRow(event.data.items[i]);
       }
     }
     //

@@ -252,7 +252,7 @@ ElementPath.setParentRow = function(elementPaths) {
     var elementPath = elementPaths[i];
     if (top == null) {
       top = elementPath.top;
-    } else {
+    } else if (elementPath.top != null) {
       top = ElementPath.findParent(top, elementPath.top);
     }
   }
@@ -325,6 +325,7 @@ ElementPath.getParentElement = function(savedData, isItemField) {
 };
 
 // returns a parent element that contains both element1 and element2 (can be equal to each other)
+// element1 cannot be null
 ElementPath.findParent = function(element1, element2) {
   // if element2 contains element1
   if ($.contains(element2[0], element1[0])) {

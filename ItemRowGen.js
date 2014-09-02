@@ -20,6 +20,19 @@ function ItemRowGen(rowIndex) {
   }
 }
 
+ItemRowGen.prototype.getRowElement = function() {
+  var element = ElementPath.setParentRow(this.elementData);
+  if (element != null) {
+    for (var i = 0; i < this.elementData.length; i++) {
+      if (this.elementData[i].path.length > ItemRowGen.PATH_ROW_INDEX) {
+        element = element.children().eq(this.elementData[i].path[ItemRowGen.PATH_ROW_INDEX]);
+        break;
+      }
+    }
+  }
+  return element;
+};
+
 ItemRowGen.prototype.setRowData = function(attribute, rowIndex, element, start, end, startNodeIndex, endNodeIndex) {
   if (this.rowIndex === rowIndex) {
     var attributeIndex = ItemRowGen.getAttributeIndex(attribute);

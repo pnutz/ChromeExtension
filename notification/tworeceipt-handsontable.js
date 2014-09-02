@@ -36,14 +36,16 @@ var TwoReceiptHandsOnTable =
       manualColumnResize : true,
       minSpareRows : this.configurations.minSpareRows,
       columnSorting : true,
-      afterCreateRow : function (index, data)
+      // DEPRECIATED, push index immediately when row created (this pushes after)
+      /*afterCreateRow : function (index, data)
       {
         // add a row to the representation
         self.rows.push(index);
-      },
+      },*/
       afterRemoveRow: function (tableRowIndex, data)
       {
         var rowsCount = 0;
+        var rowRemoved = false;
         // Use the table's row index to find the corresponding index
         // in the table
         // the position in the array corresponding to the
@@ -58,16 +60,22 @@ var TwoReceiptHandsOnTable =
             self.rows[index] = null;
             delete self.source[index];
             rowsCount = index++;
+            rowRemoved = true;
+            return false;
           }
         });
 
-        // Decrement each non null element by 1
-        for (; rowsCount < self.rows.length; rowsCount++)
-        {
-          // don't decrement if the element is null
-          // since that means the item was removed
-          if (self.rows[rowsCount] !== null)
-            self.rows[rowsCount] -= 1;
+        // ensures afterRemoveRow applied to a valid row
+        if (rowRemoved) {
+          // Decrement each non null element by 1
+          for (; rowsCount < self.rows.length; rowsCount++)
+          {
+            // don't decrement if the element is null
+            // since that means the item was removed
+            if (self.rows[rowsCount] !== null) {
+              self.rows[rowsCount] -= 1;
+            }
+          }
         }
       },
       // If we want stuff after the table initializes
@@ -164,7 +172,7 @@ var TwoReceiptHandsOnTable =
     $deleteIcon.addClass('glyphicon glyphicon-remove');
     $deleteIcon.attr('row', row);
     $anchor.append($deleteIcon);
-    $anchor.click(function() {
+    $deleteIcon.click(function() {
       instance.alter('remove_row', row);
     });
     // Add class to center the icon
@@ -208,13 +216,13 @@ var TwoReceiptHandsOnTable =
       var that = this;
       // cell textarea change event
       $(this.TEXTAREA).bind("input propertychange", function() {
-        var temp_this = this;
+        var tempThis = this;
         var delay = 150;
 
-        clearTimeout($(temp_this).data("timer"));
-        $(temp_this).data("timer", setTimeout(function() {
-          $(temp_this).removeData("timer");
-          var newValue = temp_this.value.toString();
+        clearTimeout($(tempThis).data("timer"));
+        $(tempThis).data("timer", setTimeout(function() {
+          $(tempThis).removeData("timer");
+          var newValue = tempThis.value.toString();
 
           // retrieve actual row (including deleted)
           var row;
@@ -227,25 +235,26 @@ var TwoReceiptHandsOnTable =
             }
           }
 
-          var col_name = that.instance.colToProp(that.col);
+          // if on spare row currently, add row
+          if (row == null)
+          {
+            self.rows.push(that.row);
+            row = self.rows.length - 1;
+          }
+
+          var colName = that.instance.colToProp(that.col);
           // minimum 3 characters
           if (newValue.length > 2) {
-            // if on spare row currently, add row
-            if (row == null)
-            {
-              self.rows.push(that.row);
-              row = self.rows.length - 1;
-            }
-            var message = { request: "searchText", "fieldName": col_name, "itemIndex": row, "text": newValue };
+            var message = { request: "searchText", "fieldName": colName, "itemIndex": row, "text": newValue };
             window.parent.postMessage(message, "*");
           }
           // remove source
-          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name) && row != null)
+          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(colName) && row != null)
           {
-            self.source[row][col_name] = [];
+            self.source[row][colName] = [];
 
             // clear autocomplete list
-            self.updateTableSource(col_name, row);
+            self.updateTableSource(colName, row);
           }
         }, delay));
       });
@@ -415,13 +424,13 @@ var TwoReceiptHandsOnTable =
       var that = this;
       // cell textarea change event
       $(this.TEXTAREA).bind("input propertychange", function() {
-        var temp_this = this;
+        var tempThis = this;
         var delay = 150;
 
-        clearTimeout($(temp_this).data("timer"));
-        $(temp_this).data("timer", setTimeout(function() {
-          $(temp_this).removeData("timer");
-          var newValue = temp_this.value.toString();
+        clearTimeout($(tempThis).data("timer"));
+        $(tempThis).data("timer", setTimeout(function() {
+          $(tempThis).removeData("timer");
+          var newValue = tempThis.value.toString();
 
           // retrieve actual row (including deleted)
           var row;
@@ -434,17 +443,17 @@ var TwoReceiptHandsOnTable =
             }
           }
 
-          var col_name = that.instance.colToProp(that.col);
+          // if on spare row currently, add row
+          if (row == null)
+          {
+            self.rows.push(that.row);
+            row = self.rows.length - 1;
+          }
+
+          var colName = that.instance.colToProp(that.col);
           // minimum 1 character and numeric
           if (newValue.length > 0 && Handsontable.helper.isNumeric(newValue)) {
-            // if on spare row currently, add row
-            if (row == null)
-            {
-              self.rows.push(that.row);
-              row = self.rows.length - 1;
-            }
-
-            var message = { fieldName: col_name, itemIndex: row, text: newValue/*, rowData: self.getDataAtRow(row)*/ };
+            var message = { fieldName: colName, itemIndex: row, text: newValue/*, rowData: self.getDataAtRow(row)*/ };
             if (type === "money") {
               message.request = "searchMoney";
             } else {
@@ -453,12 +462,12 @@ var TwoReceiptHandsOnTable =
             window.parent.postMessage(message, "*");
           }
           // remove source
-          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(col_name) && row != null)
+          else if (self.source.hasOwnProperty(row) && self.source[row].hasOwnProperty(colName) && row != null)
           {
-            self.source[row][col_name] = [];
+            self.source[row][colName] = [];
 
             // clear autocomplete list
-            self.updateTableSource(col_name, row);
+            self.updateTableSource(colName, row);
           }
         }, delay));
       });
@@ -573,15 +582,15 @@ var TwoReceiptHandsOnTable =
     this.receiptItemTable.handsontable('loadData', itemsArray);
   },
 
-  addItemRow: function(data, init)
+  addItemRow: function(data)
   {
     var lastRow = 0;
     var rowNum = 0;
     for (var index = this.rows.length - 1; index >= 0; index--)
     {
-      if (this.rows[index] !== null)
+      if (this.rows[index] != null)
       {
-        lastRow = index + 1;
+        lastRow = this.rows[index] + 1;
         rowNum = this.rows[index];
         break;
       }
@@ -589,17 +598,12 @@ var TwoReceiptHandsOnTable =
 
     this.rows.push(lastRow);
 
-    // optional param init if table has been initialized fully. expects a blank row for the last row
-    if (init == null) {
-      if (this.rows.length === 1) {
-        rowNum = 0;
-      } else {
-        rowNum++;
-      }
+    // if row is added before table is fully generated
+    if (this.rows.length === 1) {
+      rowNum = 0;
+    } else {
+      rowNum++;
     }
-
-    console.log(this.rows);
-    console.log("row index: " + rowNum);
 
     for (var i = 0; i < this.configurations.itemColumns.length; i++) {
       this.receiptItemTable.handsontable('setDataAtCell', rowNum, i, data[this.configurations.itemColumns[i]]);
@@ -638,13 +642,13 @@ var TwoReceiptHandsOnTable =
 
   getDataAtRow: function(rowIndex) {
     var rowData = { index: rowIndex };
-    // Minus one row since there is always an extra empty row
-    var rowsToIterate = this.rows.length - this.configurations.minSpareRows;
-    for (var i = 0; i < rowsToIterate; i++) {
-      if (this.rows[i] === rowIndex) {
+
+    for (var index = 0; index < this.rows.length; index++) {
+      if (index === rowIndex) {
         for (var j = 0; j < this.configurations.itemColumns.length; j++) {
-          rowData[this.configurations.itemColumns[j]] = this.receiptItemTable.handsontable('getDataAtRowProp', this.rows[i], this.configurations.itemColumns[j]);
+          rowData[this.configurations.itemColumns[j]] = this.receiptItemTable.handsontable('getDataAtRowProp', this.rows[index], this.configurations.itemColumns[j]);
         }
+        break;
       }
     }
     return rowData;

@@ -13,17 +13,13 @@ $(document).ready(function () {
 		console.log("document ready");
   }
 
-  // document text can be of visible elements/both visible/hidden
-  // issue is that element might become visible when user searches?
-  // can we assume not?
-
 	// only run function when user prompts to start, so links keep working
 	/*$(document).click(function(event) {
 		lastClicked = $(event.target);`
 		if (htmlGet !== "pull-off")	{
 			var element = $(event.target);
-      var element_text = element.text().trim();
-			console.log("Element Clicked: " + element_text);
+      var elementText = element.text().trim();
+			console.log("Element Clicked: " + elementText);
 
       var linkSelected;
       if (element[0].tagName === "BUTTON" || element[0].tagName === "A") {
@@ -52,11 +48,11 @@ $(document).ready(function () {
 			{
 				element[0].className += " " + CLASS_NAME;
 
-        var message_domain;
+        var messageDomain;
         if (document.domain === null || document.domain === "") {
-          message_domain = "DOMAIN";
+          messageDomain = "DOMAIN";
         } else {
-          message_domain = document.domain;
+          messageDomain = document.domain;
         }
 
         var first_text_id = document.createTextNode(TEXT_ID);
@@ -64,20 +60,20 @@ $(document).ready(function () {
         $("." + CLASS_NAME).prepend(first_text_id);
         $("." + CLASS_NAME).append(second_text_id);
 
-				var msg_data = {
+				var msgData = {
 					response: htmlGet.substring(5),
-					selection: element_text.replace(/\n/g, ""),
+					selection: elementText.replace(/\n/g, ""),
 					data: element[0].outerHTML,
 					html: document.body.outerHTML,
 					url: location.href,
-					domain: message_domain
+					domain: messageDomain
 				};
 
         // iframe, send it to main page content script
         if (self !== top) {
-          window.parent.postMessage(JSON.stringify(msg_data), '*');
+          window.parent.postMessage(JSON.stringify(msgData), '*');
         } else {
-          incomingPort.postMessage(msg_data);
+          incomingPort.postMessage(msgData);
         }
 
         first_text_id.parentNode.removeChild(first_text_id);
@@ -146,28 +142,28 @@ $(document).ready(function () {
 
 				commonAncestorContainer.className += " " + CLASS_NAME;
 
-        var message_domain;
+        var messageDomain;
         if (document.domain === null || document.domain === "") {
-          message_domain = "DOMAIN";
+          messageDomain = "DOMAIN";
         } else {
-          message_domain = document.domain;
+          messageDomain = document.domain;
         }
 
-				var msg_data = {
+				var msgData = {
 					response: htmlGet.substring(5),
 					selection: textSelection.replace(/\n/g, ""),
 					data: commonAncestorContainer.outerHTML,
 					html: document.body.outerHTML,
 					url: location.href,
-					domain: message_domain
+					domain: messageDomain
 				};
 
-				console.log(msg_data);
+				console.log(msgData);
         // iframe, send it to main page content script
         if (self !== top) {
-          window.parent.postMessage(JSON.stringify(msg_data), '*');
+          window.parent.postMessage(JSON.stringify(msgData), '*');
         } else {
-          incomingPort.postMessage(msg_data);
+          incomingPort.postMessage(msgData);
         }
 
 				commonAncestorContainer.className = commonAncestorContainer.className.replace(" " + CLASS_NAME, "");
@@ -322,11 +318,11 @@ chrome.runtime.onConnect.addListener(function(port) {
       incomingPort = port;
     }
 
-    var message_domain;
+    var messageDomain;
     if (document.domain === null || document.domain === "") {
-      message_domain = "DOMAIN";
+      messageDomain = "DOMAIN";
     } else {
-      message_domain = document.domain;
+      messageDomain = document.domain;
     }
 
     port.onMessage.addListener(function(msg) {
@@ -335,18 +331,18 @@ chrome.runtime.onConnect.addListener(function(port) {
       if (port.name === "receiptPort") {
         // send basic page data so aServer can generate data
         if (msg.request === "initializeReceipt") {
-          var msg_data = {
+          var msgData = {
             response: msg.request,
             html: document.body.outerHTML,
             url: location.href,
-            domain: message_domain
+            domain: messageDomain
           };
 
           createNotification();
 
           // delay response so generated data comes later (handsontable not fully generated yet)
           setTimeout(function() {
-            incomingPort.postMessage(msg_data);
+            incomingPort.postMessage(msgData);
           }, 400);
         }
         // receive generated data
@@ -377,7 +373,7 @@ chrome.runtime.onConnect.addListener(function(port) {
                 //window.location.href = data;
                 //document.body.appendChild(canvas);
 
-                receipt.saved_data.snapshot = canvas.toDataURL("image/png");
+                receipt.savedData.snapshot = canvas.toDataURL("image/png");
                 sendReceipt();
               }
             });
@@ -404,19 +400,19 @@ chrome.runtime.onMessage.addListener(
 		if (self === top) {
       // retrieve url & domain
       if (request.greeting === "checkUrl") {
-        var message_domain;
+        var messageDomain;
         if (document.domain === null || document.domain === "") {
-          message_domain = "DOMAIN";
+          messageDomain = "DOMAIN";
         } else {
-          message_domain = document.domain;
+          messageDomain = document.domain;
         }
 
-        var msg_data = {
+        var msgData = {
           response: request.greeting,
           url: location.href,
-          domain: message_domain
+          domain: messageDomain
         };
-        sendResponse(msg_data);
+        sendResponse(msgData);
       }
       // get page html
       else if (request.greeting === "getHTML")	{
@@ -444,9 +440,9 @@ window.addEventListener("message", function(event) {
 
       // user submitted receipt, send all data to eventPage
       case "saveReceipt":
-        if (event.data.saved_data != null) {
+        if (event.data.savedData != null) {
           var notdiv = document.getElementById("notificationdiv");
-          prepareReceipt(event.data.saved_data, event.data.rows, event.data.parent);
+          prepareReceipt(event.data.savedData, event.data.rows, event.data.parent);
           document.getElementsByTagName("body")[0].style.paddingTop = "0px";
           notdiv.parentNode.removeChild(notdiv);
         }
@@ -461,9 +457,52 @@ window.addEventListener("message", function(event) {
 
       // user requests numeric search
       case "searchNumber":
-        if (event.data.fieldName != null && event.data.text != null) {
-          searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
+        // if row element exists, apply sorted search
+        if (event.data.fieldName != null && event.data.text != null &&
+               event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
+          var field = event.data.fieldName + event.data.itemIndex;
+          var element = itemRowGen.getRowElement();
+          if (element != null) {
+            // put this in a method
+            var searchResults = searchOrderedText(event.data.text, field, element[0]);
+            searchTerms[field] = searchResults.results;
+            searchTerms[field].count = searchResults.count;
+
+            /*console.log($("[data-tworeceipt-" + field + "-search='0']"));
+            console.log($("[data-tworeceipt-" + field + "-search='1']"));
+            console.log($("[data-tworeceipt-" + field + "-search='2']"));
+            console.log($("[data-tworeceipt-" + field + "-search='3']"));
+            console.log($("[data-tworeceipt-" + field + "-search='4']"));
+            console.log($("[data-tworeceipt-" + field + "-search='5']"));
+            console.log($("[data-tworeceipt-" + field + "-search='6']"));
+            console.log($("[data-tworeceipt-" + field + "-search='7']"));
+            console.log($("[data-tworeceipt-" + field + "-search='8']"));
+            console.log($("[data-tworeceipt-" + field + "-search='9']"));
+            console.log($("[data-tworeceipt-" + field + "-search='10']"));
+            console.log($("[data-tworeceipt-" + field + "-search='11']"));
+            console.log($("[data-tworeceipt-" + field + "-search='12']"));
+            console.log($("[data-tworeceipt-" + field + "-search='13']"));
+            console.log($("[data-tworeceipt-" + field + "-search='14']"));
+            console.log($("[data-tworeceipt-" + field + "-search='15']"));
+            console.log($("[data-tworeceipt-" + field + "-search='16']"));
+            console.log($("[data-tworeceipt-" + field + "-search='17']"));
+            console.log($("[data-tworeceipt-" + field + "-search='18']"));
+            console.log($("[data-tworeceipt-" + field + "-search='19']"));
+            console.log($("[data-tworeceipt-" + field + "-search='20']"));
+            console.log($("[data-tworeceipt-" + field + "-search='21']"));
+            console.log($("[data-tworeceipt-" + field + "-search='22']"));*/
+
+            var results = getMatches(field, event.data.itemIndex, "number");
+            var message = { response: "searchResults", results: results, fieldName: event.data.fieldName, itemIndex: event.data.itemIndex };
+            console.log(message);
+            event.source.postMessage(message, event.origin);
+            console.log(searchTerms);
+          }
         }
+
+        /*if (event.data.fieldName != null && event.data.text != null) {
+          searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
+        }*/
         // problem with this is the user can still be typing.. for now the user needs to create template for each field in row
         /*if (event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
           generateRows(event.data.rowData);
@@ -509,11 +548,11 @@ window.addEventListener("message", function(event) {
           var element = getMatchElement(field, event.data.value);
           var start = getSearchTermProperty(field, "start", event.data.value);
           var end = getSearchTermProperty(field, "end", event.data.value);
-          var startNodeIndex = getSearchTermProperty(field, "start_node_index", event.data.value);
+          var startNodeIndex = getSearchTermProperty(field, "startNodeIndex", event.data.value);
           setFieldText(element, start, end, event.data.fieldName, event.data.itemIndex, startNodeIndex);
 
           if (event.data.itemIndex != null && event.data.itemIndex === itemRowGen.rowIndex) {
-            var endNodeIndex = getSearchTermProperty(field, "end_node_index", event.data.value);
+            var endNodeIndex = getSearchTermProperty(field, "endNodeIndex", event.data.value);
             itemRowGen.setRowData(event.data.fieldName, event.data.itemIndex, element, start, end, startNodeIndex, endNodeIndex);
 
             // before generating rows, make sure current handsontable row is filled out
@@ -606,10 +645,10 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
     findRelevantMatches(field, type);
 
     var results = getMatches(field, itemIndex, type);
-    var message = { "response": "searchResults", "results": results, "fieldName": fieldName, "itemIndex": itemIndex };
+    var message = { response: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex };
     console.log(message);
     source.postMessage(message, event.origin);
-    console.log(search_terms);
+    console.log(searchTerms);
   } else {
     console.log("document search halted: " + total + " instances of " + text + " found in document");
   }
@@ -624,8 +663,8 @@ function prepareReceipt(data, rows, parent) {
     // track deleted items for generated templates
     if (generated != null && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items")) {
       $.each(generated.templates.items, function(key, value) {
-        var int_key = parseInt(key);
-        if (!isNaN(int_key) && rows[int_key] === null) {
+        var intKey = parseInt(key);
+        if (!isNaN(intKey) && rows[intKey] === null) {
           generated.templates.items[key].deleted = true;
         }
       });
@@ -649,9 +688,9 @@ function prepareReceipt(data, rows, parent) {
         console.log("set parent element path");
         console.log(generatedElementPath);
       } else if (key === "items") {
-        $.each(generated.items, function(item_key, item_value) {
-          if (generated.templates.items[item_key].deleted == null) {
-            generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths.items[item_key]);
+        $.each(generated.items, function(itemKey, itemValue) {
+          if (generated.templates.items[itemKey].deleted == null) {
+            generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths.items[itemKey]);
             console.log("set parent element path");
             console.log(generatedElementPath);
           }
@@ -666,12 +705,12 @@ function prepareReceipt(data, rows, parent) {
 
     delete generated.elementPaths;
 
-    var message_domain;
+    var messageDomain;
     // default local html pages to DOMAIN (since no domain)
     if (document.domain === null || document.domain === "") {
-      message_domain = "DOMAIN";
+      messageDomain = "DOMAIN";
     } else {
-      message_domain = document.domain;
+      messageDomain = document.domain;
     }
 
     // compose message
@@ -679,10 +718,10 @@ function prepareReceipt(data, rows, parent) {
       response: "saveReceipt",
       html: document.body.outerHTML,
       url: location.href,
-      domain: message_domain,
+      domain: messageDomain,
       attributes: attributes,
       generated: generated,
-      saved_data: data
+      savedData: data
     };
 
     incomingPort.postMessage({ request: "resizeWindow" });

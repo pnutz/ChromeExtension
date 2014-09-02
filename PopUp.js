@@ -116,7 +116,7 @@ var PopUp =
     // Registration button
     this.buttons.registration.on("click", function()
     {
-      chrome.tabs.create({url: registrationUrl});
+      chrome.tabs.create({url: self.controllers.GetUrl("registration")});
       window.close();
     });
 

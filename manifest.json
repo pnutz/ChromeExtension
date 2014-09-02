@@ -13,7 +13,7 @@
   },
 	"content_scripts": [
 		{
-			"matches": ["<all_urls>"],
+      "matches": ["<all_urls>"],
 			"js":	["jquery-2.0.3.min.js", "content.js", "contentSearch.js", "ElementPath.js", "RelativeText.js", "ItemRowGen.js", "html2canvas.js"],
 			"all_frames": false,
       "run_at" : "document_start"
@@ -35,12 +35,12 @@
 	//	"matches": ["*://localhost/*"]
 	//},
   "permissions": [
-    "tabs",
 		// url permissions required for webRequest API
 		"<all_urls>",
 		//"webRequest",
 		"background",
     "http://localhost:3000/api/v1/tokens.json",
-		"http://localhost:8888/"
+		"http://localhost:8888/",
+    "tabs"
   ]
 }

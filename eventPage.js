@@ -1,15 +1,15 @@
 // stores all open receipt notification connections
-var receipt_ports = { /* tabId: receiptPort */ },
+var receiptPorts = { /* tabId: receiptPort */ },
 // track last non chrome- url tab
 currentTabId,
-old_window_state,
+oldWindowState,
 
 aServerHost = "http://localhost:8888",
 
 facebookAPI = new FaceBookAPI();
 
 // this needs modification based on final receipt popup values
-function sendAttributeTemplate(html, url, domain, generated, attributes, saved_data) {
+function sendAttributeTemplate(html, url, domain, generated, attributes, savedData) {
 	var host = aServerHost + "/template";
 	var message = {
 		token: localStorage["authToken"],
@@ -20,12 +20,12 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, saved_d
     domain: domain,
     attributes: {},
     generated: {},
-    saved_data: {}
+    savedData: {}
 	};
 
   message.attributes = JSON.stringify(attributes);
   message.generated = JSON.stringify(generated);
-  message.saved_data = JSON.stringify(saved_data);
+  message.savedData = JSON.stringify(savedData);
 
 	var request = $.post(host, message, function (data, status) {
 		alert("Data: " + data + "\nStatus: " + status);
@@ -49,8 +49,8 @@ function sendDomain(tabId, html, url, domain) {
 	};
 
 	request = $.post(host, message, function (data, status) {
-    var json_data = "[" + data + "]";
-    var response = $.parseJSON(json_data);
+    var jsonData = "[" + data + "]";
+    var response = $.parseJSON(jsonData);
     var generated = {};
     generated.templates = {};
     generated.elementPaths = {};
@@ -64,19 +64,19 @@ function sendDomain(tabId, html, url, domain) {
         generated.items = {};
         generated.templates.items = {};
         generated.elementPaths.items = {};
-        var item_index = 0;
-        $.each(value, function(key2, item_attributes) {
-          generated.items[item_index] = item_attributes;
-          generated.templates.items[item_index] = response[0].templates.items[key2];
-          generated.elementPaths.items[item_index] = response[0].elementPaths.items[key2];
-          item_index++;
+        var itemIndex = 0;
+        $.each(value, function(key2, itemAttributes) {
+          generated.items[itemIndex] = itemAttributes;
+          generated.templates.items[itemIndex] = response[0].templates.items[key2];
+          generated.elementPaths.items[itemIndex] = response[0].elementPaths.items[key2];
+          itemIndex++;
         });
       }
     });
     // send content script generated data
-    receipt_ports[tabId].postMessage({"request": "generatedData", "generated": generated});
+    receiptPorts[tabId].postMessage({"request": "generatedData", "generated": generated});
     console.log(generated);
-		alert("Data: " + json_data + "\nStatus: " + status);
+		alert("Data: " + jsonData + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
 		alert(xhr.responseText);
@@ -85,27 +85,27 @@ function sendDomain(tabId, html, url, domain) {
 
 // searches string to return a string between substring1 and substring2 - finds first instance of substring2 after substring1
 function stringBetween(string, substring1, substring2) {
-	var first_index = string.indexOf(substring1);
-	return string.substring(first_index + substring1.length, string.indexOf(substring2, first_index));
+	var firstIndex = string.indexOf(substring1);
+	return string.substring(firstIndex + substring1.length, string.indexOf(substring2, firstIndex));
 }
 
 function receiptSetup() {
 	// setup receipt notification message passing connection with current tab
-  if (receipt_ports[currentTabId] !== undefined) {
-    receipt_ports[currentTabId].disconnect();
+  if (receiptPorts[currentTabId] !== undefined) {
+    receiptPorts[currentTabId].disconnect();
   }
-	receipt_ports[currentTabId] = chrome.tabs.connect(currentTabId, {name: "receiptPort"});
-  console.log(receipt_ports);
-	console.log("Connected to port " + receipt_ports[currentTabId].name + " for tab: " + currentTabId);
+	receiptPorts[currentTabId] = chrome.tabs.connect(currentTabId, {name: "receiptPort"});
+  console.log(receiptPorts);
+	console.log("Connected to port " + receiptPorts[currentTabId].name + " for tab: " + currentTabId);
 
   // prompt content.js for data if new receipt popup
-  receipt_ports[currentTabId].postMessage({"request": "initializeReceipt"});
+  receiptPorts[currentTabId].postMessage({"request": "initializeReceipt"});
 
-	receipt_ports[currentTabId].onMessage.addListener(function(msg) {
+	receiptPorts[currentTabId].onMessage.addListener(function(msg) {
     if (msg.request) {
-      console.log("Received message: " + msg.request + " for port: " + receipt_ports[currentTabId].name);
+      console.log("Received message: " + msg.request + " for port: " + receiptPorts[currentTabId].name);
     } else {
-      console.log("Received message: " + msg.response + " for port: " + receipt_ports[currentTabId].name);
+      console.log("Received message: " + msg.response + " for port: " + receiptPorts[currentTabId].name);
     }
 
     // message node js server html & domain data
@@ -115,16 +115,16 @@ function receiptSetup() {
     // resize window in preparation for snapshot
     else if (msg.request === "resizeWindow") {
       resizeToPrinterPage();
-      receipt_ports[currentTabId].postMessage({ request: "takeSnapshot" });
+      receiptPorts[currentTabId].postMessage({ request: "takeSnapshot" });
     }
     // send receipt information and clean up
     else if (msg.response === "saveReceipt") {
       console.log(msg);
 
-      postReceiptToWebApp(msg.saved_data);
-      sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.saved_data);
+      postReceiptToWebApp(msg.savedData);
+      sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.savedData);
 
-      if (old_window_state != null) {
+      if (oldWindowState != null) {
         resizeToOriginalPage();
       }
 
@@ -132,7 +132,7 @@ function receiptSetup() {
     }
     // prompt to cloe receipt connection
     else if (msg.request === "closeReceipt") {
-      if (old_window_state != null) {
+      if (oldWindowState != null) {
         resizeToOriginalPage();
       }
 
@@ -141,42 +141,42 @@ function receiptSetup() {
 	});
 }
 
-function postReceiptToWebApp(saved_data) {
-  var form_data = { receipt: saved_data };
+function postReceiptToWebApp(savedData) {
+  var formData = { receipt: savedData };
 
-  form_data.receipt["receipt_items_attributes"] = form_data.receipt.items;
-  delete form_data.receipt.items;
+  formData.receipt["receipt_items_attributes"] = formData.receipt.items;
+  delete formData.receipt.items;
 
   // + in front of Date() makes it a number (timestamp divided by 1000)
-  form_data.receipt["numeric_date"] = +new Date(form_data.receipt["date"])/1000;
-  delete form_data.receipt["date"];
+  formData.receipt["numeric_date"] = +new Date(formData.receipt["date"])/1000;
+  delete formData.receipt["date"];
 
-  form_data.receipt["vendor_name"] = form_data.receipt["vendor"];
-  delete form_data.receipt["vendor"];
+  formData.receipt["vendor_name"] = formData.receipt["vendor"];
+  delete formData.receipt["vendor"];
 
-  form_data.receipt["transaction_number"] = form_data.receipt["transaction"];
-  delete form_data.receipt["transaction"];
+  formData.receipt["transaction_number"] = formData.receipt["transaction"];
+  delete formData.receipt["transaction"];
 
-  form_data.receipt["title"] = "";
-  form_data.receipt["currency_id"] = 1;
-  //form_data.receipt["purchase_type_id"] = 1;
+  formData.receipt["title"] = "";
+  formData.receipt["currency_id"] = 1;
+  //formData.receipt["purchase_type_id"] = 1;
   // optional folder_id
 
-  form_data.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: form_data.receipt["snapshot"] } };
-  delete form_data.receipt["snapshot"];
+  formData.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: formData.receipt["snapshot"] } };
+  delete formData.receipt["snapshot"];
 
-  delete form_data.receipt["subtotal"];
-  delete form_data.receipt["taxes"];
-  delete form_data.receipt["profile"];
-  delete form_data.receipt["category"];
-  form_data.receipt["tag_names"] = [ "test1", "test2", "test3" ];
+  delete formData.receipt["subtotal"];
+  delete formData.receipt["taxes"];
+  delete formData.receipt["profile"];
+  delete formData.receipt["category"];
+  formData.receipt["tag_names"] = [ "test1", "test2", "test3" ];
 
-  console.log(form_data);
+  console.log(formData);
 
   var receiptRequest = $.ajax({
     url: localStorage["receiptPost"],
     type: 'POST',
-    data : form_data,
+    data : formData,
     dataType: 'json'
   }).done(function(data){
     alert("submitted");
@@ -192,19 +192,19 @@ function postReceiptToWebApp(saved_data) {
 function resizeToPrinterPage() {
   chrome.windows.getCurrent(function(window) {
     if (window.state === "minimized" || window.state === "maximized" || window.state === "fullscreen") {
-      old_window_state = {
+      oldWindowState = {
         state: window.state
       };
     } else {
-      old_window_state = {
+      oldWindowState = {
         width: window.width,
         height: window.height,
         left: window.left,
-        top: window.top,
+        top: window.top
       };
     }
 
-    console.log(old_window_state);
+    console.log(oldWindowState);
     console.log(window.state);
 
     var width = 1100;
@@ -223,13 +223,13 @@ function resizeToPrinterPage() {
 
 function resizeToOriginalPage() {
   chrome.windows.getCurrent(function(window) {
-    chrome.windows.update(window.id, old_window_state);
-    old_window_state = null;
+    chrome.windows.update(window.id, oldWindowState);
+    oldWindowState = null;
   });
 }
 
-function checkUrl(tab_id) {
-  chrome.tabs.sendMessage(tab_id, { greeting: "checkUrl" }, function(response) {
+function checkUrl(tabId) {
+  chrome.tabs.sendMessage(tabId, { greeting: "checkUrl" }, function(response) {
     if (response.url !== undefined) {
       console.log("TODO: send url to aServer - " + response.url);
     } else {
@@ -271,9 +271,9 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
 	if (changeInfo.status === "complete" && changeInfo.url === undefined)
 	{
     // if tabId contains receipt notification, disconnect port and remove key/value
-    if (receipt_ports[tabId] !== undefined) {
-      receipt_ports[tabId].disconnect();
-      delete receipt_ports[tabId];
+    if (receiptPorts[tabId] !== undefined) {
+      receiptPorts[tabId].disconnect();
+      delete receiptPorts[tabId];
     }
 
     // whenever page updates, check url with aServer for receipt page
@@ -284,19 +284,19 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
 // track tab removed
 chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 	// if tabId contains a receipt notification, disconnect port and delete port key/value
-  if (receipt_ports[tabId] !== undefined) {
+  if (receiptPorts[tabId] !== undefined) {
     console.log("Disconnecting from receipt port");
-    receipt_ports[tabId].disconnect();
-    delete receipt_ports[tabId];
+    receiptPorts[tabId].disconnect();
+    delete receiptPorts[tabId];
   }
 });
 
 function closeReceipt() {
   console.log("Receipt notification closed - Disconnected from receipt_port");
 
-  if (receipt_ports[currentTabId] !== undefined) {
-    receipt_ports[currentTabId].disconnect();
-    delete receipt_ports[currentTabId];
+  if (receiptPorts[currentTabId] !== undefined) {
+    receiptPorts[currentTabId].disconnect();
+    delete receiptPorts[currentTabId];
   }
 }
 
