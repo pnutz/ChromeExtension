@@ -67,7 +67,7 @@ function findFirstTextNode(element, startIndex) {
 }
 
 // find all instances of searchTerm in the document and set data attribute
-// returns a list of parent elements that contain the searchTerm ordered from the rowElement outwards (order: rowResults, leftResults, rightResults)
+// returns a list of parent elements that contain the searchTerm ordered from param rowElement outwards (order: rowResults, leftResults, rightResults)
 function searchOrderedText(searchTerm, field, rowElement, parentElement, nodeIndex, count) {
   var leftResults = {};
   var rowResults = {};
@@ -156,6 +156,11 @@ function searchOrderedText(searchTerm, field, rowElement, parentElement, nodeInd
     }
   }
 
+  // if no valid nodes to right of container element, count may be greater than params.count
+  if (params.count > count) {
+    count = params.count;
+  }
+
   var keys = Object.keys(rowResults);
   var leftKeys = Object.keys(leftResults);
   var rightKeys = Object.keys(params.searchElements);
@@ -197,13 +202,6 @@ function searchOrderedText(searchTerm, field, rowElement, parentElement, nodeInd
 
   return { results: rowResults, count: count };
 }
-
-// to set results order - count can be set after results have returned - element tag is stored in results information.
-// L1, wait till finished R1
-// L2, wait till finished R2
-// M stored, followed by finished L2, R2 - return results
-// followed by finished L1, R1 - add to end
-// return results
 
 /* params: nodeIndex - index in textNodes iterated through
 *          searchTerm - search term to match
@@ -344,6 +342,9 @@ function findMatch(node, params) {
       // if a class for field search already exists, use that instead
       console.log("data field");
       var dataField = "data-tworeceipt-" + field + "-search";
+      console.log("MATCH COUNT-------------------------------------------------------------------");
+      console.log(count);
+      console.log($(targetParent).attr(dataField));
       if ($(targetParent).attr(dataField) != null) {
         console.log("EXISTING SEARCH ELEMENT");
         console.log($(targetParent).attr(dataField));
@@ -808,7 +809,7 @@ function getMatches(field, itemIndex) {
         var text = findMatchText(field, keys[index]);
         console.log(text);
         if (itemIndex != null) {
-          matches.push(text);
+          matches.push(index + " " + text);
           // fix gaps caused by removed searchTerms, so search is in numerical order from 0
           if (keys[index] !== index.toString()) {
             searchTerms[field][index] = searchTerms[field][keys[index]];

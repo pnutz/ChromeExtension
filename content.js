@@ -460,49 +460,18 @@ window.addEventListener("message", function(event) {
         // if row element exists, apply sorted search
         if (event.data.fieldName != null && event.data.text != null &&
                event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
+
           var field = event.data.fieldName + event.data.itemIndex;
           var element = itemRowGen.getRowElement();
           if (element != null) {
-            // put this in a method
-            var searchResults = searchOrderedText(event.data.text, field, element[0]);
-            searchTerms[field] = searchResults.results;
-            searchTerms[field].count = searchResults.count;
-
-            /*console.log($("[data-tworeceipt-" + field + "-search='0']"));
-            console.log($("[data-tworeceipt-" + field + "-search='1']"));
-            console.log($("[data-tworeceipt-" + field + "-search='2']"));
-            console.log($("[data-tworeceipt-" + field + "-search='3']"));
-            console.log($("[data-tworeceipt-" + field + "-search='4']"));
-            console.log($("[data-tworeceipt-" + field + "-search='5']"));
-            console.log($("[data-tworeceipt-" + field + "-search='6']"));
-            console.log($("[data-tworeceipt-" + field + "-search='7']"));
-            console.log($("[data-tworeceipt-" + field + "-search='8']"));
-            console.log($("[data-tworeceipt-" + field + "-search='9']"));
-            console.log($("[data-tworeceipt-" + field + "-search='10']"));
-            console.log($("[data-tworeceipt-" + field + "-search='11']"));
-            console.log($("[data-tworeceipt-" + field + "-search='12']"));
-            console.log($("[data-tworeceipt-" + field + "-search='13']"));
-            console.log($("[data-tworeceipt-" + field + "-search='14']"));
-            console.log($("[data-tworeceipt-" + field + "-search='15']"));
-            console.log($("[data-tworeceipt-" + field + "-search='16']"));
-            console.log($("[data-tworeceipt-" + field + "-search='17']"));
-            console.log($("[data-tworeceipt-" + field + "-search='18']"));
-            console.log($("[data-tworeceipt-" + field + "-search='19']"));
-            console.log($("[data-tworeceipt-" + field + "-search='20']"));
-            console.log($("[data-tworeceipt-" + field + "-search='21']"));
-            console.log($("[data-tworeceipt-" + field + "-search='22']"));*/
-
-            var results = getMatches(field, event.data.itemIndex, "number");
-            var message = { response: "searchResults", results: results, fieldName: event.data.fieldName, itemIndex: event.data.itemIndex };
-            console.log(message);
-            event.source.postMessage(message, event.origin);
-            console.log(searchTerms);
+            sortedSearchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex, element);
+          } else {
+            searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
           }
+        } else if (event.data.fieldName != null && event.data.text != null) {
+          searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
         }
 
-        /*if (event.data.fieldName != null && event.data.text != null) {
-          searchRequest(event.source, "number", event.data.fieldName, event.data.text, event.data.itemIndex);
-        }*/
         // problem with this is the user can still be typing.. for now the user needs to create template for each field in row
         /*if (event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
           generateRows(event.data.rowData);
@@ -510,9 +479,22 @@ window.addEventListener("message", function(event) {
         break;
 
       case "searchMoney":
-        if (event.data.fieldName != null && event.data.text != null) {
+        // if row element exists, apply sorted search
+        if (event.data.fieldName != null && event.data.text != null &&
+               event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
+
+          var field = event.data.fieldName + event.data.itemIndex;
+          var element = itemRowGen.getRowElement();
+          if (element != null) {
+            sortedSearchRequest(event.source, "money", event.data.fieldName, event.data.text, event.data.itemIndex, element);
+          } else {
+            searchRequest(event.source, "money", event.data.fieldName, event.data.text, event.data.itemIndex);
+          }
+        } else if (event.data.fieldName != null && event.data.text != null) {
           searchRequest(event.source, "money", event.data.fieldName, event.data.text, event.data.itemIndex);
         }
+
+        // problem with this is the user can still be typing.. for now the user needs to create template for each field in row
         /*if (event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
           generateRows(event.data.rowData);
         }*/
@@ -622,6 +604,35 @@ function generateRows(row) {
     var message = itemRowGen.generateAllNextRows();
     message.response = "newItemRows";
     event.source.postMessage(message, event.origin);
+  }
+}
+
+// respond with sorted search data. unselect and unhighlight text for fieldName
+function sortedSearchRequest(source, type, fieldName, text, itemIndex, rowElement) {
+  var field = fieldName;
+  if (itemIndex != null) {
+    field += itemIndex;
+  }
+
+  cleanHighlight();
+  cleanElementData(field);
+  cleanFieldText(fieldName, itemIndex);
+
+  var searchResults = searchOrderedText(text, field, rowElement[0]);
+  searchTerms[field] = searchResults.results;
+  searchTerms[field].count = searchResults.count;
+
+  // relevant matches need to be included... how to order?
+  // if ordered already by text match, sort from inside element to outside (element, text node, word, text) - no duplicates
+  // relevant matches needs to apply validation based on type
+  // findRelevantMatches(field, type);
+
+  var results = getMatches(field, itemIndex, type);
+  if (results.length > 0) {
+    var message = { response: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex };
+    console.log(message);
+    source.postMessage(message, event.origin);
+    console.log(searchTerms);
   }
 }
 
