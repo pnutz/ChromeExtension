@@ -239,7 +239,7 @@ function findMatch(node, params) {
 
   // stores the number of characters the start of searchTerm is from the end of text
   var charactersFromEnd = text.length - index;
-  console.log("charactersFromEnd: " + charactersFromEnd);
+  //console.log("charactersFromEnd: " + charactersFromEnd);
 
   // loop through text node in case there is more than one searchTerm instance in text
   while (index !== -1) {
@@ -340,11 +340,7 @@ function findMatch(node, params) {
       console.log("end index: " + endIndex);*/
 
       // if a class for field search already exists, use that instead
-      console.log("data field");
       var dataField = "data-tworeceipt-" + field + "-search";
-      console.log("MATCH COUNT-------------------------------------------------------------------");
-      console.log(count);
-      console.log($(targetParent).attr(dataField));
       if ($(targetParent).attr(dataField) != null) {
         console.log("EXISTING SEARCH ELEMENT");
         console.log($(targetParent).attr(dataField));
@@ -410,14 +406,100 @@ function findMatch(node, params) {
           };
 }
 
-// loop through all searchTerms for field, adding possible search matches to searchTerms object
+// loop through all searchTerms for field, adding possible search matches to front of searchTerms
 function findRelevantMatches(field, type) {
   if (searchTerms.hasOwnProperty(field) && Object.keys(searchTerms[field]).length > 0) {
-    var count = searchTerms[field].count;
-    console.log(findMatchByWord(field, count, type));
-    console.log(findMatchByNode(field, count, type));
-    console.log(findMatchByElement(field, count, type));
+    var words = findMatchesByWord(field, type);
+    // set searchTerms[field] to include words
+    prependArrayToSearchTerms(words, field);
+
+    var nodes = findMatchesByNode(field, type);
+    // set searchTerms[field] to include nodes
+    prependArrayToSearchTerms(nodes, field);
+
+    var elements = findMatchesByElement(field, type);
+    // set searchTerms[field] to include elements
+    prependArrayToSearchTerms(elements, field);
   }
+}
+
+// prepends searchTerms[field] with param array and returns compiled object
+function prependArrayToSearchTerms(array, field) {
+  var index = 0;
+  var collection = {};
+
+  // add array to empty collection
+  for (var i = 0; i < array.length; i++) {
+    collection[index] = array[i];
+    index++;
+  }
+
+  // add existing searchTerms to collection
+  var keys = Object.keys(searchTerms[field]);
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    if (key !== "count") {
+      collection[index] = searchTerms[field][key];
+      index++;
+    }
+  }
+
+  // set searchTerms as collection
+  searchTerms[field] = collection;
+  searchTerms[field].count = index;
+
+  return collection;
+}
+
+// loop through all searchTerms for field, adding possible search matches to searchTerms while maintaining existing order
+function findSortedRelevantMatches(field, type) {
+  if (searchTerms.hasOwnProperty(field) && Object.keys(searchTerms[field]).length > 0) {
+
+    var keys = Object.keys(searchTerms[field]);
+    var words = findSortedMatchesByWord(field, type);
+    // prepend each word to its indexed searchTerm match
+    prependObjectToSearchTerms(keys, words, field);
+
+    keys = Object.keys(searchTerms[field]);
+    var nodes = findSortedMatchesByNode(field, type);
+    // prepend each text node to its indexed searchTerm match
+    prependObjectToSearchTerms(keys, nodes, field);
+
+    keys = Object.keys(searchTerms[field]);
+    var elements = findSortedMatchesByElement(field, type);
+    // prepend each element to its indexed searchTerm match
+    prependObjectToSearchTerms(keys, elements, field);
+  }
+}
+
+// prepends each collection match with indexed match in object and returns compiled object
+// keys are parametarized since unique keys can exist in both object and searchTerms
+function prependObjectToSearchTerms(keys, object, field) {
+  var index = 0;
+  var collection = {};
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    if (key !== "count") {
+      // add object value for key to collection
+      if (object.hasOwnProperty(key)) {
+        collection[index] = object[key];
+        index++;
+      }
+
+      // add existing value for key to collection
+      if (searchTerms[field].hasOwnProperty(key)) {
+        collection[index] = searchTerms[field][key];
+        index++;
+      }
+    }
+  }
+
+  // set searchTerms as collection
+  searchTerms[field] = collection;
+  searchTerms[field].count = index;
+
+  return collection;
 }
 
 // isNumeric from handsontable
@@ -430,328 +512,489 @@ function isNumeric(n) {
     t == 'object' ? !!n && typeof n.valueOf() == "number" && !(n instanceof Date) : false;
 }
 
-// parent element? loop until text changes?
-// appends matches (excluding index > count) complete by element and returns newly added search terms
-function findMatchByElement(field, count, type) {
-  var keys = Object.keys(searchTerms[field]);
-  console.log(keys);
-  var originalCount = searchTerms[field].count;
+// returns an element match for searchTerms with params field and key for param type
+function findElementMatch(field, key, type) {
+  console.log("findMatchByElement: " + key);
 
-  for (var i = 0; i < keys.length; i++) {
-    var index = keys[i];
+  var fieldValue = getSearchTermProperty(field, "data", key),
+      startNodeIndex = getSearchTermProperty(field, "startNodeIndex", key),
+      endNodeIndex = getSearchTermProperty(field, "endNodeIndex", key),
+      startIndex = getSearchTermProperty(field, "start", key),
+      endIndex = getSearchTermProperty(field, "end", key),
+      // code duplication so 'getSearchTermProperty' for data is not run twice
+      element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
 
-    // do not include count index and indices less than count (# of original searchTerms)
-    if (!isNaN(parseInt(index)) && parseInt(index) < count) {
-      console.log("findMatchByElement: " + index);
+  var elementText = getDocumentText(element);
 
-      var fieldValue = getSearchTermProperty(field, "data", index),
-          startNodeIndex = getSearchTermProperty(field, "startNodeIndex", index),
-          endNodeIndex = getSearchTermProperty(field, "endNodeIndex", index),
-          startIndex = getSearchTermProperty(field, "start", index),
-          endIndex = getSearchTermProperty(field, "end", index),
-          // code duplication so 'getSearchTermProperty' for data is not run twice
-          element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
-
-      var elementText = getDocumentText(element);
-
-      // current searchTerm is already the element match
-      if (startIndex === 0 && endIndex === elementText.length) {
-        console.log("searchTerm is already match element");
-        continue;
-      }
-
-      // calculating for new searchTerm nodeIndex
-      var newStartNodeIndex = startNodeIndex;
-      //console.log(textNodes[newStartNodeIndex].nodeValue);
-      // keep iterating backwards until start of textNodes, or textNode is not within element, or text node parent is not equal to element
-      while (newStartNodeIndex !== 0 &&
-              $.contains(element[0], textNodes[newStartNodeIndex].parentNode) &&
-              textNodes[newStartNodeIndex].parentNode !== element[0]) {
-        newStartNodeIndex--;
-        console.log(newStartNodeIndex);
-        console.log(textNodes[newStartNodeIndex].nodeValue);
-      }
-
-      var newEndNodeIndex = endNodeIndex;
-      //console.log(textNodes[newEndNodeIndex].nodeValue);
-      // keep iterating forwards until end of textNodes, or textNode is not within element, or text node parent is not equal to element
-      while (newEndNodeIndex !== textNodes.length - 1 &&
-              $.contains(element[0], textNodes[newEndNodeIndex].parentNode) &&
-              textNodes[newEndNodeIndex].parentNode !== element[0]) {
-        newEndNodeIndex++;
-        console.log(textNodes[newEndNodeIndex].nodeValue);
-      }
-
-      startIndex = 0;
-      endIndex = elementText.length;
-
-      switch (type) {
-        case "money":
-          if (elementText.indexOf("$") === 0) {
-            elementText = elementText.substring(1);
-            startIndex++;
-          }
-
-          // money value must contain a decimal
-          if (elementText.indexOf("$") === elementText.length - 1 || elementText.indexOf(".") === elementText.length - 1) {
-            elementText = elementText.substring(0, elementText.length - 1);
-            endIndex--;
-          }
-          else if (elementText.indexOf(".") === -1) {
-            console.log("searchTerm is not numeric");
-            continue;
-          }
-        case "number":
-          if (!isNumeric(elementText)) {
-            console.log("searchTerm is not numeric");
-            continue;
-          }
-          break;
-        default:
-          break;
-      }
-
-      var newSearchTerm = {
-                              data: fieldValue,
-                              start: startIndex,
-                              end: endIndex,
-                              startNodeIndex: newStartNodeIndex,
-                              endNodeIndex: newEndNodeIndex
-                            };
-
-      // only consider valid search terms
-      if (isValidSearchTerm(newSearchTerm, type)) {
-        // check all existing searchTerms for duplicates
-        var duplicate = hasDuplicate(field, newSearchTerm);
-
-        console.log(newSearchTerm);
-        if (duplicate) {
-          console.log("duplicate");
-        } else {
-          console.log("NOT duplicate");
-          searchTerms[field][searchTerms[field].count] = newSearchTerm;
-          searchTerms[field].count++;
-        }
-      }
-    }
+  // current searchTerm is already the element match
+  if (startIndex === 0 && endIndex === elementText.length) {
+    console.log("searchTerm is already match element");
+    return;
   }
 
-  // return new searchTerms added to object
-  var addedSearchTerms = {};
-  for (var i = originalCount; i < searchTerms[field].count; i++) {
-    addedSearchTerms[i] = searchTerms[field][i];
+  // calculating for new searchTerm nodeIndex
+  var newStartNodeIndex = startNodeIndex;
+  //console.log(textNodes[newStartNodeIndex].nodeValue);
+  // keep iterating backwards until start of textNodes, or textNode is not within element, or text node parent is not equal to element
+  while (newStartNodeIndex !== 0 &&
+         $.contains(element[0], textNodes[newStartNodeIndex].parentNode) &&
+         textNodes[newStartNodeIndex].parentNode !== element[0]) {
+    newStartNodeIndex--;
+    console.log(newStartNodeIndex);
+    console.log(textNodes[newStartNodeIndex].nodeValue);
   }
-  return addedSearchTerms;
+
+  var newEndNodeIndex = endNodeIndex;
+  //console.log(textNodes[newEndNodeIndex].nodeValue);
+  // keep iterating forwards until end of textNodes, or textNode is not within element, or text node parent is not equal to element
+  while (newEndNodeIndex !== textNodes.length - 1 &&
+         $.contains(element[0], textNodes[newEndNodeIndex].parentNode) &&
+         textNodes[newEndNodeIndex].parentNode !== element[0]) {
+    newEndNodeIndex++;
+    console.log(textNodes[newEndNodeIndex].nodeValue);
+  }
+
+  startIndex = 0;
+  endIndex = elementText.length;
+
+  console.log("new search term: " + elementText);
+
+  switch (type) {
+    case "money":
+      if (elementText.indexOf("$") === 0) {
+        elementText = elementText.substring(1);
+        startIndex++;
+      }
+
+      // money value must contain a decimal
+      if (elementText.indexOf("$") === elementText.length - 1 || elementText.indexOf(".") === elementText.length - 1) {
+        elementText = elementText.substring(0, elementText.length - 1);
+        endIndex--;
+      }
+      else if (elementText.indexOf(".") === -1) {
+        console.log("searchTerm is not numeric");
+        return;
+      }
+    case "number":
+      if (!isNumeric(elementText)) {
+        console.log("searchTerm is not numeric");
+        return;
+      }
+      break;
+    default:
+      break;
+  }
+
+  return {
+    data: fieldValue,
+    start: startIndex,
+    end: endIndex,
+    startNodeIndex: newStartNodeIndex,
+    endNodeIndex: newEndNodeIndex
+  };
 }
 
-// appends matches (excluding index > count) complete by text node and returns newly added search terms
-function findMatchByNode(field, count, type) {
+// returns matches complete by element
+function findMatchesByElement(field, type) {
   var keys = Object.keys(searchTerms[field]);
-  console.log(keys);
-  var originalCount = searchTerms[field].count;
-
-  for (var i = 0; i < keys.length; i++) {
-    var index = keys[i];
-
-    // do not include count index and indices less than count (# of original searchTerms)
-    if (!isNaN(parseInt(index)) && parseInt(index) < count) {
-      console.log("findMatchByNode: " + index);
-
-      var fieldValue = getSearchTermProperty(field, "data", index),
-          startNodeIndex = getSearchTermProperty(field, "startNodeIndex", index),
-          endNodeIndex = getSearchTermProperty(field, "endNodeIndex", index),
-          // code duplication so 'getSearchTermProperty' for data is not run twice
-          element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
-
-      // iterating to first text node of element, counting characters
-      var nodeIndex = startNodeIndex - 1;
-      var charCount = 0;
-      while (nodeIndex > -1 &&
-              ($.contains(element[0], textNodes[nodeIndex].parentNode) ||
-              textNodes[nodeIndex].parentNode === element[0])) {
-        charCount += textNodes[nodeIndex].nodeValue.trim().length + 1;
-        nodeIndex--;
-      }
-      var startIndex = charCount;
-
-      // iterate through textNodes from startNode to end of endNode, counting characters
-      nodeIndex = startNodeIndex;
-      while (nodeIndex < endNodeIndex && nodeIndex < textNodes.length) {
-        charCount += textNodes[nodeIndex].nodeValue.trim().length + 1;
-        nodeIndex++;
-      }
-      var endIndex = charCount + textNodes[endNodeIndex].nodeValue.trim().length;
-
-      var elementText = getDocumentText(element);
-
-      switch (type) {
-        case "money":
-          if (elementText.indexOf("$") === 0) {
-            elementText = elementText.substring(1);
-            startIndex++;
-          }
-
-          // money value must contain a decimal
-          if (elementText.indexOf("$") === elementText.length - 1 || elementText.indexOf(".") === elementText.length - 1) {
-            elementText = elementText.substring(0, elementText.length - 1);
-            endIndex--;
-          }
-          else if (elementText.indexOf(".") === -1) {
-            console.log("searchTerm is not numeric");
-            continue;
-          }
-
-        case "number":
-          if (!isNumeric(elementText)) {
-            console.log("searchTerm is not numeric");
-            continue;
-          }
-          break;
-        default:
-          break;
-      }
-
-      var newSearchTerm = {
-                              data: fieldValue,
-                              start: startIndex,
-                              end: endIndex,
-                              startNodeIndex: startNodeIndex,
-                              endNodeIndex: endNodeIndex
-                            };
-
-      // only consider valid search terms
-      if (isValidSearchTerm(newSearchTerm, type)) {
-        // check all existing searchTerms for duplicates
-        var duplicate = hasDuplicate(field, newSearchTerm);
-
-        console.log(newSearchTerm);
-        if (duplicate) {
-          console.log("duplicate");
-        } else {
-          console.log("NOT duplicate");
-          searchTerms[field][searchTerms[field].count] = newSearchTerm;
-          searchTerms[field].count++;
-        }
-      }
-    }
-  }
-
-  // return new searchTerms added to object
-  var addedSearchTerms = {};
-  for (var index = originalCount; index < searchTerms[field].count; index++) {
-    addedSearchTerms[index] = searchTerms[field][index];
-  }
-  return addedSearchTerms;
-}
-
-// appends matches (excluding index > count) complete by word (separated by space characters/text nodes) and returns newly added search terms
-function findMatchByWord(field, count, type) {
-  var keys = Object.keys(searchTerms[field]);
-  console.log(keys);
-  var originalCount = searchTerms[field].count;
+  var results = [];
 
   for (var i = 0; i < keys.length; i++) {
     var key = keys[i];
 
-    // do not include count index and indices less than count (# of original searchTerms)
-    if (!isNaN(parseInt(key)) && parseInt(key) < count) {
-      console.log("findMatchByWord: " + key);
-
-      var fieldValue = getSearchTermProperty(field, "data", key),
-          startNodeIndex = getSearchTermProperty(field, "startNodeIndex", key),
-          endNodeIndex = getSearchTermProperty(field, "endNodeIndex", key),
-          startIndex = getSearchTermProperty(field, "start", key),
-          endIndex = getSearchTermProperty(field, "end", key),
-          // code duplication so 'getSearchTermProperty' for data is not run twice
-          element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
-
-      // check if there are any non-space characters to left / right of indices
-      var elementText = getDocumentText(element);
-      var startText = elementText.substring(0, startIndex);
-      //console.log(startText);
-      // while there are no spaces from the end of startText, subtract characters from startIndex
-      var charIndex = startText.length - 1;
-      while (startText.charAt(charIndex).match(/\s/) === null && charIndex !== -1) {
-        charIndex--;
-        startIndex--;
+    // do not include 'count' key
+    if (!isNaN(parseInt(key))) {
+      var newSearchTerm = findElementMatch(field, key, type);
+      if (newSearchTerm == null) {
+        continue;
       }
-
-      var endText = elementText.substring(endIndex);
-      //console.log(endText);
-      charIndex = 0;
-      while (endText.charAt(charIndex).match(/\s/) === null && charIndex !== endText.length) {
-        charIndex++;
-        endIndex++;
-      }
-
-      var finalText = elementText.substring(startIndex, endIndex);
-      console.log(finalText);
-
-      switch (type) {
-        case "money":
-          // remove all exact matches for money category
-          delete searchTerms[field][key];
-
-          if (finalText.indexOf("$") === 0) {
-            finalText = finalText.substring(1);
-            startIndex++;
-          }
-
-          // money value must contain a decimal
-          if (finalText.indexOf("$") === finalText.length - 1 || finalText.indexOf(".") === finalText.length - 1) {
-            finalText = finalText.substring(0, finalText.length - 1);
-            endIndex--;
-          }
-          else if (finalText.indexOf(".") === -1) {
-            console.log("searchTerm is not numeric");
-            continue;
-          }
-        case "number":
-          if (!isNumeric(finalText)) {
-            console.log("searchTerm is not numeric");
-            // remove exact match search term if the word is not completely numeric
-            console.log(searchTerms[field]);
-            if (searchTerms[field].hasOwnProperty(key)) {
-              delete searchTerms[field][key];
-            }
-            continue;
-          }
-          break;
-        default:
-          break;
-      }
-
-      var newSearchTerm = {
-        data: fieldValue,
-        start: startIndex,
-        end: endIndex,
-        startNodeIndex: startNodeIndex,
-        endNodeIndex: endNodeIndex
-      };
 
       // only consider valid search terms
       if (isValidSearchTerm(newSearchTerm, type)) {
         // check all existing searchTerms for duplicates
-        var duplicate = hasDuplicate(field, newSearchTerm);
+        var duplicate = hasDuplicate(searchTerms[field], newSearchTerm);
 
         console.log(newSearchTerm);
-        if (duplicate) {
-          console.log("duplicate");
+        // delete any existing duplicate and add as a result (maintaining order)
+        if (duplicate != null) {
+          console.log("match duplicate");
+          delete searchTerms[field][duplicate];
+        }
+
+        // check results for duplicates
+        duplicate = hasDuplicate(results, newSearchTerm);
+
+        // only add new result if it doesn't exist already
+        if (duplicate != null) {
+          console.log("results duplicate");
         } else {
           console.log("NOT duplicate");
-          searchTerms[field][searchTerms[field].count] = newSearchTerm;
-          searchTerms[field].count++;
+          results.push(newSearchTerm);
         }
       }
     }
   }
+  return results;
+}
 
-  // return new searchTerms added to object
-  var addedSearchTerms = {};
-  for (var index = originalCount; index < searchTerms[field].count; index++) {
-    addedSearchTerms[index] = searchTerms[field][index];
+// returns matches complete by element, indexed by original key
+function findSortedMatchesByElement(field, type) {
+  var keys = Object.keys(searchTerms[field]);
+  var results = {};
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+
+    // do not include 'count' key
+    if (!isNaN(parseInt(key))) {
+      var newSearchTerm = findElementMatch(field, key, type);
+      if (newSearchTerm == null) {
+        continue;
+      }
+
+      // only consider valid search terms
+      if (isValidSearchTerm(newSearchTerm, type)) {
+        // check all existing searchTerms for duplicates
+        var duplicate = hasDuplicate(searchTerms[field], newSearchTerm);
+
+        console.log(newSearchTerm);
+        // delete any existing duplicate and add as a result (maintaining order)
+        if (duplicate != null) {
+          console.log("match duplicate");
+          delete searchTerms[field][duplicate];
+        }
+
+        // check results for duplicates
+        duplicate = hasDuplicate(results, newSearchTerm);
+
+        // only add new result if it doesn't exist already
+        if (duplicate != null) {
+          console.log("results duplicate");
+        } else {
+          console.log("NOT duplicate");
+          results[key] = newSearchTerm;
+        }
+      }
+    }
   }
-  return addedSearchTerms;
+  return results;
+}
+
+// returns a node match for searchTerms with params field and key for param type
+function findNodeMatch(field, key, type) {
+  console.log("findMatchByNode: " + key);
+
+  var fieldValue = getSearchTermProperty(field, "data", key),
+      startNodeIndex = getSearchTermProperty(field, "startNodeIndex", key),
+      endNodeIndex = getSearchTermProperty(field, "endNodeIndex", key),
+      // code duplication so 'getSearchTermProperty' for data is not run twice
+      element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
+
+  // iterating to first text node of element, counting characters
+  var nodeIndex = startNodeIndex - 1;
+  var charCount = 0;
+  while (nodeIndex > -1 &&
+         ($.contains(element[0], textNodes[nodeIndex].parentNode) ||
+          textNodes[nodeIndex].parentNode === element[0])) {
+    charCount += textNodes[nodeIndex].nodeValue.trim().length + 1;
+    nodeIndex--;
+  }
+  var startIndex = charCount;
+
+  // iterate through textNodes from startNode to end of endNode, counting characters
+  nodeIndex = startNodeIndex;
+  while (nodeIndex < endNodeIndex && nodeIndex < textNodes.length) {
+    charCount += textNodes[nodeIndex].nodeValue.trim().length + 1;
+    nodeIndex++;
+  }
+  var endIndex = charCount + textNodes[endNodeIndex].nodeValue.trim().length;
+
+  var elementText = getDocumentText(element);
+  console.log("new search term: " + elementText);
+
+  switch (type) {
+    case "money":
+      if (elementText.indexOf("$") === 0) {
+        elementText = elementText.substring(1);
+        startIndex++;
+      }
+
+      // money value must contain a decimal
+      if (elementText.indexOf("$") === elementText.length - 1 || elementText.indexOf(".") === elementText.length - 1) {
+        elementText = elementText.substring(0, elementText.length - 1);
+        endIndex--;
+      }
+      else if (elementText.indexOf(".") === -1) {
+        console.log("searchTerm is not numeric");
+        return;
+      }
+
+    case "number":
+      if (!isNumeric(elementText)) {
+        console.log("searchTerm is not numeric");
+        return;
+      }
+      break;
+    default:
+      break;
+  }
+
+  return {
+    data: fieldValue,
+    start: startIndex,
+    end: endIndex,
+    startNodeIndex: startNodeIndex,
+    endNodeIndex: endNodeIndex
+  };
+}
+
+// returns matches complete by text node
+function findMatchesByNode(field, type) {
+  var keys = Object.keys(searchTerms[field]);
+  var results = [];
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+
+    // do not include 'count' key
+    if (!isNaN(parseInt(key))) {
+      var newSearchTerm = findNodeMatch(field, key, type);
+      if (newSearchTerm == null) {
+        continue;
+      }
+
+      // only consider valid search terms
+      if (isValidSearchTerm(newSearchTerm, type)) {
+        // check all existing searchTerms for duplicates
+        var duplicate = hasDuplicate(searchTerms[field], newSearchTerm);
+
+        console.log(newSearchTerm);
+        // delete any existing duplicate and add as a result (maintaining order)
+        if (duplicate != null) {
+          console.log("match duplicate");
+          delete searchTerms[field][duplicate];
+        }
+
+        // check results for duplicates
+        duplicate = hasDuplicate(results, newSearchTerm);
+
+        // only add new result if it doesn't exist already
+        if (duplicate != null) {
+          console.log("results duplicate");
+        } else {
+          console.log("NOT duplicate");
+          results.push(newSearchTerm);
+        }
+      }
+    }
+  }
+  return results;
+}
+
+// returns matches complete by text node, indexed by original key
+function findSortedMatchesByNode(field, type) {
+  var keys = Object.keys(searchTerms[field]);
+  var results = {};
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+
+    // do not include 'count' key
+    if (!isNaN(parseInt(key))) {
+      var newSearchTerm = findNodeMatch(field, key, type);
+      if (newSearchTerm == null) {
+        continue;
+      }
+
+      // only consider valid search terms
+      if (isValidSearchTerm(newSearchTerm, type)) {
+        // check all existing searchTerms for duplicates
+        var duplicate = hasDuplicate(searchTerms[field], newSearchTerm);
+
+        console.log(newSearchTerm);
+        // delete any existing duplicate and add as a result (maintaining order)
+        if (duplicate != null) {
+          console.log("match duplicate");
+          delete searchTerms[field][duplicate];
+        }
+
+        // check results for duplicates
+        duplicate = hasDuplicate(results, newSearchTerm);
+
+        // only add new result if it doesn't exist already
+        if (duplicate != null) {
+          console.log("results duplicate");
+        } else {
+          console.log("NOT duplicate");
+          results[key] = newSearchTerm;
+        }
+      }
+    }
+  }
+  return results;
+}
+
+// returns a word match for searchTerms with params field and key for param type
+function findWordMatch(field, key, type) {
+  console.log("findMatchByWord: " + key);
+
+  var fieldValue = getSearchTermProperty(field, "data", key),
+      startNodeIndex = getSearchTermProperty(field, "startNodeIndex", key),
+      endNodeIndex = getSearchTermProperty(field, "endNodeIndex", key),
+      startIndex = getSearchTermProperty(field, "start", key),
+      endIndex = getSearchTermProperty(field, "end", key),
+      // code duplication so 'getSearchTermProperty' for data is not run twice
+      element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
+
+  // check if there are any non-space characters to left / right of indices
+  var elementText = getDocumentText(element);
+  var startText = elementText.substring(0, startIndex);
+  //console.log(startText);
+  // while there are no spaces from the end of startText, subtract characters from startIndex
+  var charIndex = startText.length - 1;
+  while (startText.charAt(charIndex).match(/\s/) === null && charIndex !== -1) {
+    charIndex--;
+    startIndex--;
+  }
+
+  var endText = elementText.substring(endIndex);
+  //console.log(endText);
+  charIndex = 0;
+  while (endText.charAt(charIndex).match(/\s/) === null && charIndex !== endText.length) {
+    charIndex++;
+    endIndex++;
+  }
+
+  var finalText = elementText.substring(startIndex, endIndex);
+  console.log("new search term: " + finalText);
+
+  switch (type) {
+    case "money":
+      // remove all exact matches for money category
+      delete searchTerms[field][key];
+
+      if (finalText.indexOf("$") === 0) {
+        finalText = finalText.substring(1);
+        startIndex++;
+      }
+
+      // money value must contain a decimal
+      if (finalText.indexOf("$") === finalText.length - 1 || finalText.indexOf(".") === finalText.length - 1) {
+        finalText = finalText.substring(0, finalText.length - 1);
+        endIndex--;
+      }
+      else if (finalText.indexOf(".") === -1) {
+        console.log("searchTerm is not numeric");
+        return;
+      }
+    case "number":
+      if (!isNumeric(finalText)) {
+        console.log("searchTerm is not numeric");
+        // remove exact match search term if the word is not completely numeric
+        console.log(searchTerms[field][key]);
+        if (searchTerms[field].hasOwnProperty(key)) {
+          delete searchTerms[field][key];
+        }
+        return;
+      }
+      break;
+    default:
+      break;
+  }
+
+  return {
+    data: fieldValue,
+    start: startIndex,
+    end: endIndex,
+    startNodeIndex: startNodeIndex,
+    endNodeIndex: endNodeIndex
+  };
+}
+
+// returns matches complete by word (separated by space characters/text nodes)
+function findMatchesByWord(field, type) {
+  var keys = Object.keys(searchTerms[field]);
+  var results = [];
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+
+    // do not include 'count' key
+    if (!isNaN(parseInt(key))) {
+      var newSearchTerm = findWordMatch(field, key, type);
+      if (newSearchTerm == null) {
+        continue;
+      }
+
+      // only consider valid search terms
+      if (isValidSearchTerm(newSearchTerm, type)) {
+        // check all existing searchTerms for duplicates
+        var duplicate = hasDuplicate(searchTerms[field], newSearchTerm);
+
+        console.log(newSearchTerm);
+        // delete any existing duplicate and add as a result (maintaining order)
+        if (duplicate != null) {
+          console.log("match duplicate");
+          delete searchTerms[field][duplicate];
+        }
+
+        // check results for duplicates
+        duplicate = hasDuplicate(results, newSearchTerm);
+
+        // only add new result if it doesn't exist already
+        if (duplicate != null) {
+          console.log("results duplicate");
+        } else {
+          console.log("NOT duplicate");
+          results.push(newSearchTerm);
+        }
+      }
+    }
+  }
+  return results;
+}
+
+// returns matches complete by word, indexed by original key
+function findSortedMatchesByWord(field, type) {
+  var keys = Object.keys(searchTerms[field]);
+  var results = {};
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+
+    // do not include 'count' key
+    if (!isNaN(parseInt(key))) {
+      var newSearchTerm = findWordMatch(field, key, type);
+      if (newSearchTerm == null) {
+        continue;
+      }
+
+      // only consider valid search terms
+      if (isValidSearchTerm(newSearchTerm, type)) {
+        // check all existing searchTerms for duplicates
+        var duplicate = hasDuplicate(searchTerms[field], newSearchTerm);
+
+        console.log(newSearchTerm);
+        // delete any existing duplicate and add as a result (maintaining order)
+        if (duplicate != null) {
+          console.log("match duplicate");
+          delete searchTerms[field][duplicate];
+        }
+
+        // check results for duplicates
+        duplicate = hasDuplicate(results, newSearchTerm);
+
+        // only add new result if it doesn't exist already
+        if (duplicate != null) {
+          console.log("results duplicate");
+        } else {
+          console.log("NOT duplicate");
+          results[key] = newSearchTerm;
+        }
+      }
+    }
+  }
+  return results;
 }
 
 // returns true if newSearchTerm is valid
@@ -778,20 +1021,38 @@ function isValidSearchTerm(searchTerm, type) {
 }
 
 // returns true if newSearchTerm is a duplicate of a searchTerm in searchTerms[field]
-function hasDuplicate(field, newSearchTerm) {
-  var duplicate = false;
-  var keys = Object.keys(searchTerms[field]);
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    var value = searchTerms[field][key];
+function hasDuplicate(collection, newSearchTerm) {
+  var duplicate = null;
 
-    if (key !== "count" &&
-        value.data === newSearchTerm.data &&
-        value.start === newSearchTerm.start &&
-        value.end === newSearchTerm.end &&
-        value.nodeIndex === newSearchTerm.nodeIndex) {
-      duplicate = true;
-      break;
+  // collection is an array
+  if (Array.isArray(collection)) {
+    for (var i = 0; i < collection.length; i++) {
+      var value = collection[i];
+
+      if (value.data === newSearchTerm.data &&
+          value.start === newSearchTerm.start &&
+          value.end === newSearchTerm.end &&
+          value.nodeIndex === newSearchTerm.nodeIndex) {
+        duplicate = i;
+        break;
+      }
+    }
+  }
+  // collection is an object
+  else {
+    var keys = Object.keys(collection);
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      var value = collection[key];
+
+      if (key !== "count" &&
+          value.data === newSearchTerm.data &&
+          value.start === newSearchTerm.start &&
+          value.end === newSearchTerm.end &&
+          value.nodeIndex === newSearchTerm.nodeIndex) {
+        duplicate = key;
+        break;
+      }
     }
   }
   return duplicate;
@@ -809,13 +1070,7 @@ function getMatches(field, itemIndex) {
         var text = findMatchText(field, keys[index]);
         console.log(text);
         if (itemIndex != null) {
-          matches.push(index + " " + text);
-          // fix gaps caused by removed searchTerms, so search is in numerical order from 0
-          if (keys[index] !== index.toString()) {
-            searchTerms[field][index] = searchTerms[field][keys[index]];
-            delete searchTerms[field][keys[index]];
-            searchTerms[field].count = searchTerms[field].count - 1;
-          }
+          matches.push(text);
         } else {
           matches.push({ "label": text, "value": keys[index] });
         }

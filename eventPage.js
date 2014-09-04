@@ -28,10 +28,10 @@ function sendAttributeTemplate(html, url, domain, generated, attributes, savedDa
   message.savedData = JSON.stringify(savedData);
 
 	var request = $.post(host, message, function (data, status) {
-		alert("Data: " + data + "\nStatus: " + status);
+		//alert("Data: " + data + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
-		alert(xhr.responseText);
+		//alert(xhr.responseText);
 	});
 }
 
@@ -76,10 +76,10 @@ function sendDomain(tabId, html, url, domain) {
     // send content script generated data
     receiptPorts[tabId].postMessage({"request": "generatedData", "generated": generated});
     console.log(generated);
-		alert("Data: " + jsonData + "\nStatus: " + status);
+		//alert("Data: " + jsonData + "\nStatus: " + status);
 	})
 	.fail( function(xhr, textStatus, errorThrown) {
-		alert(xhr.responseText);
+		//alert(xhr.responseText);
 	});
 }
 
@@ -179,13 +179,13 @@ function postReceiptToWebApp(savedData) {
     data : formData,
     dataType: 'json'
   }).done(function(data){
-    alert("submitted");
+    //alert("submitted");
   }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
     console.error(
       "The following error occurred: " + textStatus,
       errorThrown);
-    alert(jqXHR.responseText);
+    //alert(jqXHR.responseText);
   });
 }
 
@@ -303,25 +303,14 @@ function closeReceipt() {
 // message handling - by request.greeting
 /*
 addReceipt:
-	from: popup.js
+	from: PopUp.js
 	trigger: Add Receipt selected from popup
-	action: creates new addreceipt popup if one does not exist
-
-default:
-{
-pull-off:
-pull-date:
-pull-...:
-}
-	from: addreceipt.js
-	trigger: button toggled on/off for attribute date, etc.
-	action: send content.js the requested pull state
+	action: sets up connection with content script and creates a receipt notification on page
 */
 
 // TODO: In the future we need to encapsulate this into it's own class.
 //       We should be able to "register" each of these cases in the switch
 //       statement and provide a callback.
-//       P.S probably better to utilize actual event pages as well.
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	console.log("onMessage:", request);
 
@@ -341,3 +330,19 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	}
 });
 
+// extension hotkeys defined in manifest.json
+// if new hotkeys are added, completely remove extension and re-add it to your chrome browser to enable
+chrome.commands.onCommand.addListener(function(command) {
+  if (localStorage["authToken"] != null) {
+    switch (command)
+    {
+      case "addReceipt":
+        receiptSetup();
+        break;
+      case "accessVault":
+        chrome.tabs.create({url: "vault/vault.html"});
+        break;
+      default:
+    }
+  }
+});

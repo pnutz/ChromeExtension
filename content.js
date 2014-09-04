@@ -614,6 +614,8 @@ function sortedSearchRequest(source, type, fieldName, text, itemIndex, rowElemen
     field += itemIndex;
   }
 
+  console.log("----------SORTED SEARCH REQUEST " + field + "-----------");
+
   cleanHighlight();
   cleanElementData(field);
   cleanFieldText(fieldName, itemIndex);
@@ -622,10 +624,7 @@ function sortedSearchRequest(source, type, fieldName, text, itemIndex, rowElemen
   searchTerms[field] = searchResults.results;
   searchTerms[field].count = searchResults.count;
 
-  // relevant matches need to be included... how to order?
-  // if ordered already by text match, sort from inside element to outside (element, text node, word, text) - no duplicates
-  // relevant matches needs to apply validation based on type
-  // findRelevantMatches(field, type);
+  findSortedRelevantMatches(field, type);
 
   var results = getMatches(field, itemIndex, type);
   if (results.length > 0) {
@@ -642,6 +641,8 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
   if (itemIndex != null) {
     field += itemIndex;
   }
+
+  console.log("----------SEARCH REQUEST " + field + "-----------");
 
   cleanHighlight();
   cleanElementData(field);
