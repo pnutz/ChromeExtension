@@ -49,7 +49,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
     "data" :  this.mReceiptsData,
     "columnDefs" : [
      { 
-        "targets" : [5, 6], // hide folder ids since we only want them for filtering
+        "targets" : [6, 7], // hide folder ids since we only want them for filtering
         "visible" : false
      },
      { // For formatting the date column
@@ -58,7 +58,20 @@ DataTable.prototype.PopulateTableData_ = function(data) {
          var oDate = new Date(data);
          return oDate.getDate() + '-' + (oDate.getMonth() + 1) + '-' + oDate.getFullYear();
        }
-     }
+     },
+     { // For displaying tags on the receipt level
+       "targets" : 5,
+       "render" : function (data, type, row) {
+         // create an input element to add new tags
+         var input = "";
+         $.each(data, function(index, value) {
+           input += value.name;
+         });
+         input += "<input class='" + self.sTagsFieldClass +"' type='text'" +
+                      "id='receipt-" + row.id + "'/>";
+         return input;
+       }
+     },
     ],
     "columns" : [
       {"data" : "date"},
@@ -66,6 +79,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       {"data" : "transaction_number"},
       {"data" : "total"},
       {"data" : "title"},
+      {"data" : "tags"},
       {"data" : "folder_id"},
       {"data" : "id"}
     ],
@@ -76,7 +90,6 @@ DataTable.prototype.PopulateTableData_ = function(data) {
     // $(this) is the jquery object for the current row
     // oRow is the DataTable object for the current row 
     var oRow = self.oDataTable.row($(this));
-    console.log(oRow.data());
     if (oRow.child.isShown()) {
       oRow.child.hide();
       $(this).removeClass("shown");
@@ -87,7 +100,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       $(this).addClass("selected");
 
       //Set up the enter key binding event for when enter key pressed
-      $("input").keyup(function(e) {
+      $("input,." + self.sTagsFieldClass).keyup(function(e) {
         if (e.keyCode == 13)
           self.AddTag_($(this).attr("id"), $(this).val());
       });
@@ -95,6 +108,10 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   });
 };
 
+/**
+ * @brief retrieve receipts from the server and populate
+ * the table
+ */
 DataTable.prototype.GetReceipts_ = function() {
     var self = this;
     var request = $.ajax({
@@ -150,7 +167,6 @@ DataTable.prototype.IsWithinDate_ =  function(startDate, endDate) {
  * and show only dates that are within range
  */
 DataTable.prototype.FilterFolders_ =  function(aFolders) {
-  console.log(aFolders);
   $.fn.dataTableExt.afnFiltering.push(function( oSettings, aData, iDataIndex ) {
     return $.inArray(aData[colIndex.FOLDER], aFolders) >= 0;
   });
@@ -177,6 +193,8 @@ DataTable.prototype.FormatData_ = function(mRowData) {
         sReceiptItemsList += value["name"] + ", "; 
       });
     }
+    
+    // Add the text input fields for tags after each receipt item
     sReceiptItemsList += "<input type='text' class='" + self.sTagsFieldClass + "' id='receipt-item-" + value["id"] + "'/></li>";
   });
 

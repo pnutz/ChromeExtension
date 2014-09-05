@@ -69,6 +69,10 @@ var Vault =
       console.log("missing credentials");
     }
   },
+
+  /**
+   * @brief the callback for when the date preset field is changed
+   */
   presetChangedCallback: function() {
     var select = parseInt(vData.rangePreset.val());
     if (select == 0)
