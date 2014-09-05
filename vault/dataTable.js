@@ -5,8 +5,9 @@ var colIndex =
   TRANSACTION: 2, 
   TOTAL : 3,
   TITLE : 4, 
-  FOLDER : 5,
-  RECEIPT : 6
+  TAGS : 5,
+  FOLDER : 6,
+  RECEIPT : 7
 };
 
 function DataTable (sId)
