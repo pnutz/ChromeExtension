@@ -474,7 +474,7 @@ window.addEventListener("message", function(event) {
 
         // problem with this is the user can still be typing.. for now the user needs to create template for each field in row
         /*if (event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
-          generateRows(event.data.rowData);
+          ======generateRows();
         }*/
         break;
 
@@ -496,7 +496,7 @@ window.addEventListener("message", function(event) {
 
         // problem with this is the user can still be typing.. for now the user needs to create template for each field in row
         /*if (event.data.itemIndex != null && itemRowGen != null && event.data.itemIndex === itemRowGen.rowIndex) {
-          generateRows(event.data.rowData);
+          =======generateRows();
         }*/
         break;
 
@@ -574,7 +574,7 @@ window.addEventListener("message", function(event) {
       // returned item row to ensure it is filled out before generating item rows
       case "returnRowData":
         if (event.data.data != null && event.data.data.index === itemRowGen.rowIndex) {
-          generateRows(event.data.data);
+          generateRows(event);
         }
         break;
 
@@ -585,12 +585,13 @@ window.addEventListener("message", function(event) {
 });
 
 // check if all row attributes are filled out and return generated rows to handsontable
-function generateRows(row) {
-  var keys = Object.keys(event.data.data);
+function generateRows(event) {
+  var row = event.data.data;
+  var keys = Object.keys(row);
   var rowValid = true;
   if (keys.length > 1) {
     for (var i = 0; i < keys.length; i++) {
-      if (event.data.data[keys[i]] == null || event.data.data[keys[i]].length === 0) {
+      if (row[keys[i]] == null || row[keys[i]].length === 0) {
         rowValid = false;
         console.log(keys[i] + " blank");
         break;

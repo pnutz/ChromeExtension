@@ -561,13 +561,17 @@ function findElementMatch(field, key, type) {
 
   switch (type) {
     case "money":
-      if (elementText.indexOf("$") === 0) {
-        elementText = elementText.substring(1);
-        startIndex++;
+
+      var dollarSign = elementText.indexOf("$");
+
+      // $ in front of the dollar amount, if text starts with $ or text in front of $ is not numeric
+      if (dollarSign === 0 || isNaN(parseInt(elementText.substring(0, dollarSign)))) {
+        elementText = elementText.substring(dollarSign + 1);
+        startIndex += 1 + dollarSign;
       }
 
-      // money value must contain a decimal
-      if (elementText.indexOf("$") === elementText.length - 1 || elementText.indexOf(".") === elementText.length - 1) {
+      // money value must contain a decimal, trim symbol from end of dollar amount
+      if (dollarSign === elementText.length - 1 || elementText.indexOf(".") === elementText.length - 1) {
         elementText = elementText.substring(0, elementText.length - 1);
         endIndex--;
       }
@@ -714,13 +718,16 @@ function findNodeMatch(field, key, type) {
 
   switch (type) {
     case "money":
-      if (elementText.indexOf("$") === 0) {
-        elementText = elementText.substring(1);
-        startIndex++;
+      var dollarSign = elementText.indexOf("$");
+
+      // $ in front of the dollar amount, if text starts with $ or text in front of $ is not numeric
+      if (dollarSign === 0 || isNaN(parseInt(elementText.substring(0, dollarSign)))) {
+        elementText = elementText.substring(dollarSign + 1);
+        startIndex += 1 + dollarSign;
       }
 
-      // money value must contain a decimal
-      if (elementText.indexOf("$") === elementText.length - 1 || elementText.indexOf(".") === elementText.length - 1) {
+      // money value must contain a decimal, trim symbol from end of dollar amount
+      if (dollarSign === elementText.length - 1 || elementText.indexOf(".") === elementText.length - 1) {
         elementText = elementText.substring(0, elementText.length - 1);
         endIndex--;
       }
@@ -873,13 +880,16 @@ function findWordMatch(field, key, type) {
       // remove all exact matches for money category
       delete searchTerms[field][key];
 
-      if (finalText.indexOf("$") === 0) {
-        finalText = finalText.substring(1);
-        startIndex++;
+      var dollarSign = finalText.indexOf("$");
+
+      // $ in front of the dollar amount, if text starts with $ or text in front of $ is not numeric
+      if (dollarSign === 0 || isNaN(parseInt(finalText.substring(0, dollarSign)))) {
+        finalText = finalText.substring(dollarSign + 1);
+        startIndex += 1 + dollarSign;
       }
 
-      // money value must contain a decimal
-      if (finalText.indexOf("$") === finalText.length - 1 || finalText.indexOf(".") === finalText.length - 1) {
+      // money value must contain a decimal, trim symbol from end of dollar amount
+      if (dollarSign === finalText.length - 1 || finalText.indexOf(".") === finalText.length - 1) {
         finalText = finalText.substring(0, finalText.length - 1);
         endIndex--;
       }
