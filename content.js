@@ -381,6 +381,12 @@ chrome.runtime.onConnect.addListener(function(port) {
             console.log("parent element is null");
           }
         }
+        else if (msg.request == "getFolders"){
+          console.log(msg.folderData);
+
+          var message = { response: "getFolders", folderData: msg.folderData };
+          document.getElementById('twoReceiptIFrame').contentWindow.postMessage(message, '*');
+        }
       }
     });
 
@@ -438,6 +444,9 @@ window.addEventListener("message", function(event) {
 
     switch (event.data.request) {
 
+      case "getFolders":
+        incomingPort.postMessage({ request: "getFolders" });
+        break;
       // user submitted receipt, send all data to eventPage
       case "saveReceipt":
         if (event.data.savedData != null) {

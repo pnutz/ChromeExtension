@@ -84,6 +84,7 @@ var NotiBar =
     this.initAutoComplete("taxes");
 
     this.initValidation();
+    this.initGetFolders();
 
     // on receipt submit, validate data and send dictionary of form data to content script
     $("#receipt-submit").click(function()
@@ -133,6 +134,12 @@ var NotiBar =
         }
       }, delay));
     });
+  },
+
+  initGetFolders: function()
+  {
+    var message = { request: "getFolders"};
+    window.parent.postMessage(message, "*");
   },
 
   initValidation: function()
@@ -575,6 +582,16 @@ window.addEventListener("message", function(event) {
           });
         }
       });
+    }
+    else if (event.data.response == "getFolders")
+    {
+      var select = document.getElementById('folders');
+      for(var i = 0; i < event.data.folderData.length; i++) {
+        option = document.createElement("option");
+        option.value = event.data.folderData[i].id;
+        option.innerHTML = event.data.folderData[i].name;
+        select.appendChild(option);
+    }
     }
     // interaction with highlighted data
     else if (event.data.request === "highlightSelected")
