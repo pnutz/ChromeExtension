@@ -1,3 +1,8 @@
+html,body{
+  /* set html and body to 100% so that
+   * navbar can be 100% height as well*/
+  height: 100%;
+}
 a.tabHeader
 {
   font-weight: bold;
@@ -26,4 +31,14 @@ a.tabHeader
 #vault-folders-navbar > .subfolder > a 
 {
   padding: 2px 15px;
+}
+
+#vault-main-container
+{
+  height: 100%;
+}
+
+#vault-navbar-container
+{
+  height: 100%;
 }
