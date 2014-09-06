@@ -1,10 +1,10 @@
-var colIndex = 
+var colIndex =
 {
   DATE : 0,
   VENDOR: 1,
-  TRANSACTION: 2, 
+  TRANSACTION: 2,
   TOTAL : 3,
-  TITLE : 4, 
+  TITLE : 4,
   TAGS : 5,
   FOLDER : 6,
   RECEIPT : 7
@@ -26,7 +26,7 @@ DataTable.prototype.Init = function(controllers)
 {
   this.oControllers = controllers;
   this.GetReceipts_();
-  
+
 };
 
 DataTable.prototype.ShowFolders = function (aFolders) {
@@ -49,7 +49,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   this.oDataTable = this.oElem.DataTable({
     "data" :  this.mReceiptsData,
     "columnDefs" : [
-     { 
+     {
         "targets" : [6, 7], // hide folder ids since we only want them for filtering
         "visible" : false
      },
@@ -89,7 +89,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   // set up showing child rows when receipt row is clicked
   this.oElem.find("tbody").on("click", "tr", function() {
     // $(this) is the jquery object for the current row
-    // oRow is the DataTable object for the current row 
+    // oRow is the DataTable object for the current row
     var oRow = self.oDataTable.row($(this));
     if (oRow.child.isShown()) {
       oRow.child.hide();
@@ -146,7 +146,7 @@ DataTable.prototype.GetReceipts_ = function() {
 };
 
 /**
- * @brief custom filtering of DataTale to filter 
+ * @brief custom filtering of DataTale to filter
  * and show only dates that are within range
  */
 DataTable.prototype.IsWithinDate_ =  function(startDate, endDate) {
@@ -164,7 +164,7 @@ DataTable.prototype.IsWithinDate_ =  function(startDate, endDate) {
 };
 
 /**
- * @brief custom filtering of DataTale to filter 
+ * @brief custom filtering of DataTale to filter
  * and show only dates that are within range
  */
 DataTable.prototype.FilterFolders_ =  function(aFolders) {
@@ -191,16 +191,16 @@ DataTable.prototype.FormatData_ = function(mRowData) {
     if ("tags" in value) {
       sReceiptItemsList += " Tags: "
       $.each(value["tags"], function(index, value) {
-        sReceiptItemsList += value["name"] + ", "; 
+        sReceiptItemsList += value["name"] + ", ";
       });
     }
-    
+
     // Add the text input fields for tags after each receipt item
     sReceiptItemsList += "<input type='text' class='" + self.sTagsFieldClass + "' id='receipt-item-" + value["id"] + "'/></li>";
   });
 
   sReceiptItemsList += '</ul>'
-  var sFormat = 
+  var sFormat =
     '<table><tr><td>' + sDetailsFormat + '</td><td>' + sReceiptItemsList + '</td></tr></table>';
   console.log(sFormat);
   return sFormat;
@@ -217,8 +217,8 @@ DataTable.prototype.AddTag_ = function(sElementId, sName) {
   var sType = aIdSplit.length > 2 ? "receipt_item" : "receipt";
   var mData = { name : sName};
   var sUrl = self.oControllers.AppendCred(
-    self.oControllers.GetUrl("tags") + 
-    "/" + sType + 
+    self.oControllers.GetUrl("tags") +
+    "/" + sType +
     "/" + aIdSplit[aIdSplit.length - 1]+".json");
 
   var request = $.ajax({

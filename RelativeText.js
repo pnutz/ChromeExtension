@@ -76,10 +76,16 @@ RelativeText.prototype.calculateElementText = function(element) {
   // initialize end before start is finalized
   var end = start;
 
-  // leftText should start at index 0?
-  var leftIndex = textNodes[index].nodeValue.trim().indexOf(this.leftText);
-  if (leftIndex === 0) {
-    start += this.leftText.length;
+  var leftText = this.leftText;
+  var leftIndex = textNodes[index].nodeValue.trim().indexOf(leftText);
+  // trim off characters from the beginning of leftText until length is 3 or match found
+  while (leftIndex === -1 && leftText.length > 3) {
+    leftText = leftText.substring(1);
+    leftIndex = textNodes[index].nodeValue.trim().indexOf(leftText);
+  }
+
+  if (leftIndex !== -1) {
+    start += leftIndex + leftText.length;
   }
 
   // set startNodeIndex
@@ -102,10 +108,26 @@ RelativeText.prototype.calculateElementText = function(element) {
     elementNodeIndex++;
   }
 
-  // rightText should start at text length - rightText.length?
   var endNodeText = textNodes[index].nodeValue.trim();
-  var rightIndex = endNodeText.indexOf(this.rightText);
-  if (rightIndex === endNodeText.length - this.rightText.length) {
+  var rightText = this.rightText;
+  var rightIndex = endNodeText.indexOf(rightText);
+  // trim off characters from end of rightText until length is 3 or match found
+  while (rightIndex === -1 && rightText.length > 3) {
+    rightText = rightText.substring(0, rightText.length - 2);
+    rightIndex = endNodeText.indexOf(rightText);
+  }
+
+  // if rightText starts at the beginning of endNodeText, do nothing
+  // if there is a match, add characters to end based on how many characters are missing
+  if (rightIndex > 0) {
+    end += endNodeText.length - rightIndex.length + 1;
+  }
+  // if there isn't a match, add entire endNodeText
+  else if (rightIndex === -1) {
+    end += endNodeText.length + 1;
+  }
+
+  if (rightIndex === endNodeText.length - rightText.length) {
     end += rightIndex;
   } else if (end === 0) {
     end += textNodes[index].nodeValue.trim().length;

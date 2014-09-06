@@ -6,6 +6,8 @@ oldWindowState,
 
 aServerHost = "http://localhost:8888",
 
+apiComm = new ControllerUrls(localStorage["webAppHost"]),
+
 facebookAPI = new FaceBookAPI();
 
 // this needs modification based on final receipt popup values
@@ -138,7 +140,28 @@ function receiptSetup() {
 
       closeReceipt();
     }
+    else if (msg.request == "getFolders"){
+      this.getFolders();
+    }
 	});
+}
+
+function getFolders(){
+  console.log('URL: ' + apiComm.AppendCred(apiComm.GetUrl("folders")));
+  var receiptRequest = $.ajax({
+    url: apiComm.AppendCred(apiComm.GetUrl("folders") + '.json'),
+    type: 'GET',
+    dataType: 'json'
+  }).done(function(data){
+    // alert(data);
+    receiptPorts[currentTabId].postMessage({"request": "getFolders", folderData: data});
+  }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+    console.error(
+      "The following error occurred: " + textStatus,
+      errorThrown);
+    //alert(jqXHR.responseText);
+  });
 }
 
 function postReceiptToWebApp(savedData) {
