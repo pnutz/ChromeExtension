@@ -120,19 +120,15 @@ RelativeText.prototype.calculateElementText = function(element) {
   // if rightText starts at the beginning of endNodeText, do nothing
   // if there is a match, add characters to end based on how many characters are missing
   if (rightIndex > 0) {
-    end += endNodeText.length - rightIndex.length + 1;
-  }
-  // if there isn't a match, add entire endNodeText
-  else if (rightIndex === -1) {
-    end += endNodeText.length + 1;
-  }
-
-  if (rightIndex === endNodeText.length - rightText.length) {
     end += rightIndex;
-  } else if (end === 0) {
-    end += textNodes[index].nodeValue.trim().length;
-  } else {
-    end += textNodes[index].nodeValue.trim().length + 1;
+  }
+  // if there isn't a match or there is no rightText, add entire endNodeText
+  else if (rightText.length === 0 || rightIndex === -1) {
+    if (end === 0) {
+      end += endNodeText.length;
+    } else {
+      end += endNodeText.length + 1;
+    }
   }
 
   text = text.substring(start, end);

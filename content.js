@@ -357,14 +357,14 @@ chrome.runtime.onConnect.addListener(function(port) {
           var parent = elementPath.element;
           console.log(parent);
 
-          if (parent != null) {
-            parent = ElementPath.getParentContainer(parent);
-            console.log(parent);
-
-            /*
+          /*
             set image size to 1/3 original size OR set CSS sizes to 300% before rendering
             http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
           */
+
+          if (parent != null) {
+            parent = ElementPath.getParentContainer(parent);
+            console.log(parent);
 
             // this messes up the page dom, so only run at the end of the receipt submission
             html2canvas(parent[0], {
@@ -377,8 +377,16 @@ chrome.runtime.onConnect.addListener(function(port) {
                 sendReceipt();
               }
             });
-          } else {
-            console.log("parent element is null");
+          }
+          // no parent element, so send entire document
+          else {
+            // this messes up the page dom, so only run at the end of the receipt submission
+            html2canvas($("body")[0], {
+              onrendered: function(canvas) {
+                receipt.savedData.snapshot = canvas.toDataURL("image/png");
+                sendReceipt();
+              }
+            });
           }
         }
         else if (msg.request == "getFolders"){
