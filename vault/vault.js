@@ -7,11 +7,13 @@ var Vault =
   {
     receipts : [],
     dateFormat : "yy-mm-dd",
+    sNavbarItemClass : ".vault-navbar-item-name",
     dataTable : null,
     rangePreset : null,
     endDate : null,
     startDate : null,
-    mClassNames : {}
+    mClassNames : {},
+    iNavBarItemWidth : null
   },
   appendCred_: function(url)
   {
@@ -47,6 +49,23 @@ var Vault =
       e.preventDefault();
       $(this).tab('show');
     });
+
+    $(".vault-navbar-item-name").hide();
+    self.mData.iNavBarItemWidth = $("#vault-navbar > li").width();
+    $("#vault-navbar").mouseenter(function() {
+      $("#vault-navbar-container").stop().animate({width : "8%"}, 
+      {
+        done : function(animation, jumpedToEnd) {
+          $(this).find(self.mData.sNavbarItemClass).stop().show("slow");
+        }
+      });
+  //    $(this).find(self.mData.sNavbarItemClass).stop().show();
+    });
+    $("#vault-navbar").mouseleave(function() {
+      $(this).find(self.mData.sNavbarItemClass).stop().hide("slow");
+      $("#vault-navbar-container").stop().animate({width : self.mData.iNavBarItemWidth + "px"});
+    });
+
 
     // For when user clicks the new folder button
     $('#new-folder-submit').click(function (e) {

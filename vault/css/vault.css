@@ -2,6 +2,7 @@ html,body{
   /* set html and body to 100% so that
    * navbar can be 100% height as well*/
   height: 100%;
+  min-height: 100% !important
 }
 a.tabHeader
 {
@@ -38,7 +39,27 @@ a.tabHeader
   height: 100%;
 }
 
+#vault-main-view
+{
+  float: left;
+  width: 90%;
+  height: 100%;
+}
+
+#vault-navbar
+{
+  align: center;
+  height: 100%;
+  background-color: #585858;
+/*  z-index: 4;*/
+/*  position: fixed;*/
+}
+
 #vault-navbar-container
 {
+  float: left;
   height: 100%;
+  background-color: #585858;
+/*  z-index: 4;*/
+/*  position: fixed;*/
 }

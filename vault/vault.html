@@ -13,6 +13,7 @@
 		<link rel="stylesheet" href="../css/jquery-ui-1.9.2.custom.min.css">
     <link rel="stylesheet" type="text/css" href="../js/DataTables-1.10.0/media/css/jquery.dataTables.css">
 		<link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 	</head>
   <body>
     
@@ -49,42 +50,45 @@
       </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
 
-    <div id="vault-main-container" class="row">
-      <div id="vault-navbar-container" class="col-md-1">
+      <div id="vault-navbar-container">
         <ul id="vault-navbar" class="nav nav-pills nav-stacked">
           <li class="active">
             <a href="#vault" class="tabHeader">
-              <span class="glyphicon glyphicon-align-justify"</span>
+              <span class="glyphicon glyphicon-align-justify"></span>
+              <span class="vault-navbar-item-name">Vault</span>
             </a>
           </li>
           <li>
             <a href="#bills" class="tabHeader">
               <span class="glyphicon glyphicon-pencil"></span>
+              <span class="vault-navbar-item-name">Bills</span>
             </a>
           </li>
           <li>
             <a href="#subscriptions" class="tabHeader">
               <span class="glyphicon glyphicon-inbox"></span>
+              <span class="vault-navbar-item-name">Subscriptions</span>
             </a>
           </li>
           <li>
             <a href="#orders" class="tabHeader">
               <span class="glyphicon glyphicon-plane"></span>
+              <span class="vault-navbar-item-name">Orders</span>
             </a>
           </li>
           <li>
             <a href="#settings" class="tabHeader">
               <span class="glyphicon glyphicon-cog"></span>
+              <span class="vault-navbar-item-name">Settings</span>
             </a>
           </li>
         </ul>
       </div>
-
-      <div class="col-md-11">
+      <div id="vault-main-view">
         <div class="tab-content">
           <div class="tab-pane active" id="vault">
             <div class="row">
-              <div class="col-md-2">
+              <div class="col-xs-1 col-md-1">
                 <ul id="vault-folders-navbar" class="nav nav-pills nav-stacked">
                   <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">Recent/All</a></li>
                 </ul>
@@ -138,7 +142,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="tab-pane col-md-10" id="folders">
+                <div class="tab-pane col-xs-11 col-md-11" id="folders">
                 </div>
               </div>
             </div>
@@ -157,6 +161,5 @@
           </div>
         </div>
       </div>
-    </div>
 	</body>
 </html>
