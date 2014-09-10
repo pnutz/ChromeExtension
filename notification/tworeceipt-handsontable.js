@@ -608,6 +608,7 @@ var TwoReceiptHandsOnTable =
     for (var i = 0; i < this.configurations.itemColumns.length; i++) {
       this.receiptItemTable.handsontable('setDataAtCell', rowNum, i, data[this.configurations.itemColumns[i]]);
     }
+    console.log(this.rows);
   },
 
   deleteItemRow: function(rowNum)
@@ -619,7 +620,7 @@ var TwoReceiptHandsOnTable =
   {
     var receiptItems = {};
     // Minus one row since there is always an extra empty row
-    var rowsToIterate = this.rows.length - this.configurations.minSpareRows;
+    var rowsToIterate = this.rows.length;
     for (var i = 0; i < rowsToIterate; i++)
     {
       var thisRow;
