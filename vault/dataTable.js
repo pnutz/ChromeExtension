@@ -32,8 +32,11 @@ DataTable.prototype.Init = function(controllers)
 DataTable.prototype.ShowFolders = function (aFolders) {
   $.fn.dataTableExt.afnFiltering.pop();
   this.oElem.dataTable().fnDraw();
-  this.FilterFolders_(aFolders)
-  this.oElem.dataTable().fnDraw();
+  // Only filter if array is not empty
+  if (aFolders.length > 0) {
+    this.FilterFolders_(aFolders)
+    this.oElem.dataTable().fnDraw();
+  }
 };
 
 DataTable.prototype.ShowDateRange = function (oStartDate, oEndDate) {
@@ -48,6 +51,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   this.mReceiptsData = data;
   this.oDataTable = this.oElem.DataTable({
     "data" :  this.mReceiptsData,
+    "paging" : false,
     "columnDefs" : [
      {
         "targets" : [6, 7], // hide folder ids since we only want them for filtering
@@ -66,7 +70,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
          // create an input element to add new tags
          var input = "";
          $.each(data, function(index, value) {
-           input += value.name;
+           input += self.GetTagHtml_(value.name);
          });
          input += "<input class='" + self.sTagsFieldClass +"' type='text'" +
                       "id='receipt-" + row.id + "'/>";
@@ -191,7 +195,7 @@ DataTable.prototype.FormatData_ = function(mRowData) {
     if ("tags" in value) {
       sReceiptItemsList += " Tags: "
       $.each(value["tags"], function(index, value) {
-        sReceiptItemsList += value["name"] + ", ";
+        sReceiptItemsList += self.GetTagHtml_(value["name"]);
       });
     }
 
@@ -234,6 +238,19 @@ DataTable.prototype.AddTag_ = function(sElementId, sName) {
         "The following error occurred: " + textStatus,
         errorThrown);
     });
+};
+
+/**
+ * @brief Format an html string to render the tags
+ * @param sTagName the name of the tag to render 
+ * @return html to render the tag
+ */
+DataTable.prototype.GetTagHtml_ = function (sTagName)
+{
+  var sTagHtml = "<span class='tag-label label label-default'>" + sTagName + 
+                 "<span class='tag-label-remove glyphicon glyphicon-remove'></span>" + 
+                 "</span>";
+  return sTagHtml;
 };
 
 

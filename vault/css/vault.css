@@ -44,6 +44,7 @@ a.tabHeader
   float: left;
   width: 90%;
   height: 100%;
+  overflow:auto;
 }
 
 #vault-navbar
