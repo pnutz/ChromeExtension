@@ -110,7 +110,7 @@ var PopUp =
     // facebook login
     this.buttons.fbLogin.on("click", function()
     {
-      chrome.runtime.sendMessage({greeting: "FB_LOGIN_OAUTH"});
+      chrome.runtime.sendMessage({request: "FB_LOGIN_OAUTH"});
     });
 
     // Registration button
@@ -149,7 +149,7 @@ var PopUp =
     {
       chrome.tabs.query({active: true, currentWindow: true}, function (tab) {
         console.log("GET HTML");
-        chrome.tabs.sendMessage(tab[0].id, {greeting: "getHTML"}, function(response) {
+        chrome.tabs.sendMessage(tab[0].id, {request: "getHTML"}, function(response) {
           if (response.farewell === "sendHTML") {
             // html getter tool
             var textfile = "datadump.txt";
@@ -210,7 +210,7 @@ var PopUp =
 
     this.buttons.showReceiptForm.on("click", function()
     {
-      chrome.extension.sendMessage({greeting: "addReceipt"});
+      chrome.extension.sendMessage({request: "addReceipt"});
       window.close();
     });
   }

@@ -61,7 +61,7 @@ $(document).ready(function () {
         $("." + CLASS_NAME).append(second_text_id);
 
 				var msgData = {
-					response: htmlGet.substring(5),
+					request: htmlGet.substring(5),
 					selection: elementText.replace(/\n/g, ""),
 					data: element[0].outerHTML,
 					html: document.body.outerHTML,
@@ -150,7 +150,7 @@ $(document).ready(function () {
         }
 
 				var msgData = {
-					response: htmlGet.substring(5),
+					request: htmlGet.substring(5),
 					selection: textSelection.replace(/\n/g, ""),
 					data: commonAncestorContainer.outerHTML,
 					html: document.body.outerHTML,
@@ -214,7 +214,7 @@ $(document).ready(function () {
 			// submission with <ENTER> triggers HERE2
 			submitElement.click(function(event) {
 				//alert("HERE2");
-				chrome.runtime.sendMessage({ greeting: "purchaseComplete" });
+				chrome.runtime.sendMessage({ request: "purchaseComplete" });
 			});
 		}
 	}
@@ -252,7 +252,7 @@ $(document).ready(function () {
 			// submission with <ENTER> triggers HERE2
 			submitElement.click(function(event) {
 				//alert("HERE2");
-				chrome.runtime.sendMessage({ greeting: "purchaseComplete" });
+				chrome.runtime.sendMessage({ request: "purchaseComplete" });
 			});
 		}
 	}
@@ -329,71 +329,76 @@ chrome.runtime.onConnect.addListener(function(port) {
       console.log("Received msg: " + msg.request + " for port: " + port.name);
       // receive receipt notification-related messages
       if (port.name === "receiptPort") {
-        // send basic page data so aServer can generate data
-        if (msg.request === "initializeReceipt") {
-          var msgData = {
-            response: msg.request,
-            html: document.body.outerHTML,
-            url: location.href,
-            domain: messageDomain
-          };
+        switch (msg.request) {
+          // send basic page data so aServer can generate data
+          case "initializeReceipt":
+            var msgData = {
+              request: msg.request,
+              html: document.body.outerHTML,
+              url: location.href,
+              domain: messageDomain
+            };
 
-          createNotification();
+            createNotification();
 
-          // delay response so generated data comes later (handsontable not fully generated yet)
-          setTimeout(function() {
-            incomingPort.postMessage(msgData);
-          }, 400);
-        }
-        // receive generated data
-        else if (msg.request === "generatedData") {
-          generated = msg.generated;
+            // delay response so generated data comes later (handsontable not fully generated yet)
+            setTimeout(function() {
+              incomingPort.postMessage(msgData);
+            }, 400);
+            break;
 
-          // send generated data to receipt notification
-          document.getElementById('twoReceiptIFrame').contentWindow.postMessage(msg, "*");
-        }
-        else if (msg.request === "takeSnapshot") {
-          // try hard-copying jquery to get parent isolated from DOM, so DOM is not messed up with canvas
-          var parent = elementPath.element;
-          console.log(parent);
+          // receive generated data
+          case "generatedData":
+            generated = msg.generated;
 
-          /*
-            set image size to 1/3 original size OR set CSS sizes to 300% before rendering
-            http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
-          */
+            // send generated data to receipt notification
+            document.getElementById('twoReceiptIFrame').contentWindow.postMessage(msg, "*");
+            break;
 
-          if (parent != null) {
-            parent = ElementPath.getParentContainer(parent);
+          case "takeSnapshot":
+            // try hard-copying jquery to get parent isolated from DOM, so DOM is not messed up with canvas
+            var parent = elementPath.element;
             console.log(parent);
 
-            // this messes up the page dom, so only run at the end of the receipt submission
-            html2canvas(parent[0], {
-              onrendered: function(canvas) {
-                //var data = canvas.toDataURL("image/gif").replace("image/jpeg", "image/octet-stream");
-                //window.location.href = data;
-                //document.body.appendChild(canvas);
+            /*
+            set image size to 1/3 original size OR set CSS sizes to 300% before rendering
+            http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
+            */
 
-                receipt.savedData.snapshot = canvas.toDataURL("image/png");
-                sendReceipt();
-              }
-            });
-          }
-          // no parent element, so send entire document
-          else {
-            // this messes up the page dom, so only run at the end of the receipt submission
-            html2canvas($("body")[0], {
-              onrendered: function(canvas) {
-                receipt.savedData.snapshot = canvas.toDataURL("image/png");
-                sendReceipt();
-              }
-            });
-          }
-        }
-        else if (msg.request == "getFolders"){
-          console.log(msg.folderData);
+            if (parent != null) {
+              parent = ElementPath.getParentContainer(parent);
+              console.log(parent);
 
-          var message = { response: "getFolders", folderData: msg.folderData };
-          document.getElementById('twoReceiptIFrame').contentWindow.postMessage(message, '*');
+              // this messes up the page dom, so only run at the end of the receipt submission
+              html2canvas(parent[0], {
+                onrendered: function(canvas) {
+                  //var data = canvas.toDataURL("image/gif").replace("image/jpeg", "image/octet-stream");
+                  //window.location.href = data;
+                  //document.body.appendChild(canvas);
+
+                  receipt.savedData.snapshot = canvas.toDataURL("image/png");
+                  sendReceipt();
+                }
+              });
+            }
+            // no parent element, so send entire document
+            else {
+              // this messes up the page dom, so only run at the end of the receipt submission
+              html2canvas($("body")[0], {
+                onrendered: function(canvas) {
+                  receipt.savedData.snapshot = canvas.toDataURL("image/png");
+                  sendReceipt();
+                }
+              });
+            }
+            break;
+
+          case "getFolders":
+            console.log(msg.folderData);
+
+            var message = { request: "getFolders", folderData: msg.folderData };
+            document.getElementById('twoReceiptIFrame').contentWindow.postMessage(message, '*');
+            break;
         }
       }
     });
@@ -409,36 +414,40 @@ chrome.runtime.onConnect.addListener(function(port) {
 
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
-    console.log("running listener function for " + request.greeting);
+    console.log("running listener function for " + request.request);
 		// do not load for iframe
 		if (self === top) {
-      // retrieve url & domain
-      if (request.greeting === "checkUrl") {
-        var messageDomain;
-        if (document.domain === null || document.domain === "") {
-          messageDomain = "DOMAIN";
-        } else {
-          messageDomain = document.domain;
-        }
+      switch (request.request) {
+        // retrieve url & domain
+        case "checkUrl":
+          var messageDomain;
+          if (document.domain === null || document.domain === "") {
+            messageDomain = "DOMAIN";
+          } else {
+            messageDomain = document.domain;
+          }
 
-        var msgData = {
-          response: request.greeting,
-          url: location.href,
-          domain: messageDomain
-        };
-        sendResponse(msgData);
+          var msgData = {
+            request: request.request,
+            url: location.href,
+            domain: messageDomain
+          };
+          sendResponse(msgData);
+          break;
+
+        // get page html
+        case "getHTML":
+          sendResponse({
+            data: document.body.outerHTML,
+            farewell: "sendHTML"
+          });
+          break;
+
+        // this is how lastpass does it, by adding a div and iframe element to the current page
+        case "showNotification":
+          createNotification();
+          break;
       }
-      // get page html
-      else if (request.greeting === "getHTML")	{
-				sendResponse({
-					data: document.body.outerHTML,
-					farewell: "sendHTML"
-				});
-			}
-			// this is how lastpass does it, by adding a div and iframe element to the current page
-			else if (request.greeting === "showNotification") {
-				createNotification();
-			}
 		}
 		else {
 			console.log("IFRAME (nothing run) - received onMessage connection instead of port connect");
@@ -455,6 +464,7 @@ window.addEventListener("message", function(event) {
       case "getFolders":
         incomingPort.postMessage({ request: "getFolders" });
         break;
+
       // user submitted receipt, send all data to eventPage
       case "saveReceipt":
         if (event.data.savedData != null) {
@@ -582,7 +592,7 @@ window.addEventListener("message", function(event) {
         if (itemRowGen != null) {
           var message = itemRowGen.generateNextRow();
           if (message !== false && message !== true) {
-            message.response = "newItemRows";
+            message.request = "newItemRows";
             event.source.postMessage(message, event.origin);
           }
         }
@@ -620,7 +630,7 @@ function generateRows(event) {
 
   if (rowValid) {
     var message = itemRowGen.generateAllNextRows();
-    message.response = "newItemRows";
+    message.request = "newItemRows";
     event.source.postMessage(message, event.origin);
   }
 }
@@ -646,7 +656,7 @@ function sortedSearchRequest(source, type, fieldName, text, itemIndex, rowElemen
 
   var results = getMatches(field, itemIndex, type);
   if (results.length > 0) {
-    var message = { response: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex };
+    var message = { request: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex };
     console.log(message);
     source.postMessage(message, event.origin);
     console.log(searchTerms);
@@ -675,7 +685,7 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
     findRelevantMatches(field, type);
 
     var results = getMatches(field, itemIndex, type);
-    var message = { response: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex };
+    var message = { request: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex };
     console.log(message);
     source.postMessage(message, event.origin);
     console.log(searchTerms);
@@ -700,7 +710,12 @@ function prepareReceipt(data, rows, parent) {
       });
     }
 
-    // calculate ElementPath for all templates in savedData
+    // set each attribute value to be its elementPath
+    console.log("ATTRIBUTES");
+    attributes = ElementPath.processAttributePaths(attributes);
+    console.log(attributes);
+
+    // calculate parent ElementPath for all templates in savedData
     var savedPath = new ElementPath();
     // path is calculated in element setter
     savedPath.element = ElementPath.getParentElement(data);
@@ -745,7 +760,7 @@ function prepareReceipt(data, rows, parent) {
 
     // compose message
     receipt = {
-      response: "saveReceipt",
+      request: "saveReceipt",
       html: document.body.outerHTML,
       url: location.href,
       domain: messageDomain,

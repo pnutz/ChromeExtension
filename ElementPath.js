@@ -1,7 +1,7 @@
 // ElementPath class (method to find an element from element body/row - transition from aServer to chrome extension)
 ElementPath.DATA_ATTR = "data-tworeceipt-row";
 ElementPath.CONTAINER_TAGS = ["BODY", "DIV", "P", "TABLE", "UL", "SPAN", "SECTION", "ARTICLE"];
-ElementPath.ROW_TAGS = ["TR", "LI"];
+ElementPath.ROW_TAGS = ["TR", "LI", "DL", "DD"];
 
 function ElementPath(rowIndex, element, path, topElement) {
   if (element != null) {
@@ -79,7 +79,7 @@ Object.defineProperty(ElementPath.prototype, "top", {
         var element = $("[" + ElementPath.DATA_ATTR + this.rowIndex + "='" + this.rowIndex + "']");
         // default to closest row element if there is no top element
         if (element.length === 0) {
-          element = this.findClosestRowElement();
+          element = this.setClosestRowElement();
           // run set method for top
           this.top = element;
         } else {
@@ -124,19 +124,11 @@ ElementPath.prototype.alterPath = function(index, change) {
 
 // find closest row element, compare with any existing elements with attr
 // set attr based on best top element and clean
-ElementPath.prototype.findClosestRowElement = function() {
+ElementPath.prototype.setClosestRowElement = function() {
   var element = null;
 
   if (this.rowIndex != null && this._element != null) {
-    var element = this._element;
-    var tag = element.prop("tagName");
-    var matchFound = $.inArray(tag, ElementPath.ROW_TAGS);
-
-    while (matchFound === -1 && element.parent().length > 0) {
-      element = element.parent();
-      tag = element.prop("tagName");
-      matchFound = $.inArray(tag, ElementPath.ROW_TAGS);
-    }
+    var element = ElementPath.findClosestRowElement(this._element);
 
     // set to parent of containerTag
     if (element.parent().length > 0) {
@@ -214,6 +206,20 @@ ElementPath.prototype.getEndOfPath = function() {
   return element;
 };
 
+// returns closest row element for param element
+ElementPath.findClosestRowElement = function(element) {
+  var tag = element.prop("tagName");
+  var matchFound = $.inArray(tag, ElementPath.ROW_TAGS);
+
+  while (matchFound === -1 && element.parent().length > 0) {
+    element = element.parent();
+    tag = element.prop("tagName");
+    matchFound = $.inArray(tag, ElementPath.ROW_TAGS);
+  }
+
+  return element;
+}
+
 // compares two paths and returns a path representing the parent element
 ElementPath.findParentElementPath = function(path1, path2) {
   console.log("compare parent element path");
@@ -265,6 +271,61 @@ ElementPath.setParentRow = function(elementPaths) {
   }
 
   return top;
+};
+
+// set each value in attributes to be its elementPath and calculate row attr elementPath
+ElementPath.processAttributePaths = function(attributes, isItemField) {
+  var elementPaths = {};
+  var keys = Object.keys(attributes);
+
+  if (isItemField == null) {
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+
+      if (key !== "items") {
+        var keyElement = $("[data-tworeceipt-" + key + "-start]");
+        if (keyElement.length > 0) {
+          var path = new ElementPath(null, keyElement);
+          elementPaths[key] = path.path;
+        }
+      } else {
+        elementPaths[key] = ElementPath.processAttributePaths(attributes[key], true);
+      }
+    }
+  } else {
+    for (var i = 0; i < keys.length; i++) {
+      var itemIndex = keys[i];
+      var itemValue = attributes[itemIndex];
+      elementPaths[itemIndex] = {};
+
+      var itemKeys = Object.keys(itemValue);
+      var parentElement = null;
+      for (var j = 0; j < itemKeys.length; j++) {
+        var itemAttr = itemKeys[j];
+        var keyElement = $("[data-tworeceipt-" + itemAttr + itemIndex + "-start]");
+        if (keyElement.length > 0) {
+          var path = new ElementPath(null, keyElement);
+          elementPaths[itemIndex][itemAttr] = path.path;
+
+          // set parentElement to most-parent element
+          if (parentElement != null) {
+            parentElement = ElementPath.findParent(parentElement, keyElement);
+          } else {
+            parentElement = keyElement;
+          }
+        }
+      }
+
+      // process row attribute elementPath
+      if (parentElement != null) {
+        var parentElement = ElementPath.findClosestRowElement(parentElement);
+        var rowPath = new ElementPath(null, parentElement);
+        elementPaths[itemIndex].row = rowPath.path;
+      }
+    }
+  }
+
+  return elementPaths;
 };
 
 // returns a DOM element that is a parent to all template fields

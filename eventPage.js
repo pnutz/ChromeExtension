@@ -106,12 +106,10 @@ function receiptSetup() {
 	receiptPorts[currentTabId].onMessage.addListener(function(msg) {
     if (msg.request) {
       console.log("Received message: " + msg.request + " for port: " + receiptPorts[currentTabId].name);
-    } else {
-      console.log("Received message: " + msg.response + " for port: " + receiptPorts[currentTabId].name);
     }
 
     // message node js server html & domain data
-		if (msg.response === "initializeReceipt") {
+		if (msg.request === "initializeReceipt") {
       sendDomain(currentTabId, msg.html, msg.url, msg.domain);
     }
     // resize window in preparation for snapshot
@@ -120,7 +118,7 @@ function receiptSetup() {
       receiptPorts[currentTabId].postMessage({ request: "takeSnapshot" });
     }
     // send receipt information and clean up
-    else if (msg.response === "saveReceipt") {
+    else if (msg.request === "saveReceipt") {
       console.log(msg);
 
       postReceiptToWebApp(msg.savedData);
@@ -252,8 +250,8 @@ function resizeToOriginalPage() {
 }
 
 function checkUrl(tabId) {
-  chrome.tabs.sendMessage(tabId, { greeting: "checkUrl" }, function(response) {
-    if (response.url !== undefined) {
+  chrome.tabs.sendMessage(tabId, { request: "checkUrl" }, function(response) {
+    if (response.url != null) {
       console.log("TODO: send url to aServer - " + response.url);
     } else {
       console.log("TODO: send url to aServer");
@@ -323,7 +321,7 @@ function closeReceipt() {
   }
 }
 
-// message handling - by request.greeting
+// message handling - by request.request
 /*
 addReceipt:
 	from: PopUp.js
@@ -337,7 +335,7 @@ addReceipt:
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	console.log("onMessage:", request);
 
-	switch (request.greeting)
+	switch (request.request)
 	{
 		// user tried to add receipt from popup
 		case "addReceipt":

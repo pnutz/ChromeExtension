@@ -560,87 +560,71 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // send message using window.parent.postMessage("yes", '*')
 window.addEventListener("message", function(event) {
+  // TODO: chrome extension id
   if (event.origin.indexOf("chrome-extension://") === -1)
   {
     console.log(event.data);
 
-    // generated values for form fields
-    if (event.data.request === "generatedData")
-    {
-      $.each(event.data.generated, function(key, value)
-      {
-        if (key !== "templates" && key !== "elementPaths" && key !== "items")
-        {
-          NotiBar.setFieldValue(key, value);
-        }
-        else if (key === "items")
-        {
-          $.each(value, function(itemKey, itemValue)
-          {
-            console.log(itemValue);
-            TwoReceiptHandsOnTable.addItemRow(itemValue);
-          });
-        }
-      });
-    }
-    else if (event.data.response == "getFolders")
-    {
-      var select = document.getElementById('folders');
-      for(var i = 0; i < event.data.folderData.length; i++) {
-        option = document.createElement("option");
-        option.value = event.data.folderData[i].id;
-        option.innerHTML = event.data.folderData[i].name;
-        select.appendChild(option);
-    }
-    }
-    // interaction with highlighted data
-    else if (event.data.request === "highlightSelected")
-    {
+    switch(event.data.request) {
+      // generated values for form fields
+      case "generatedData":
+        $.each(event.data.generated, function(key, value) {
+          if (key !== "templates" && key !== "elementPaths" && key !== "items") {
+            NotiBar.setFieldValue(key, value);
+          } else if (key === "items") {
+            $.each(value, function(itemKey, itemValue) {
+              console.log(itemValue);
+              TwoReceiptHandsOnTable.addItemRow(itemValue);
+            });
+          }
+        });
+        break;
 
-    }
-    // search results
-    else if (event.data.response === "searchResults")
-    {
-      // regular form
-      if (event.data.itemIndex == null)
-      {
-        NotiBar.setAutoCompleteOptions(event.data.fieldName, event.data.results);
-      }
-      // handsontable
-      else
-      {
-        // store search results in source so handsontable can switch between sources for different cells
-        if (!TwoReceiptHandsOnTable.source.hasOwnProperty(event.data.itemIndex))
-        {
-          TwoReceiptHandsOnTable.source[event.data.itemIndex] = {};
+      case "getFolders":
+        var select = document.getElementById('folders');
+        for(var i = 0; i < event.data.folderData.length; i++) {
+          option = document.createElement("option");
+          option.value = event.data.folderData[i].id;
+          option.innerHTML = event.data.folderData[i].name;
+          select.appendChild(option);
         }
-        TwoReceiptHandsOnTable.source[event.data.itemIndex][event.data.fieldName] = event.data.results;
+        break;
 
-        // update table autocomplete source and open TwoReceiptEditor
-        TwoReceiptHandsOnTable.updateTableSource(event.data.fieldName, event.data.itemIndex);
-      }
-    }
-    // generated item row
-    else if (event.data.response === "newItemRows")
-    {
-      for (var i = 0; i < event.data.items.length; i++)
-      {
-        TwoReceiptHandsOnTable.addItemRow(event.data.items[i]);
-      }
-    }
-    //
-    else if (event.data.request === "getRowData")
-    {
-      var row = TwoReceiptHandsOnTable.getDataAtRow(event.data.itemIndex);
-      var message = { request: "returnRowData", data: row };
-      window.parent.postMessage(message, "*");
-    }
-    else
-    {
-      if (self !== top)
-      {
+      // interaction with highlighted data
+      case "highlightSelected":
+        break;
 
-      }
+      // search results
+      case "searchResults":
+        // regular form
+        if (event.data.itemIndex == null) {
+          NotiBar.setAutoCompleteOptions(event.data.fieldName, event.data.results);
+        }
+        // handsontable
+        else {
+          // store search results in source so handsontable can switch between sources for different cells
+          if (!TwoReceiptHandsOnTable.source.hasOwnProperty(event.data.itemIndex)) {
+            TwoReceiptHandsOnTable.source[event.data.itemIndex] = {};
+          }
+          TwoReceiptHandsOnTable.source[event.data.itemIndex][event.data.fieldName] = event.data.results;
+
+          // update table autocomplete source and open TwoReceiptEditor
+          TwoReceiptHandsOnTable.updateTableSource(event.data.fieldName, event.data.itemIndex);
+        }
+        break;
+
+      // generated item row
+      case "newItemRows":
+        for (var i = 0; i < event.data.items.length; i++) {
+          TwoReceiptHandsOnTable.addItemRow(event.data.items[i]);
+        }
+        break;
+
+      case "getRowData":
+        var row = TwoReceiptHandsOnTable.getDataAtRow(event.data.itemIndex);
+        var message = { request: "returnRowData", data: row };
+        window.parent.postMessage(message, "*");
+        break;
     }
   }
 });
