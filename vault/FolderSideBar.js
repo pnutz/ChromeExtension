@@ -13,7 +13,9 @@ function FolderSideBar (oElement) {
     newFolderModalSelect : $("#parent-folder-select")
   };
   this.mClassNames = {
-    AddNewFolder : "add-folder-button"
+    AddNewFolder : "add-folder-button",
+    sParentFolder : "parent-folder",
+    sSubFolder : "subfolder"
   };
 }
 
@@ -117,7 +119,7 @@ FolderSideBar.prototype.RenderFolderOnList_ = function(folderData) {
 
     // sub folder specific data
     if (folderData.folder_id !== null) {
-      newListItem.addClass("subfolder");
+      newListItem.addClass(this.mClassNames.sSubFolder);
       newListItem.attr("parent_id", folderData.folder_id);
       newListItem.hide();
       folderData.name = "-" + folderData.name;

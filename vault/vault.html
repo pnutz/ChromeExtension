@@ -89,13 +89,13 @@
           <div class="tab-pane active" id="vault">
             <div class="row">
               <div class="col-xs-1 col-md-1">
-                <ul id="vault-folders-navbar" class="nav nav-pills nav-stacked">
+                <div id="vault-folders-navbar" class="nav nav-pills nav-stacked">
                   <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">Recent/All</a></li>
-                </ul>
+                </div>
               </div>
               <div class="tab-content">
                 <h3 id="folder-name">Recent/All</h3>
-                <div class="tab-pane col-md-10 active" id="vault-receipts-pane">
+                <div class="tab-pane col-md-11 active" id="vault-receipts-pane">
                   <div class="row">
                     <label for="category">Category</label>
                     <select id="category-select" name="category">
@@ -121,22 +121,20 @@
                     </select>
                   </div>
                   <div class="row">
-                    <div class="well well-sm">
-                      <table id="vault-receipts" class="display">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Vendor</th>
-                          <th>Trans. No.</th>
-                          <th>Price</th>
-                          <th>Note</th>
-                          <th>Tags</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                      </tbody>
-                      </table>
-                    </div>
+                    <table id="vault-receipts" class="display">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Vendor</th>
+                        <th>Trans. No.</th>
+                        <th>Price</th>
+                        <th>Note</th>
+                        <th>Tags</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                    </table>
                   </div>
                 </div>
                 <div class="tab-pane col-xs-11 col-md-11" id="folders">

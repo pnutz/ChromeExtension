@@ -20,6 +20,8 @@ function DataTable (sId)
   this.oLatestDate = new Date(0);
   this.oControllers = null;
   this.mReceiptsData = null;
+  this.sTagLabelClass = "tag-label";
+  this.sTagRemoveLabelClass = "tag-label-remove";
 };
 
 DataTable.prototype.Init = function(controllers)
@@ -72,8 +74,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
          $.each(data, function(index, value) {
            input += self.GetTagHtml_(value.name);
          });
-         input += "<input class='" + self.sTagsFieldClass +"' type='text'" +
-                      "id='receipt-" + row.id + "'/>";
+         input += self.GetAddTagHtml_(row.id);
          return input;
        }
      },
@@ -247,11 +248,25 @@ DataTable.prototype.AddTag_ = function(sElementId, sName) {
  */
 DataTable.prototype.GetTagHtml_ = function (sTagName)
 {
-  var sTagHtml = "<span class='tag-label label label-default'>" + sTagName + 
-                 "<span class='tag-label-remove glyphicon glyphicon-remove'></span>" + 
+  var sTagHtml = "<span class='" + this.sTagLabelClass + " label label-default'>" + sTagName + 
+                 "<a href='#'><span class='" + this.sTagRemoveLabelClass + " glyphicon glyphicon-remove'></span></a>" + 
                  "</span>";
   return sTagHtml;
 };
+
+/**
+ * @brief Format an html string to render the add tag button
+ * @param sTagName the name of the tag to render 
+ * @return html to render the tag
+ */
+DataTable.prototype.GetAddTagHtml_ = function (iRowId)
+{
+  var sTagHtml = "<input class='" + this.sTagsFieldClass +"' type='text'" +
+                  "id='receipt-" + iRowId + "'/><span class='label label-default'>" +
+                  "<a href='#'><span class='glyphicon glyphicon-plus'></span></a></span>";
+  return sTagHtml;
+};
+
 
 
 
