@@ -61,6 +61,11 @@ var NotiBar =
                       {
                         id :  "#date",
                         type : fieldTypes.DATE
+                      },
+                    "folders" :
+                      {
+                        id :  "#folders",
+                        type : fieldTypes.SELECT
                       }
                   }
   },
