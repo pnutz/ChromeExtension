@@ -178,6 +178,9 @@ function postReceiptToWebApp(savedData) {
   formData.receipt["transaction_number"] = formData.receipt["transaction"];
   delete formData.receipt["transaction"];
 
+  formData.receipt["folder_id"] = formData.receipt["folders"];
+  delete formData.receipt["folders"];
+
   formData.receipt["title"] = "";
   formData.receipt["currency_id"] = 1;
   //formData.receipt["purchase_type_id"] = 1;

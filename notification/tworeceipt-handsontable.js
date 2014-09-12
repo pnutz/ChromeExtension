@@ -333,6 +333,24 @@ var TwoReceiptHandsOnTable =
         }
       }
 
+//TODO: Works but row is undefined due to some weird ass delay above 150
+      // (function (that) {
+      //     Handsontable.PluginHooks.add( 'afterSelectionEnd', function(rower,column) { 
+      //     console.log('self.index: ' + self.index);
+      //       console.log('rower: ' + rower);
+      //       console.log('row: ' + row);
+
+      //       if ( self.index == rower )
+      //         self.index = self.index + 1;
+      //       else
+      //         self.index = rower;
+            
+      //           var message = { request: "highlightSearchText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row, "value": self.index };
+      //           window.parent.postMessage(message, "*");
+      //     });
+      //   })(this);
+      
+
       if (row != null && Handsontable.helper.isArray(this.cellProperties.source))
       {
         (function (that) {
