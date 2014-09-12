@@ -582,6 +582,10 @@ window.addEventListener("message", function(event) {
 
       case "getFolders":
         var select = document.getElementById('folders');
+        option = document.createElement("option");
+        option.value = "";
+        option.innerHTML = "";
+        select.appendChild(option);
         for(var i = 0; i < event.data.folderData.length; i++) {
           option = document.createElement("option");
           option.value = event.data.folderData[i].id;
