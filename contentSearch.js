@@ -215,21 +215,23 @@ function searchOrderedText(searchTerm, field, rowElement, parentElement, nodeInd
 */
 function findMatch(node, params) {
 
-  var nodeValue = node.nodeValue.trim(),
-      nodeIndex = params.nodeIndex,
-      searchTerm = params.searchTerm,
-      searchElements = params.searchElements,
-      field = params.field,
-      total = params.total,
-      count = params.count,
-      text = params.text,
-      currentIndex = params.currentIndex;
+  var nodeValue = node.nodeValue.trim();
+  var nodeIndex = params.nodeIndex;
+  var searchTerm = params.searchTerm;
+  var searchElements = params.searchElements;
+  var field = params.field;
+  var total = params.total;
+  var count = params.count;
+  var text = params.text;
+  var currentIndex = params.currentIndex;
 
   if (text === "") {
     text = nodeValue;
   } else {
     text += " " + nodeValue;
   }
+  console.log("nodeIndex: " + nodeIndex + " - " + nodeValue);
+  console.log(textNodes[nodeIndex]);
 
   // if searchTerm is found, current text node is the end node for one count
   var index = text.toLowerCase().indexOf(searchTerm.toLowerCase(), currentIndex + 1);
@@ -516,13 +518,13 @@ function isNumeric(n) {
 function findElementMatch(field, key, type) {
   console.log("findMatchByElement: " + key);
 
-  var fieldValue = getSearchTermProperty(field, "data", key),
-      startNodeIndex = getSearchTermProperty(field, "startNodeIndex", key),
-      endNodeIndex = getSearchTermProperty(field, "endNodeIndex", key),
-      startIndex = getSearchTermProperty(field, "start", key),
-      endIndex = getSearchTermProperty(field, "end", key),
+  var fieldValue = getSearchTermProperty(field, "data", key);
+  var startNodeIndex = getSearchTermProperty(field, "startNodeIndex", key);
+  var endNodeIndex = getSearchTermProperty(field, "endNodeIndex", key);
+  var startIndex = getSearchTermProperty(field, "start", key);
+  var endIndex = getSearchTermProperty(field, "end", key);
       // code duplication so 'getSearchTermProperty' for data is not run twice
-      element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
+  var element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
 
   var elementText = getDocumentText(element);
 
@@ -534,30 +536,32 @@ function findElementMatch(field, key, type) {
 
   // calculating for new searchTerm nodeIndex
   var newStartNodeIndex = startNodeIndex;
-  //console.log(textNodes[newStartNodeIndex].nodeValue);
   // keep iterating backwards until start of textNodes, or textNode is not within element, or text node parent is not equal to element
   while (newStartNodeIndex !== 0 &&
-         $.contains(element[0], textNodes[newStartNodeIndex].parentNode) &&
-         textNodes[newStartNodeIndex].parentNode !== element[0]) {
+         ($.contains(element[0], textNodes[newStartNodeIndex].parentNode) ||
+         textNodes[newStartNodeIndex].parentNode === element[0])) {
     newStartNodeIndex--;
     console.log(newStartNodeIndex);
     console.log(textNodes[newStartNodeIndex].nodeValue);
   }
+  newStartNodeIndex++;
 
   var newEndNodeIndex = endNodeIndex;
-  //console.log(textNodes[newEndNodeIndex].nodeValue);
   // keep iterating forwards until end of textNodes, or textNode is not within element, or text node parent is not equal to element
   while (newEndNodeIndex !== textNodes.length - 1 &&
-         $.contains(element[0], textNodes[newEndNodeIndex].parentNode) &&
-         textNodes[newEndNodeIndex].parentNode !== element[0]) {
+         ($.contains(element[0], textNodes[newEndNodeIndex].parentNode) ||
+         textNodes[newEndNodeIndex].parentNode === element[0])) {
     newEndNodeIndex++;
     console.log(textNodes[newEndNodeIndex].nodeValue);
   }
+  newEndNodeIndex--;
 
   startIndex = 0;
   endIndex = elementText.length;
 
   console.log("new search term: " + elementText);
+  console.log(textNodes[newStartNodeIndex]);
+  console.log(textNodes[newEndNodeIndex]);
 
   switch (type) {
     case "money":
@@ -714,7 +718,7 @@ function findNodeMatch(field, key, type) {
   var endIndex = charCount + textNodes[endNodeIndex].nodeValue.trim().length;
 
   var elementText = getDocumentText(element);
-  console.log("new search term: " + elementText);
+  console.log("new search term: " + elementText.substring(startIndex, endIndex));
 
   switch (type) {
     case "money":
@@ -845,13 +849,13 @@ function findSortedMatchesByNode(field, type) {
 function findWordMatch(field, key, type) {
   console.log("findMatchByWord: " + key);
 
-  var fieldValue = getSearchTermProperty(field, "data", key),
-      startNodeIndex = getSearchTermProperty(field, "startNodeIndex", key),
-      endNodeIndex = getSearchTermProperty(field, "endNodeIndex", key),
-      startIndex = getSearchTermProperty(field, "start", key),
-      endIndex = getSearchTermProperty(field, "end", key),
-      // code duplication so 'getSearchTermProperty' for data is not run twice
-      element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
+  var fieldValue = getSearchTermProperty(field, "data", key);
+  var startNodeIndex = getSearchTermProperty(field, "startNodeIndex", key);
+  var endNodeIndex = getSearchTermProperty(field, "endNodeIndex", key);
+  var startIndex = getSearchTermProperty(field, "start", key);
+  var endIndex = getSearchTermProperty(field, "end", key);
+  // code duplication so 'getSearchTermProperty' for data is not run twice
+  var element = $("[data-tworeceipt-" + field + "-search='" + fieldValue + "']");
 
   // check if there are any non-space characters to left / right of indices
   var elementText = getDocumentText(element);
@@ -1308,8 +1312,11 @@ function cleanHighlight() {
       node.parentNode.insertBefore(textNode, node);
       node.parentNode.removeChild(node);
 
+      console.log(nodeIndex);
+      console.log(textNodes);
       // set textNodes reference to new text node
       textNodes[nodeIndex] = textNode;
+      console.log(textNode);
     });
   }
 }
