@@ -28,6 +28,11 @@ a.tabHeader
 {
   padding: 10px;
 }
+#vault-folders-navbar > li > a
+{
+  padding : 5px;
+  font-size: 14px;
+}
 
 #vault-folders-navbar > .subfolder > a 
 {
@@ -56,6 +61,12 @@ a.tabHeader
 /*  position: fixed;*/
 }
 
+#vault-navbar > li > a
+{
+  overflow:hidden;
+  white-space:nowrap;
+}
+
 #vault-navbar-container
 {
   float: left;
@@ -63,6 +74,23 @@ a.tabHeader
   background-color: #585858;
 /*  z-index: 4;*/
 /*  position: fixed;*/
+}
+
+#vault-top-bar
+{
+}
+
+#vault-folders-navbar-column
+{
+  padding: 0px;
+  /* TODO: folder navbar shouldn't shrink when sidebar expanded*/
+/*  min-width:100px;*/
+
+}
+
+#vault-page-content
+{
+  padding:10px;
 }
 
 .tag-label 

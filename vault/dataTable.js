@@ -20,6 +20,7 @@ function DataTable (sId)
   this.oLatestDate = new Date(0);
   this.oControllers = null;
   this.mReceiptsData = null;
+  this.sNoClickExpand = "no-expand";
   this.sTagLabelClass = "tag-label";
   this.sTagRemoveLabelClass = "tag-label-remove";
 };
@@ -74,8 +75,9 @@ DataTable.prototype.PopulateTableData_ = function(data) {
          $.each(data, function(index, value) {
            input += self.GetTagHtml_(value.name);
          });
+
          input += self.GetAddTagHtml_(row.id);
-         return input;
+         return self.WrapTag_(input);
        }
      },
     ],
@@ -92,24 +94,33 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   });
 
   // set up showing child rows when receipt row is clicked
-  this.oElem.find("tbody").on("click", "tr", function() {
-    // $(this) is the jquery object for the current row
+  this.oElem.find("tbody").on("click", "td", function() {
+    // $(this) is the jquery object for the current cell
     // oRow is the DataTable object for the current row
-    var oRow = self.oDataTable.row($(this));
-    if (oRow.child.isShown()) {
-      oRow.child.hide();
-      $(this).removeClass("shown");
-      $(this).removeClass("selected");
-    } else {
-      oRow.child(self.FormatData_(oRow.data())).show();
-      $(this).addClass("shown");
-      $(this).addClass("selected");
+    // TODO: right now the whole tag cell will not expand when clicked
+    // we may want to shrink it so that only the actual tags will prevent
+    // expansion
+    if ($(this).children("." + self.sNoClickExpand).length === 0)
+    {
+      var $row = $(this).parent();
+      var oRow = self.oDataTable.row($row);
+      if (oRow.child.isShown()) {
+        oRow.child.hide();
+        $row.removeClass("shown");
+        $row.removeClass("selected");
+      } else {
+        oRow.child(self.FormatData_(oRow.data())).show();
+        $row.addClass("shown");
+        $row.addClass("selected");
 
-      //Set up the enter key binding event for when enter key pressed
-      $("input,." + self.sTagsFieldClass).keyup(function(e) {
-        if (e.keyCode == 13)
-          self.AddTag_($(this).attr("id"), $(this).val());
-      });
+        //Set up the enter key binding event for when enter key pressed
+        $("." + self.sTagsFieldClass).keyup(function(e) {
+            console.log("got it");
+          if (e.keyCode == 13) {
+            self.AddTag_($(this).attr("id"), $(this).val());
+          }
+        });
+      }
     }
   });
 };
@@ -261,12 +272,22 @@ DataTable.prototype.GetTagHtml_ = function (sTagName)
  */
 DataTable.prototype.GetAddTagHtml_ = function (iRowId)
 {
-  var sTagHtml = "<input class='" + this.sTagsFieldClass +"' type='text'" +
-                  "id='receipt-" + iRowId + "'/><span class='label label-default'>" +
-                  "<a href='#'><span class='glyphicon glyphicon-plus'></span></a></span>";
+  var sTagHtml = "<span contenteditable=true class='label label-default " + this.sTagsFieldClass + "'" + 
+                  "id='receipt-" + iRowId + "'>&nbsp</span>" + 
+                  "<span class='label label-default'>" +
+                  "<a href='#'><span class='glyphicon glyphicon-plus'></span></a>" + 
+                  "</span>";
   return sTagHtml;
 };
 
-
-
-
+/**
+ * @brief wrap the tag related html in a parent span to prevent 
+ * showing the child row
+ * @param sTagHtml html containing the current tags
+ * @return html to render the tag
+ */
+DataTable.prototype.WrapTag_ = function (sTagHtml)
+{
+  var sTagHtml = "<span class='" + this.sNoClickExpand + "'>" + sTagHtml + "</span>";
+  return sTagHtml;
+};

@@ -88,40 +88,48 @@
         <div class="tab-content">
           <div class="tab-pane active" id="vault">
             <div class="row">
-              <div class="col-xs-1 col-md-1">
-                <div id="vault-folders-navbar" class="nav nav-pills nav-stacked">
-                  <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">Recent/All</a></li>
-                </div>
-              </div>
-              <div class="tab-content">
+              <div class="col-xs-12">
                 <h3 id="folder-name">Recent/All</h3>
+              </div>
+            </div>
+            <div class="row">
+              <div id="vault-page-content" class="tab-content">
+                <div id="vault-folders-navbar-column" class="col-xs-1 col-md-1">
+                  <ul id="vault-folders-navbar" class="nav nav-pills nav-stacked">
+                    <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">Recent/All</a></li>
+                  </ul>
+                </div>
                 <div class="tab-pane col-md-11 active" id="vault-receipts-pane">
-                  <div class="row">
                     <label for="category">Category</label>
                     <select id="category-select" name="category">
                     </select>
                     <label for="profile">Profile</label>
                     <select id="profile-select" name="profile">
                     </select>
+                  <div id="vault-top-bar" class="row">
+                    <label for="start-date" class="col-sm-1 control-label">Start Date</label>
+                    <div class="col-sm-2">
+                      <input id="start-date" class="col-sm-2 form-control" name="start-date" type="text">
+                    </div>
+                    <label for="end-date" class="col-sm-1 control-label">End Date</label>
+                    <div class="col-sm-2">
+                      <input id="end-date" class="form-control" name="end-date" type="text">
+                    </div>
+                    <label for="preset-range" class="col-sm-1 control-label">Preset</label>
+                    <div class="col-sm-2">
+                      <select id="vault-date-preset" class="form-control "name="present-range">
+                        <option value="1">Today</option>
+                        <option value="2">Yesterday</option>
+                        <option value="3">This Week</option>
+                        <option value="4">Last Week</option>
+                        <option value="5">This Month</option>
+                        <option value="6">Last Month</option>
+                        <option value="0">Custom</option>
+                      </select>
+                    </div>
                   </div>
                   <div class="row">
-                    <label for="start-date">Start Date</label>
-                    <input id="start-date" name="start-date" type="text">
-                    <label for="end-date">End Date</label>
-                    <input id="end-date" name="end-date" type="text">
-                    <label for="preset-range">Preset</label>
-                    <select id="vault-date-preset" name="present-range">
-                      <option value="1">Today</option>
-                      <option value="2">Yesterday</option>
-                      <option value="3">This Week</option>
-                      <option value="4">Last Week</option>
-                      <option value="5">This Month</option>
-                      <option value="6">Last Month</option>
-                      <option value="0">Custom</option>
-                    </select>
-                  </div>
-                  <div class="row">
-                    <table id="vault-receipts" class="display">
+                    <table id="vault-receipts" class="display" width="100%">
                     <thead>
                       <tr>
                         <th>Date</th>
