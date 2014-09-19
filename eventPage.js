@@ -138,8 +138,11 @@ function receiptSetup() {
 
       closeReceipt();
     }
-    else if (msg.request == "getFolders"){
+    else if (msg.request === "getFolders"){
       this.getFolders();
+    }
+    else if (msg.request === "getCurrencies") {
+      this.getCurrencies();
     }
 	});
 }
@@ -153,6 +156,24 @@ function getFolders(){
   }).done(function(data){
     // alert(data);
     receiptPorts[currentTabId].postMessage({"request": "getFolders", folderData: data});
+  }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+    console.error(
+      "The following error occurred: " + textStatus,
+      errorThrown);
+    //alert(jqXHR.responseText);
+  });
+}
+
+function getCurrencies(){
+  console.log('URL: ' + apiComm.AppendCred(apiComm.GetUrl("currencies")));
+  var receiptRequest = $.ajax({
+    url: apiComm.AppendCred(apiComm.GetUrl("currencies") + '.json'),
+    type: 'GET',
+    dataType: 'json'
+  }).done(function(data){
+    // alert(data);
+    receiptPorts[currentTabId].postMessage({"request": "getCurrencies", currencyData: data});
   }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
     console.error(
@@ -178,13 +199,15 @@ function postReceiptToWebApp(savedData) {
   formData.receipt["transaction_number"] = formData.receipt["transaction"];
   delete formData.receipt["transaction"];
 
-  formData.receipt["folder_id"] = formData.receipt["folders"];
-  delete formData.receipt["folders"];
+  formData.receipt["folder_id"] = formData.receipt["folder"];
+  delete formData.receipt["folder"];
+
+  formData.receipt["currency_id"] = formData.receipt["currency"];
+  delete formData.receipt["currency"];
 
   formData.receipt["title"] = "";
-  formData.receipt["currency_id"] = 1;
+
   //formData.receipt["purchase_type_id"] = 1;
-  // optional folder_id
 
   formData.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: formData.receipt["snapshot"] } };
   delete formData.receipt["snapshot"];
