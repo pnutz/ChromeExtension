@@ -144,6 +144,13 @@ chrome.runtime.onConnect.addListener(function(port) {
             var message = { request: "getFolders", folderData: msg.folderData };
             document.getElementById('twoReceiptIFrame').contentWindow.postMessage(message, '*');
             break;
+
+          case "getCurrencies":
+            console.log(msg.currencyData);
+
+            var message = { request: "getCurrencies", currencyData: msg.currencyData };
+            document.getElementById('twoReceiptIFrame').contentWindow.postMessage(message, '*');
+            break;
         }
       }
     });
@@ -208,6 +215,10 @@ window.addEventListener("message", function(event) {
 
       case "getFolders":
         incomingPort.postMessage({ request: "getFolders" });
+        break;
+
+      case "getCurrencies":
+        incomingPort.postMessage({ request: "getCurrencies" });
         break;
 
       // user submitted receipt, send all data to eventPage

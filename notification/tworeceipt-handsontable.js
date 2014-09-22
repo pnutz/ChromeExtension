@@ -332,23 +332,19 @@ var TwoReceiptHandsOnTable =
           break;
         }
       }
-
-//TODO: Works but row is undefined due to some weird ass delay above 150
-      // (function (that) {
-      //     Handsontable.PluginHooks.add( 'afterSelectionEnd', function(rower,column) { 
-      //     console.log('self.index: ' + self.index);
-      //       console.log('rower: ' + rower);
-      //       console.log('row: ' + row);
-
-      //       if ( self.index == rower )
-      //         self.index = self.index + 1;
-      //       else
-      //         self.index = rower;
+      
+      (function (that) {
+          Handsontable.PluginHooks.add( 'afterSelectionEnd', function(rower,column) { 
+            self.index = rower;
             
-      //           var message = { request: "highlightSearchText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row, "value": self.index };
-      //           window.parent.postMessage(message, "*");
-      //     });
-      //   })(this);
+            var message = { request: "highlightSearchText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row, "value": self.index };
+            window.parent.postMessage(message, "*");
+          });
+
+          Handsontable.PluginHooks.add( 'afterDeselect', function() { 
+              window.parent.postMessage({ request: "highlightText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row }, "*");
+          });
+        })(this);
       
 
       if (row != null && Handsontable.helper.isArray(this.cellProperties.source))
@@ -405,6 +401,7 @@ var TwoReceiptHandsOnTable =
     TwoReceiptEditor.prototype.close = function () {
       Handsontable.editors.AutocompleteEditor.prototype.close.apply(this, arguments);
 
+      Handsontable.PluginHooks.hooks['afterSelectionEnd'] = [];
       console.log("close");
 
       //this.instance.removeHook('beforeKeyDown', onBeforeKeyDownTR);

@@ -52,7 +52,7 @@ var Vault =
     $(".vault-navbar-item-name").hide();
     self.mData.iNavBarItemWidth = $("#vault-navbar > li").width();
     $("#vault-navbar").mouseenter(function() {
-      $("#vault-navbar-container").stop().animate({width : "11%"}, 
+      $("#vault-navbar-container").stop().animate({width : "11%"},
       {
         done : function(animation, jumpedToEnd) {
           $(this).find(self.mData.sNavbarItemClass).stop().show("slow");

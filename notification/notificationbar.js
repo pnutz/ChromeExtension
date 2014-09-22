@@ -62,9 +62,14 @@ var NotiBar =
                         id :  "#date",
                         type : fieldTypes.DATE
                       },
-                    "folders" :
+                    "folder" :
                       {
-                        id :  "#folders",
+                        id :  "#folder",
+                        type : fieldTypes.SELECT
+                      },
+                    "currency" :
+                      {
+                        id :  "#currency",
                         type : fieldTypes.SELECT
                       }
                   }
@@ -90,6 +95,7 @@ var NotiBar =
 
     this.initValidation();
     this.initGetFolders();
+    this.initGetCurrencies();
 
     // on receipt submit, validate data and send dictionary of form data to content script
     $("#receipt-submit").click(function()
@@ -144,6 +150,12 @@ var NotiBar =
   initGetFolders: function()
   {
     var message = { request: "getFolders"};
+    window.parent.postMessage(message, "*");
+  },
+
+  initGetCurrencies: function()
+  {
+    var message = { request: "getCurrencies"};
     window.parent.postMessage(message, "*");
   },
 
@@ -586,15 +598,28 @@ window.addEventListener("message", function(event) {
         break;
 
       case "getFolders":
-        var select = document.getElementById('folders');
+        var select = document.getElementById("folder");
         option = document.createElement("option");
         option.value = "";
         option.innerHTML = "";
         select.appendChild(option);
-        for(var i = 0; i < event.data.folderData.length; i++) {
+        for (var i = 0; i < event.data.folderData.length; i++) {
           option = document.createElement("option");
           option.value = event.data.folderData[i].id;
           option.innerHTML = event.data.folderData[i].name;
+          select.appendChild(option);
+        }
+        break;
+
+      case "getCurrencies":
+        var select = document.getElementById("currency");
+        for (var i = 0; i < event.data.currencyData.length; i++) {
+          option = document.createElement("option");
+          option.value = event.data.currencyData[i].id;
+          option.innerHTML = event.data.currencyData[i].code + " " + event.data.currencyData[i].description;
+          if (event.data.currencyData[i].selected === "true") {
+            option.setAttribute("selected", true);
+          }
           select.appendChild(option);
         }
         break;
