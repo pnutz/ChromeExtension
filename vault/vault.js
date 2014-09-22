@@ -1,4 +1,3 @@
-//var dummyArray = 
 var controllers;
 var vData = null;
 var Vault =

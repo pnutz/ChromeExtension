@@ -1,4 +1,4 @@
-var colIndex =
+var ColIndex =
 {
   DATE : 0,
   VENDOR: 1,
@@ -8,6 +8,12 @@ var colIndex =
   TAGS : 5,
   FOLDER : 6,
   RECEIPT : 7
+};
+
+var TagType = 
+{
+  RECEIPT : 0,
+  RECEIPT_ITEM : 1
 };
 
 function DataTable (sId)
@@ -22,6 +28,7 @@ function DataTable (sId)
   this.mReceiptsData = null;
   this.sNoClickExpand = "no-expand";
   this.sTagLabelClass = "tag-label";
+  this.sAddTagButton = "add-tag";
   this.sTagRemoveLabelClass = "tag-label-remove";
 };
 
@@ -52,7 +59,7 @@ DataTable.prototype.ShowDateRange = function (oStartDate, oEndDate) {
 DataTable.prototype.PopulateTableData_ = function(data) {
   var self = this;
   this.mReceiptsData = data;
-  this.oDataTable = this.oElem.DataTable({
+    this.oDataTable = this.oElem.DataTable({
     "data" :  this.mReceiptsData,
     "paging" : false,
     "columnDefs" : [
@@ -76,7 +83,9 @@ DataTable.prototype.PopulateTableData_ = function(data) {
            input += self.GetTagHtml_(value.name);
          });
 
-         input += self.GetAddTagHtml_(row.id);
+         // row id is also the db id for the receipt
+         input += self.GetTagFieldHtml_(row.id, TagType.RECEIPT);
+         input += self.GetAddTagHtml_(row.id, TagType.RECEIPT);
          return self.WrapTag_(input);
        }
      },
@@ -93,6 +102,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
     ],
   });
 
+  $("." + self.sAddTagButton).click(self.AddTagClickCallBack_);
   // set up showing child rows when receipt row is clicked
   this.oElem.find("tbody").on("click", "td", function() {
     // $(this) is the jquery object for the current cell
@@ -112,10 +122,11 @@ DataTable.prototype.PopulateTableData_ = function(data) {
         oRow.child(self.FormatData_(oRow.data())).show();
         $row.addClass("shown");
         $row.addClass("selected");
-
+        //TODO: temporary, we should only apply the handler to 
+        // visible buttons for this receipt only
+        $("." + self.sAddTagButton).click(self.AddTagClickCallBack_);
         //Set up the enter key binding event for when enter key pressed
         $("." + self.sTagsFieldClass).keyup(function(e) {
-            console.log("got it");
           if (e.keyCode == 13) {
             self.AddTag_($(this).attr("id"), $(this).val());
           }
@@ -123,6 +134,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       }
     }
   });
+
 };
 
 /**
@@ -152,7 +164,7 @@ DataTable.prototype.GetReceipts_ = function() {
       });
 
       self.PopulateTableData_(data);
-            // After getting all the dates, render the data table
+      // After getting all the dates, render the data table
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
@@ -169,7 +181,7 @@ DataTable.prototype.IsWithinDate_ =  function(startDate, endDate) {
   $.fn.dataTableExt.afnFiltering.push(function( oSettings, aData, iDataIndex ) {
     var oMin= startDate.getTime();
     var oMax = endDate.getTime();
-    var oCurr = new Date(aData[colIndex.DATE]).getTime();
+    var oCurr = new Date(aData[ColIndex.DATE]).getTime();
     // Check that the data value is within the date range
     if ( oMin <= oCurr && oCurr <= oMax ) {
       return true;
@@ -185,7 +197,7 @@ DataTable.prototype.IsWithinDate_ =  function(startDate, endDate) {
  */
 DataTable.prototype.FilterFolders_ =  function(aFolders) {
   $.fn.dataTableExt.afnFiltering.push(function( oSettings, aData, iDataIndex ) {
-    return $.inArray(aData[colIndex.FOLDER], aFolders) >= 0;
+    return $.inArray(aData[ColIndex.FOLDER], aFolders) >= 0;
   });
 };
 
@@ -212,7 +224,8 @@ DataTable.prototype.FormatData_ = function(mRowData) {
     }
 
     // Add the text input fields for tags after each receipt item
-    sReceiptItemsList += "<input type='text' class='" + self.sTagsFieldClass + "' id='receipt-item-" + value["id"] + "'/></li>";
+    sReceiptItemsList += self.GetTagFieldHtml_(value["id"], TagType.RECEIPT_ITEM);
+    sReceiptItemsList += self.GetAddTagHtml_(value["id"], TagType.RECEIPT_ITEM);
   });
 
   sReceiptItemsList += '</ul>'
@@ -267,16 +280,30 @@ DataTable.prototype.GetTagHtml_ = function (sTagName)
 
 /**
  * @brief Format an html string to render the add tag button
- * @param sTagName the name of the tag to render 
+ * @param iDbId the id of the receipt/receipt_item
+ * @param enum_TagType the type of tag
  * @return html to render the tag
  */
-DataTable.prototype.GetAddTagHtml_ = function (iRowId)
+DataTable.prototype.GetAddTagHtml_ = function (iDbId, enum_TagType)
 {
-  var sTagHtml = "<span contenteditable=true class='label label-default " + this.sTagsFieldClass + "'" + 
-                  "id='receipt-" + iRowId + "'>&nbsp</span>" + 
-                  "<span class='label label-default'>" +
-                  "<a href='#'><span class='glyphicon glyphicon-plus'></span></a>" + 
+  var sTag = "";
+  if ( enum_TagType === TagType.RECEIPT ) { 
+    sTag = "receipt";
+  } else {
+    sTag = "receipt-item";
+  }
+
+/*  var sTagHtml =  "<span class='label label-default'>" +
+                  "<a id='" + sTag + "-" + iDbId + "'" +  
+                  "class='" + this.sAddTagButton + "' href='#'>" + 
+                  "<span class='glyphicon glyphicon-plus'></span></a>" + 
                   "</span>";
+*/  var sTagHtml = 
+                  "<a id='" + sTag + "-" + iDbId + "'" +  
+                  "class='" + this.sAddTagButton + "' href='#'>" + 
+                  "<span class='label label-default'>" + 
+                  "<span class='glyphicon glyphicon-plus'></span></span></a>";
+
   return sTagHtml;
 };
 
@@ -291,3 +318,37 @@ DataTable.prototype.WrapTag_ = function (sTagHtml)
   var sTagHtml = "<span class='" + this.sNoClickExpand + "'>" + sTagHtml + "</span>";
   return sTagHtml;
 };
+
+/**
+ * @brief Returns the html of the input tag
+ * @param iDbId the database id of the tag
+ * @param enum_tagType the id of the receipt
+ * @return html to render the tag field
+ */
+DataTable.prototype.GetTagFieldHtml_ = function (iDbId, enum_TagType)
+{
+  var sTag = "";
+  if ( enum_TagType === TagType.RECEIPT ) { 
+    sTag = "receipt";
+  } else {
+    sTag = "receipt-item";
+  }
+  // displays a hidden wrapper
+  var sTagHtml = "<span id='wrapper-" + sTag + "-" + iDbId + "' " +
+                 "style='display:none;'" +                 
+                 "class='label label-default'> <input class='" + this.sTagsFieldClass + "'" + 
+                  " id='" + sTag + "-" + iDbId + "' type='text'/></span>";
+  return sTagHtml;
+};
+
+/**
+ * @brief Shows the input field when the add tag button is clicked
+ * @param iReceiptId the id of the receipt
+ * @return html to render the tag field
+ */
+DataTable.prototype.AddTagClickCallBack_ = function ()
+{
+  $(this).hide();
+  $("#wrapper-" + $(this).attr("id")).show();
+};
+

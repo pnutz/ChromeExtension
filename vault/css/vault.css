@@ -102,3 +102,9 @@ a.tabHeader
 {
   margin-left :3px;
 }
+
+.tags-field
+{
+  border: none; 
+  background-color: rgba(0,0,0,0.1);
+}
