@@ -16,7 +16,7 @@ a.tabHeader
 
 .tab-pane
 {
-  padding: 10px;
+  padding: 0px;
 }
 
 #vault-receipts
@@ -28,6 +28,7 @@ a.tabHeader
 {
   padding: 10px;
 }
+
 #vault-folders-navbar > li > a
 {
   padding : 5px;
@@ -37,6 +38,7 @@ a.tabHeader
 #vault-folders-navbar > .subfolder > a 
 {
   padding: 2px 15px;
+  font-size:12px;
 }
 
 #vault-main-container
@@ -50,6 +52,12 @@ a.tabHeader
  /* width: 100%;*/
   height: 100%;
   overflow:auto;
+  background-color: #DDDFFE;
+}
+
+#vault-main-view div.row
+{
+  margin : 0px;
 }
 
 #vault-navbar
@@ -90,7 +98,7 @@ a.tabHeader
 
 #vault-page-content
 {
-  padding:10px;
+  padding : 10px;
 }
 
 .tag-label 
@@ -107,4 +115,26 @@ a.tabHeader
 {
   border: none; 
   background-color: rgba(0,0,0,0.1);
+}
+
+.navbar-override 
+{
+  background-color: #CDCDCD;
+}
+
+.navbar-override > li > a 
+{
+  margin:0px;
+  border-radius:0px;
+}
+.navbar-override > li.active > a 
+{
+  /* must match background-color for vault-receipts-pane*/
+  background-color: #90919C;
+}
+
+#vault-receipts-pane
+{
+  padding: 5px;
+  background-color: #90919C;
 }

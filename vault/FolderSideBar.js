@@ -109,7 +109,7 @@ FolderSideBar.prototype.RenderFolderOnList_ = function(folderData) {
       newFolder.attr("data-toggle", "modal");
       newFolder.attr("data-target", "#add-folder-modal");
       newFolder.attr("href", "#");
-      folderData.name = "+ Add New Folder";
+      folderData.name = "New Folder";
     } else { // Actual folder type
       // Attribute is based on the id of the folder in the WebApp DB
       newFolder.attr("data-toggle", "pill");
@@ -122,7 +122,6 @@ FolderSideBar.prototype.RenderFolderOnList_ = function(folderData) {
       newListItem.addClass(this.mClassNames.sSubFolder);
       newListItem.attr("parent_id", folderData.folder_id);
       newListItem.hide();
-      folderData.name = "-" + folderData.name;
     } else { // parent folder specifics
       newListItem.addClass("parent");
     }

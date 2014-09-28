@@ -49,6 +49,8 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   var self = this;
   this.mReceiptsData = data;
     this.oDataTable = this.oElem.DataTable({
+    "dom" : "<>f",
+    "autoWidth" : false,
     "data" :  this.mReceiptsData,
     "paging" : false,
     "columnDefs" : [
@@ -77,18 +79,18 @@ DataTable.prototype.PopulateTableData_ = function(data) {
          input += TagHelper.GetTagFieldHtml(TagType.RECEIPT, row.id);
          input += TagHelper.GetAddTagHtml(TagType.RECEIPT, row.id);
          return self.WrapTag_(input);
-       }
+      },
      },
     ],
     "columns" : [
-      {"data" : "date"},
-      {"data" : "vendor_id"},
-      {"data" : "transaction_number"},
-      {"data" : "total"},
-      {"data" : "title"},
-      {"data" : "tags"},
-      {"data" : "folder_id"},
-      {"data" : "id"}
+      {"data" : "date", "width" : "5%"},
+      {"data" : "vendor_id", "width" : "5%"},
+      {"data" : "transaction_number", "width" : "5%"},
+      {"data" : "total", "width" : "5%"},
+      {"data" : "title", "width" : "15%"},
+      {"data" : "tags", "width" : "5%"},
+      {"data" : "folder_id", "width": "0%"},
+      {"data" : "id", "width": "0%"}
     ],
   });
 
@@ -202,13 +204,16 @@ DataTable.prototype.FormatData_ = function(mRowData) {
   var sDetailsFormat =
     '<tr><td>Transaction Number</td><td>' + mRowData.transaction_number +'</td></tr>' +
     '<tr><td>Note</td><td>' + mRowData.note +'</td></tr>';
-  var sReceiptItemsList = '<ul>';
+  var sFormat =
+    '<table>' + sDetailsFormat + '</table>';
+  console.log(sFormat);
+  var sReceiptItemsList = "<tr><th>Item</th><th>Name</th><th>Cost</th><th>Tags</th></tr>" ; 
   $.each(mRowData.receipt_items, function(index, value) {
-    sReceiptItemsList += '<li>Item ' + index + ' Name: ' + value["item_name"] + ' Cost: ' + value["cost"];
+    sReceiptItemsList += '<tr><td>' + index + '</td><td>' + value["item_name"] + '</td><td>' + value["cost"] + "</td>";
 
     //Add tags if they exist for this receipt item
+    sReceiptItemsList += "<td>";
     if ("tags" in value) {
-      sReceiptItemsList += " Tags: "
       $.each(value["tags"], function(index, tagValue) {
         var oTag = new Tag(tagValue.id, TagType.RECEIPT_ITEM, tagValue.name, value.id);
         sReceiptItemsList += oTag.GetHtml();
@@ -218,12 +223,12 @@ DataTable.prototype.FormatData_ = function(mRowData) {
     // Add the text input fields for tags after each receipt item
     sReceiptItemsList += TagHelper.GetTagFieldHtml(TagType.RECEIPT_ITEM, value.id);
     sReceiptItemsList += TagHelper.GetAddTagHtml(TagType.RECEIPT_ITEM, value.id);
+    sReceiptItemsList += "</td>";
   });
 
-  sReceiptItemsList += '</ul>'
-  var sFormat =
-    '<table><tr><td>' + sDetailsFormat + '</td><td>' + sReceiptItemsList + '</td></tr></table>';
-  console.log(sFormat);
+  sReceiptItemsList += '</tr>'
+  sFormat += '<table>' + sReceiptItemsList + '</table>';
+
   return sFormat;
 };
 
@@ -259,7 +264,7 @@ DataTable.prototype.AddTag_ = function(sElementId, sName) {
 
 DataTable.prototype.WrapTag_ = function (sTagHtml)
 {
-  var sTagHtml = "<span class='" + this.sNoClickExpand + "'>" + sTagHtml + "</span>";
+  var sTagHtml = "<div class='" + this.sNoClickExpand + "'>" + sTagHtml + "</div>";
   return sTagHtml;
 };
 
