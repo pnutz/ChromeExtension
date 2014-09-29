@@ -10,6 +10,12 @@ var ColIndex =
   RECEIPT : 7
 };
 
+var KeyboardCode =
+{
+  ENTER : 13,
+  ESCAPE : 27
+};
+
 function DataTable (sId)
 {
   this.oElem = $(sId);
@@ -71,13 +77,13 @@ DataTable.prototype.PopulateTableData_ = function(data) {
          // create an input element to add new tags
          var input = "";
          $.each(data, function(index, value) {
-           var oTag = new Tag(value.id, TagType.RECEIPT, value.name, row.id);
+           var oTag = new Tag(value.id, ReceiptType.RECEIPT, value.name, row.id);
            input += oTag.GetHtml();
          });
 
          // row id is also the db id for the receipt
-         input += TagHelper.GetTagFieldHtml(TagType.RECEIPT, row.id);
-         input += TagHelper.GetAddTagHtml(TagType.RECEIPT, row.id);
+         input += TagHelper.GetTagFieldHtml(ReceiptType.RECEIPT, row.id);
+         input += TagHelper.GetAddTagHtml(ReceiptType.RECEIPT, row.id);
          return self.WrapTag_(input);
       },
      },
@@ -94,8 +100,10 @@ DataTable.prototype.PopulateTableData_ = function(data) {
     ],
   });
 
+  //TODO: find a way to not have to call these callback functions twice
   TagHelper.SetupAddTagButtonCallbacks();
   TagHelper.SetupTagHoverCallbacks();
+  self.SetupTagKeyPress();
   // set up showing child rows when receipt row is clicked
   this.oElem.find("tbody").on("click", "td", function() {
     // $(this) is the jquery object for the current cell
@@ -120,11 +128,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
         TagHelper.SetupAddTagButtonCallbacks();
         TagHelper.SetupTagHoverCallbacks();
         //Set up the enter key binding event for when enter key pressed
-        $("." + TagClassIds.ADD_TAG_FIELD).keyup(function(e) {
-          if (e.keyCode == 13) {
-            self.AddTag_($(this).attr("id"), $(this).val());
-          }
-        });
+        self.SetupTagKeyPress();
       }
     }
   });
@@ -215,14 +219,14 @@ DataTable.prototype.FormatData_ = function(mRowData) {
     sReceiptItemsList += "<td>";
     if ("tags" in value) {
       $.each(value["tags"], function(index, tagValue) {
-        var oTag = new Tag(tagValue.id, TagType.RECEIPT_ITEM, tagValue.name, value.id);
+        var oTag = new Tag(tagValue.id, ReceiptType.RECEIPT_ITEM, tagValue.name, value.id);
         sReceiptItemsList += oTag.GetHtml();
       });
     }
 
     // Add the text input fields for tags after each receipt item
-    sReceiptItemsList += TagHelper.GetTagFieldHtml(TagType.RECEIPT_ITEM, value.id);
-    sReceiptItemsList += TagHelper.GetAddTagHtml(TagType.RECEIPT_ITEM, value.id);
+    sReceiptItemsList += TagHelper.GetTagFieldHtml(ReceiptType.RECEIPT_ITEM, value.id);
+    sReceiptItemsList += TagHelper.GetAddTagHtml(ReceiptType.RECEIPT_ITEM, value.id);
     sReceiptItemsList += "</td>";
   });
 
@@ -262,6 +266,26 @@ DataTable.prototype.AddTag_ = function(sElementId, sName) {
     });
 };
 
+// TODO: Probably move this bitchass into Tag.js
+DataTable.prototype.SetupTagKeyPress = function ()
+{
+  $("." + TagClassIds.ADD_TAG_FIELD).keyup(function(e) {
+    switch (e.keyCode)
+    {
+    case KeyboardCode.ENTER:
+      self.AddTag_($(this).attr("id"), $(this).val());
+      break;
+    case KeyboardCode.ESCAPE:
+      TagHelper.CancelAddNewTagInput($(e.currentTarget));
+      break;
+    }
+  });
+};
+
+/*
+ * brief wrap a tag in a div that stops the row 
+ * from expanding when the tag column is clicked
+ */
 DataTable.prototype.WrapTag_ = function (sTagHtml)
 {
   var sTagHtml = "<div class='" + this.sNoClickExpand + "'>" + sTagHtml + "</div>";

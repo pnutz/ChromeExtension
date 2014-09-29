@@ -1,4 +1,4 @@
-var TagType = 
+var ReceiptType = 
 {
   RECEIPT : 0,
   RECEIPT_ITEM : 1,
@@ -21,41 +21,64 @@ var TagClassIds =
   TAG : "tag-label",
 };
 
-var TagTypeIdPrefix = {}
-TagTypeIdPrefix[TagType.RECEIPT] = "receipt-";
-TagTypeIdPrefix[TagType.RECEIPT_ITEM] = "receipt-item-";
+var TagTypeIdPrefix = {};
+TagTypeIdPrefix[ReceiptType.RECEIPT] = "receipt-";
+TagTypeIdPrefix[ReceiptType.RECEIPT_ITEM] = "receipt-item-";
 
 /* 
  * HELPERS ---------------------------------------------------------
  */
 var TagHelper =
 {
+  /**
+   * @brief obtain an id for a tag (add button/tag/input field)
+   * @param iTagType the type of the tag (add_button,tag,input_field)
+   * @param iReceiptType the type of the tag (receipt/receipt_item)
+   * @param iReceiptId the database id of the receipt/receipt_item
+   * @return id of the tag 
+   */
+  GetTagIdString: function (iTagType, iReceiptType, iReceiptId)
+  {
+    var sTagType = "";
+    switch (iTagType)
+    {
+    case LabelType.TAG:
+      sTagType = TagClassIds.TAG;
+      break;
+    case LabelType.ADD_TAG_BUTTON:
+      sTagType = TagClassIds.ADD_TAG_BUTTON;
+      break;
+    case LabelType.ADD_TAG_FIELD:
+      sTagType = TagClassIds.ADD_TAG_FIELD;
+      break;
+    }
+    return sTagType + "-" + TagTypeIdPrefix[iReceiptType] + iReceiptId; 
+  },
 
   /**
    * @brief Format an html string to render the add tag button
-   * @param iTagType the type of the tag (receipt/receipt_item)
+   * @param iReceiptType the type of the tag (receipt/receipt_item)
    * @param iReceiptId the database id of the receipt/receipt_item
    * @return html to render the tag
    */
-  GetAddTagHtml: function (iTagType, iReceiptId)
+  GetAddTagHtml: function (iReceiptType, iReceiptId)
   {
-    var sTagHtml =  "<a id='" + TagTypeIdPrefix[iTagType] + iReceiptId + "'" +  
+    var sTagHtml =  "<a id='" + this.GetTagIdString(LabelType.ADD_TAG_BUTTON, iReceiptType, iReceiptId) + "'" +  
                     "class='" + TagClassIds.ADD_TAG_BUTTON + "' href='#'>" + 
                     "<span class='label label-default'>" + 
                     "<span class='glyphicon glyphicon-plus'></span></span></a>";
-
     return sTagHtml;
   },
 
   /**
    * @brief Returns the html of the input tag
-   * @param iTagType the type of the tag (receipt/receipt_item)
+   * @param iReceiptType the type of the tag (receipt/receipt_item)
    * @param iReceiptId the database id of the receipt/receipt_item
    * @return html to render the tag field
    */
-  GetTagFieldHtml : function (iTagType, iReceiptId)
+  GetTagFieldHtml : function (iReceiptType, iReceiptId)
   {
-    var sElemId = TagTypeIdPrefix[iTagType] + iReceiptId;
+    var sElemId = this.GetTagIdString(LabelType.ADD_TAG_FIELD, iReceiptType, iReceiptId);
     // displays a hidden wrapper
     var sTagHtml = "<span id='wrapper-" + sElemId + "' " +
                    "style='display:none;'" +                 
@@ -71,8 +94,19 @@ var TagHelper =
   {
     $("." + TagClassIds.ADD_TAG_BUTTON).click( function () {
       $(this).hide();
-      $("#wrapper-" + $(this).attr("id")).show();
+      // FIXME kind of a shitty way to find the input and its wrapper
+      $(this).parent().find("input").parent().show();
+      $(this).parent().find("input").focus();
     });
+  },
+
+  /**
+   * @brief Hides the input field and shows the add tag button again
+  */
+  CancelAddNewTagInput : function (oTagField)
+  {
+    $(oTagField).parent().hide();
+    $(oTagField).parent().siblings("a").show();
   },
 
   /**
