@@ -5,6 +5,7 @@ var Vault =
   mData:
   {
     receipts : [],
+    userSettings : {},
     dateFormat : "yy-mm-dd",
     sNavbarItemClass : ".vault-navbar-item-name",
     dataTable : null,
@@ -13,21 +14,6 @@ var Vault =
     startDate : null,
     mClassNames : {},
     iNavBarItemWidth : null
-  },
-  appendCred_: function(url)
-  {
-    var credUrl = "";
-
-    if ("userEmail" in localStorage && "authToken" in localStorage)
-    {
-      credUrl =  url +
-        "?email=" + localStorage["userEmail"] +
-        "&token=" + localStorage["authToken"];
-    }
-    else
-      console.error("Missing credentials!");
-
-    return credUrl;
   },
 
   initMembers: function() {
@@ -48,6 +34,7 @@ var Vault =
       e.preventDefault();
       $(this).tab('show');
     });
+    this.initSettingsTab();
 
     $(".vault-navbar-item-name").hide();
     self.mData.iNavBarItemWidth = $("#vault-navbar > li").width();
@@ -140,10 +127,63 @@ var Vault =
       vData.dataTable.ShowDateRange(new Date($("#start-date").val()), new Date($("#end-date").val()));
     });
   },
+  initSettingsTab: function() {
+    var self = this;
+    $("#settings-link").click(function() {
+      // If authentication token and email exist then grab receipt data.
+      if ("authToken" in localStorage && "userEmail" in localStorage && Object.keys(self.mData.userSettings).length === 0) {
+        // the only purpose for this for now (with only currency user setting) is to set self.mData.userSettings
+        self.getUserSettings_();
+
+        var receiptRequest = $.ajax({
+          url: controllers.AppendCred(controllers.GetUrl("currencies") + '.json'),
+          type: 'GET',
+          dataType: 'json'
+        }).done(function(data){
+          // initialize currency select-list
+          var currencies = $("#currency-setting");
+          $.each(data, function() {
+            var option = $("<option />").val(this.id).text(this.code + " " + this.description);
+            if (this.selected === "true") {
+              option.attr("selected", true);
+            }
+            currencies.append(option);
+          });
+        }).fail(function (jqXHR, textStatus, errorThrown){
+          // log the error to the console
+          console.error(
+            "The following error occurred: " + textStatus,
+            errorThrown);
+          alert(jqXHR.responseText);
+        });
+      }
+    });
+
+    $("#vault-settings-save").click(function() {
+      self.mData.userSettings.currency_id = $("#currency-setting").val();
+      var settingData = {};
+      settingData.user_setting = self.mData.userSettings;
+
+      $.ajax({
+        url: controllers.AppendCred(controllers.GetUrl("user_settings") + "/" + settingData.user_setting.id + ".json"),
+        type: 'PUT',
+        data : settingData,
+        dataType: 'json'
+      }).done(function(data){
+        //alert("submitted");
+      }).fail(function (jqXHR, textStatus, errorThrown){
+        // log the error to the console
+        console.error(
+          "The following error occurred: " + textStatus,
+          errorThrown);
+        //alert(jqXHR.responseText);
+      });
+    });
+  },
   getReceipts_: function() {
     var self = this;
     var request = $.ajax({
-      url: this.appendCred_(controllers.GetUrl("receipts") + ".json"),
+      url: controllers.AppendCred(controllers.GetUrl("receipts") + ".json"),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
@@ -177,6 +217,21 @@ var Vault =
         errorThrown);
     });
   },
+  getUserSettings_: function() {
+    var self = this;
+    var request = $.ajax({
+      url: controllers.AppendCred(controllers.GetUrl("user_settings") + ".json"),
+      type: 'GET',
+      dataType: 'json'
+    }).done(function(data) {
+      self.mData.userSettings = data;
+    }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
+  },
   /**
    *@brief renders receipts in the data table
    *       based on the folder
@@ -191,14 +246,14 @@ var Vault =
   getDocuments_: function(is_snapshot) {
     var self = this;
     $.ajax({
-      url: this.appendCred_(controllers.GetUrl("documents") + ".json") + "&is_snapshot=" + is_snapshot.toString(),
+      url: controllers.AppendCred(controllers.GetUrl("documents") + ".json") + "&is_snapshot=" + is_snapshot.toString(),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
       // add image source to each receipt (by id) here
       // possibly store data and calculate this by event?
 
-      //$("body").append("<img src = '" + self.appendStyle_(self.appendCred_(controllers.GetUrl("documents") + "/" + data[51].id)) + "'></img>");
+      //$("body").append("<img src = '" + self.appendStyle_(controllers.AppendCred(controllers.GetUrl("documents") + "/" + data[51].id)) + "'></img>");
 
 
     }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -212,7 +267,7 @@ var Vault =
   /**
    *@brief appends thumbnail style to image source for rails server
    *       source defaulted to original when appendStyle_ is not run
-   *       assumes appendCred_ is run prior to appending style
+   *       assumes ApiComm AppendCred is run prior to appending style
    */
   appendStyle_: function(url)
   {
@@ -222,7 +277,7 @@ var Vault =
   getFolders_: function() {
     var self = this;
     var request = $.ajax({
-      url: this.appendCred_(controllers.GetUrl("folders") + ".json"),
+      url: controllers.AppendCred(controllers.GetUrl("folders") + ".json"),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
@@ -249,7 +304,7 @@ var Vault =
     };
 
     var request = $.ajax({
-      url: this.appendCred_(controllers.GetUrl("folders") + ".json"),
+      url: controllers.AppendCred(controllers.GetUrl("folders") + ".json"),
       type: 'POST',
       data: folderData,
       dataType: 'json'

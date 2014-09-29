@@ -46,7 +46,7 @@ var PopUp =
         $("#main-div-user-email").text("Logged in as: " + localStorage["userEmail"]);
 
         // store receipt url in localStorage
-        localStorage["receiptPost"] = self.appendCred(self.controllers.GetUrl("receipts") + ".json");
+        localStorage["receiptPost"] = self.controllers.AppendCred(self.controllers.GetUrl("receipts") + ".json");
       })
       .fail(function(){
         // Remove the auth token and reload so we can try and get a new one
@@ -86,22 +86,6 @@ var PopUp =
     }
   },
 
-  // Append credentials to a url
-  appendCred: function(url)
-  {
-    var credUrl = "";
-
-    if ("userEmail" in localStorage &&
-        "authToken" in localStorage) {
-      credUrl =  url +
-          "?email=" + localStorage["userEmail"] +
-          "&token=" + localStorage["authToken"];
-    } else {
-      console.error("Missing credentials!");
-    }
-    return credUrl;
-  },
-
   bindButtonEvents: function()
   {
     // save context
@@ -132,7 +116,7 @@ var PopUp =
     // Setup Folder link click action
     this.buttons.folders.on("click", function()
     {
-      chrome.tabs.create({url: self.appendCred(self.configurations.host)});
+      chrome.tabs.create({url: self.controllers.AppendCred(self.configurations.host)});
       window.close();
     });
 

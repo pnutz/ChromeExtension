@@ -54,31 +54,31 @@
       <div id="vault-navbar-container">
         <ul id="vault-navbar" class="nav nav-pills nav-stacked">
           <li class="active">
-            <a href="#vault" class="tabHeader">
+            <a id="vault-link" href="#vault" class="tabHeader">
               <span class="glyphicon glyphicon-align-justify"></span>
               <span class="vault-navbar-item-name">Vault</span>
             </a>
           </li>
           <li>
-            <a href="#bills" class="tabHeader">
+            <a id="bills-link" href="#bills" class="tabHeader">
               <span class="glyphicon glyphicon-pencil"></span>
               <span class="vault-navbar-item-name">Bills</span>
             </a>
           </li>
           <li>
-            <a href="#subscriptions" class="tabHeader">
+            <a id="subscriptions-link" href="#subscriptions" class="tabHeader">
               <span class="glyphicon glyphicon-inbox"></span>
               <span class="vault-navbar-item-name">Subscriptions</span>
             </a>
           </li>
           <li>
-            <a href="#orders" class="tabHeader">
+            <a id="orders-link" href="#orders" class="tabHeader">
               <span class="glyphicon glyphicon-plane"></span>
               <span class="vault-navbar-item-name">Orders</span>
             </a>
           </li>
           <li>
-            <a href="#settings" class="tabHeader">
+            <a id="settings-link" href="#settings" class="tabHeader">
               <span class="glyphicon glyphicon-cog"></span>
               <span class="vault-navbar-item-name">Settings</span>
             </a>
@@ -164,8 +164,9 @@
             <div class="col-md-2 col-md-offset-5">
               <h3><b>User Settings</b></h3>
               <table id="vault-settings" width="80%">
-                <tr><th>Default Currency</th><td><select></select></td></tr>
+                <tr><th>Default Currency</th><td><select id="currency-setting"></select></td></tr>
               </table>
+              <br />
               <button id="vault-settings-save" type="button" class="btn btn-primary">Save</button>
             </div>
           </div>

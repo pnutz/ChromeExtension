@@ -331,7 +331,7 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
 // track tab removed
 chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 	// if tabId contains a receipt notification, disconnect port and delete port key/value
-  if (receiptPorts[tabId] !== undefined) {
+  if (receiptPorts[tabId] != null) {
     console.log("Disconnecting from receipt port");
     receiptPorts[tabId].disconnect();
     delete receiptPorts[tabId];
@@ -341,7 +341,7 @@ chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
 function closeReceipt() {
   console.log("Receipt notification closed - Disconnected from receipt_port");
 
-  if (receiptPorts[currentTabId] !== undefined) {
+  if (receiptPorts[currentTabId] != null) {
     receiptPorts[currentTabId].disconnect();
     delete receiptPorts[currentTabId];
   }

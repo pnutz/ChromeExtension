@@ -430,7 +430,7 @@ var NotiBar =
                 var menu = $(this).data("ui-autocomplete").menu;
                 var dataValue = $(this).attr("data-value");
                 // select option if it exists in menu list
-                if (dataValue !== undefined && dataValue !== null)
+                if (dataValue != null)
                 {
                   var $items = $("li", menu.element);
                   var source = $(this).autocomplete("option", "source");
