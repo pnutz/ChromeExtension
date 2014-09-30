@@ -231,6 +231,17 @@ window.addEventListener("message", function(event) {
         }
         break;
 
+      // close notification bar
+      case "closeReceipt":
+        var notdiv = $("#notificationdiv")[0];
+        document.getElementsByTagName("body")[0].style.paddingTop = "0px";
+		    notdiv.parentNode.removeChild(notdiv);
+
+        cleanHighlight();
+        cleanElementData();
+        cleanFieldText();
+        break;
+
       // user requests search
       case "searchText":
         if (event.data.fieldName != null && event.data.text != null) {

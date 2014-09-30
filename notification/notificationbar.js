@@ -78,6 +78,7 @@ var NotiBar =
   init: function()
   {
     var self = this;
+
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker({
       showOn: "button",
@@ -113,6 +114,18 @@ var NotiBar =
         window.parent.postMessage(message, "*");
       }
     });
+
+    $("#receipt-close").click(function() {
+      location.href = "";
+    });
+
+    window.onbeforeunload = function() {
+      return "Receipt data will be discarded.";
+    };
+
+    window.onunload = function() {
+      window.parent.postMessage({ request: "closeReceipt" }, "*");
+    };
 
     // DEPRECIATED WITH AUTOMATED ROW GENERATION
     /*$("#receipt-items-add").click(function() {
