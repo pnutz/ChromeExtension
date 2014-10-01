@@ -210,12 +210,10 @@ var NotiBar =
         taxes: { isMoney: true }
       },
 
-      highlight: function(element, errorClass, validClass)
-      {
+      highlight: function(element) {
         $(element).closest(".form-group").removeClass("has-success").addClass("has-error");
       },
-      unhighlight: function(element, errorClass, validClass)
-      {
+      unhighlight: function(element) {
         $(element).closest(".form-group").removeClass("has-error").addClass("has-success");
       }
     });

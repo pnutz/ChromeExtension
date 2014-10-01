@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Contact Us</title>
+        <script src="../jquery-2.0.3.min.js"></script>
+        <script src="../js/jquery.validate.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
+        <script src="troubleticket.js"></script>
+        <script src="../ApiComm.js"></script>
+    </head>
+    <body>
+        <form id="contact-us-form">
+            <div class="container">
+                <br />
+                <div class="row">
+                    <div class="form-group col-md-12">
+                        <input id="subject" type="text" name="subject" placeholder="Type Subject" class="form-control" autofocus />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-12">
+                        <textarea rows="10" id="content" name="content" placeholder="Write your message..." class="form-control"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-12">
+                        <input id="contact-us-submit" type="button" value="Send" class="form-control btn-primary" />
+                    </div>
+                </div>
+            </div>
+        </form>
+    </body>
+</html>

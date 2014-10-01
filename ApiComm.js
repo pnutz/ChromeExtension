@@ -10,7 +10,8 @@ function ControllerUrls(host)
                        "documents" : "/documents",
                        "registration" : "/users/sign_up",
                        "tags" : "/tags",
-                       "user_settings" :  "/user_settings"
+                       "user_settings" :  "/user_settings",
+                       "trouble_tickets" : "/trouble_tickets"
                      };
 }
 
