@@ -138,3 +138,20 @@ a.tabHeader
   padding: 5px;
   background-color: #90919C;
 }
+
+/* Laying out the start/end/preset/search fields */
+#vault-top-bar div
+{
+  padding:0px;
+}
+
+#vault-top-bar div input
+{
+  padding:5px;
+}
+
+#vault-top-bar .control-label 
+{
+  padding-left:10px;
+  padding-right:10px;
+}

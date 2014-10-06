@@ -17,7 +17,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 	</head>
   <body>
-
     <div class="modal fade" id="add-folder-modal">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -83,6 +82,13 @@
               <span class="vault-navbar-item-name">Settings</span>
             </a>
           </li>
+          <li>
+            <a id="logout" href="#" class="tabHeader">
+              <span class="glyphicon glyphicon-chevron-left"></span>
+              <span class="vault-navbar-item-name">Logout</span>
+            </a>
+          </li>
+
         </ul>
       </div>
       <div id="vault-main-view">
@@ -109,11 +115,11 @@
                     </select>
                   <div id="vault-top-bar" class="row">
                     <label for="start-date" class="col-sm-1 control-label">Start Date</label>
-                    <div class="col-sm-2">
-                      <input id="start-date" class="col-sm-2 form-control" name="start-date" type="text">
+                    <div class="col-sm-1">
+                      <input id="start-date" class="form-control" name="start-date" type="text">
                     </div>
                     <label for="end-date" class="col-sm-1 control-label">End Date</label>
-                    <div class="col-sm-2">
+                    <div class="col-sm-1">
                       <input id="end-date" class="form-control" name="end-date" type="text">
                     </div>
                     <label for="preset-range" class="col-sm-1 control-label">Preset</label>
@@ -127,6 +133,10 @@
                         <option value="6">Last Month</option>
                         <option value="0">Custom</option>
                       </select>
+                    </div>
+                    <label for="receipt-filter" class="col-sm-1 control-label">Search</label>
+                    <div class="col-sm-2">
+                      <input id="vault-receipt-filter" class="form-control" type="text" name="receipt-filter"/>
                     </div>
                   </div>
                   <div class="row">

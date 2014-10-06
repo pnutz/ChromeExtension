@@ -1,3 +1,4 @@
+var g_oControllers = new ControllersUrl("localhost");
 var ColIndex =
 {
   DATE : 0,
@@ -23,9 +24,9 @@ function DataTable (sId)
   this.sDateFormat = "yy-mm-dd";
   this.oEarliestDate = new Date(0);
   this.oLatestDate = new Date(0);
-  this.oControllers = null;
   this.mReceiptsData = null;
   this.sNoClickExpand = "no-expand";
+  this.sReceiptFilterField= "vault-receipt-filter";
 };
 
 DataTable.prototype.Init = function(controllers)
@@ -55,7 +56,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   var self = this;
   this.mReceiptsData = data;
     this.oDataTable = this.oElem.DataTable({
-    "dom" : "<>f",
+    "dom" : "",
     "autoWidth" : false,
     "data" :  this.mReceiptsData,
     "paging" : false,
@@ -104,6 +105,9 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   TagHelper.SetupAddTagButtonCallbacks();
   TagHelper.SetupTagHoverCallbacks();
   self.SetupTagKeyPress();
+  $("#" + self.sReceiptFilterField).keyup(function(e) {
+    self.oDataTable.search($(this).val()).draw();
+  });
   // set up showing child rows when receipt row is clicked
   this.oElem.find("tbody").on("click", "td", function() {
     // $(this) is the jquery object for the current cell
@@ -132,6 +136,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       }
     }
   });
+
 };
 
 /**
@@ -243,9 +248,11 @@ DataTable.prototype.FormatData_ = function(mRowData) {
  */
 DataTable.prototype.AddTag_ = function(sElementId, sName) {
   var self = this;
+  console.log(sElementId);
+  console.log(sName);
   var aIdSplit = sElementId.split("-");
-  var sType = aIdSplit.length > 2 ? "receipt_item" : "receipt";
-  var mData = { name : sName};
+  var sType = aIdSplit.length > 4 ? "receipt_item" : "receipt";
+  var mData = { name : sName };
   var sUrl = self.oControllers.AppendCred(
     self.oControllers.GetUrl("tags") +
     "/" + sType +
@@ -266,9 +273,13 @@ DataTable.prototype.AddTag_ = function(sElementId, sName) {
     });
 };
 
+
+
 // TODO: Probably move this bitchass into Tag.js
 DataTable.prototype.SetupTagKeyPress = function ()
 {
+  self = this;
+
   $("." + TagClassIds.ADD_TAG_FIELD).keyup(function(e) {
     switch (e.keyCode)
     {

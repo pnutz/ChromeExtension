@@ -101,6 +101,17 @@ var TagHelper =
   },
 
   /**
+   * @brief Remove 
+   */
+  SetupRemoveTagButtonCallbacks : function ()
+  {
+    $("." + TagClassIds.REMOVE_TAG_BUTTON).click( function () {
+      $(this).parent().find("input").parent().show();
+      $(this).parent().find("input").focus();
+    });
+  },
+
+  /**
    * @brief Hides the input field and shows the add tag button again
   */
   CancelAddNewTagInput : function (oTagField)
@@ -127,6 +138,37 @@ var TagHelper =
   {
     // TODO: pass data back into callback
     $("." + TagClassIds.REMOVE_TAG_BUTTON).click(callbackFunction);
+  },
+
+  /**
+   * @brief Register a function to be called when the remove button is clicked
+   */
+  DeleteTag_: function (sElementId)
+  {
+    var self = this;
+    console.log(sElementId);
+    var aIdSplit = sElementId.split("-");
+    var iReceiptId = aIdSplit.length > 3 ? aIdSplit[2] : aIdSplit[1];
+    var iTagId = aIdSplit.length > 3 ? aIdSplit[3] : aIdSplit[2];
+    var mData = { name : sName };
+    var sUrl = self.oControllers.AppendCred(
+      self.oControllers.GetUrl("tags") +
+      "/" + sType +
+      "/" + aIdSplit[aIdSplit.length - 1]+".json");
+
+    var request = $.ajax({
+        url: sUrl,
+        type: 'POST',
+        data: mData,
+        dataType: 'json'
+      }).done(function(data) {
+        console.log("Successfully set tag");
+      }).fail(function (jqXHR, textStatus, errorThrown){
+      // log the error to the console
+        console.error(
+          "The following error occurred: " + textStatus,
+          errorThrown);
+      });
   }
 }
 /*
@@ -142,7 +184,7 @@ function Tag(iTagId, iTagType, sName, iReceiptId)
   this.iTagType = iTagType;
   this.iReceiptId = iReceiptId;
   // Append the tag database Id to the element id
-  this.sId += TagTypeIdPrefix[iTagType] + iTagId;
+  this.sId = TagTypeIdPrefix[iTagType] + iReceiptId + "-" + iTagId;
 };
 
 /**
@@ -152,7 +194,7 @@ function Tag(iTagId, iTagType, sName, iReceiptId)
  */
 Tag.prototype.GetHtml = function ()
 {
-  var sTagHtml = "<span class='" + TagClassIds.TAG + " label label-default'>" + this.sTagName + 
+  var sTagHtml = "<span id='" + this.sId +  "' class='" + TagClassIds.TAG + " label label-default'>" + this.sTagName + 
                  "<a href='#'><span style='display:none;' class='" + TagClassIds.REMOVE_TAG_BUTTON + 
                  " glyphicon glyphicon-remove'></span></a>" + 
                  "</span>";
