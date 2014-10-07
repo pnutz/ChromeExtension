@@ -115,14 +115,17 @@ var NotiBar =
       }
     });
 
+    // resetting the source of iframe causes a window unload
     $("#receipt-close").click(function() {
       location.href = "";
     });
 
+    // prompt warning on notification bar unload
     window.onbeforeunload = function() {
       return "Receipt data will be discarded.";
     };
 
+    // send to content script when notification bar is closed to clean up
     window.onunload = function() {
       window.parent.postMessage({ request: "closeReceipt" }, "*");
     };

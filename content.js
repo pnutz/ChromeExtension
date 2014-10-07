@@ -1,12 +1,13 @@
-var incomingPort,
-    lastClicked,
-    mouseDownElement,
-    itemRowGen,
-    generated = {},
-    documentText,
-    elementPath,
-    savedData,
-    receipt;
+var incomingPort;
+var itemRowGen;
+var generated = {};
+var documentText;
+var elementPath;
+var oldScrollX;
+var oldScrollY;
+var oldOverflow;
+var arrangements = [];
+var cleanUpTimeout;
 
 $(document).ready(function () {
 	if (self === top) {
@@ -15,7 +16,6 @@ $(document).ready(function () {
 });
 
 function createNotification() {
-
   if (documentText == null) {
     documentText = initializeContentSearch();
   }
@@ -101,16 +101,11 @@ chrome.runtime.onConnect.addListener(function(port) {
             break;
 
           case "takeSnapshot":
-            // try hard-copying jquery to get parent isolated from DOM, so DOM is not messed up with canvas
-            var parent = elementPath.element;
-            console.log(parent);
+            window.clearTimeout(cleanUpTimeout);
+            takeSnapshot();
 
-            /*
-            set image size to 1/3 original size OR set CSS sizes to 300% before rendering
-            http://stackoverflow.com/questions/18316065/set-quality-of-png-with-html2canvas
-            */
-
-            if (parent != null) {
+            // DEPRECIATED CODE - OLD SNAPSHOT USING html2canvas (library removed)
+            /*if (parent != null) {
               parent = ElementPath.getParentContainer(parent);
               console.log(parent);
 
@@ -135,7 +130,17 @@ chrome.runtime.onConnect.addListener(function(port) {
                   sendReceipt();
                 }
               });
-            }
+            }*/
+            break;
+
+          case "capturePage":
+            window.clearTimeout(cleanUpTimeout);
+            processArrangements(msg.totalWidth, msg.totalHeight);
+            break;
+
+          case "cleanUp":
+            window.clearTimeout(cleanUpTimeout);
+            cleanUp();
             break;
 
           case "getFolders":
@@ -233,9 +238,13 @@ window.addEventListener("message", function(event) {
 
       // close notification bar
       case "closeReceipt":
-        var notdiv = $("#notificationdiv")[0];
-        document.getElementsByTagName("body")[0].style.paddingTop = "0px";
-		    notdiv.parentNode.removeChild(notdiv);
+        var notificationdiv = $("#notificationdiv");
+        // check if notification has already been removed (from saveReceipt)
+        if (notificationdiv.length > 0) {
+          var notdiv = notificationdiv[0];
+          document.getElementsByTagName("body")[0].style.paddingTop = "0px";
+          notdiv.parentNode.removeChild(notdiv);
+        }
 
         cleanHighlight();
         cleanElementData();
@@ -526,7 +535,7 @@ function prepareReceipt(data, rows, parent) {
     }
 
     // compose message
-    receipt = {
+    var receipt = {
       request: "saveReceipt",
       html: document.body.outerHTML,
       url: location.href,
@@ -536,22 +545,154 @@ function prepareReceipt(data, rows, parent) {
       savedData: data
     };
 
-    incomingPort.postMessage({ request: "resizeWindow" });
+    if (oldOverflow == null && oldScrollX == null && oldScrollY == null) {
+      oldOverflow = document.documentElement.style.overflow;
+      oldScrollX = window.scrollX;
+      oldScrollY = window.scrollY;
+    }
+
+    cleanUpTimeout = window.setTimeout(cleanUp, 1250);
+    incomingPort.postMessage(receipt);
   }
 
   // clean receipt data
   cleanFieldText();
 }
 
+// modify this so it sends element coordinates
 function sendReceipt() {
   if (incomingPort != null) {
-    console.log(receipt);
-    incomingPort.postMessage(receipt);
+    // need to send element coordinates/data
+    var parent = elementPath.element;
+    console.log(parent);
+
+    var message = { request: "sendReceipt" };
+
+    if (parent != null) {
+      parent = ElementPath.getParentContainer(parent);
+      console.log(parent);
+      var elementLeft = parent.offset().left;
+      var elementTop = parent.offset().top;
+      var elementWidth = parent.outerWidth();
+      var elementHeight = parent.outerHeight();
+      message.left = elementLeft;
+      message.top = elementTop;
+      message.width = elementWidth;
+      message.height = elementHeight;
+    } else {
+      // just don't send anything in this case - take entire body
+      //parent = $("body");
+    }
+
+    cleanUpTimeout = window.setTimeout(cleanUp, 1250);
+    incomingPort.postMessage(message);
   }
 }
 
+//
+function max(nums) {
+  return Math.max.apply(Math, nums.filter(function(x) { return x; }));
+}
+
+function takeSnapshot() {
+  var body = document.body;
+  var widths = [
+        document.documentElement.clientWidth,
+        document.body.scrollWidth,
+        document.documentElement.scrollWidth,
+        document.body.offsetWidth,
+        document.documentElement.offsetWidth
+      ];
+  var heights = [
+        document.documentElement.clientHeight,
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.offsetHeight
+      ];
+  var fullWidth = max(widths);
+  var fullHeight = max(heights);
+  var windowWidth = window.innerWidth;
+  var windowHeight = window.innerHeight;
+  // pad the vertical scrolling to try to deal with
+  // sticky headers, 250 is an arbitrary size
+  var scrollPad = 200;
+  var yDelta = windowHeight - (windowHeight > scrollPad ? scrollPad : 0);
+  var xDelta = windowWidth;
+  var yPos = fullHeight - windowHeight;
+  var xPos;
+
+  // During zooming, there can be weird off-by-1 types of things...
+  if (fullWidth <= xDelta + 1) {
+    fullWidth = xDelta;
+  }
+
+  // Disable all scrollbars. We'll restore the scrollbar state when we're done
+  // taking the screenshots.
+  document.documentElement.style.overflow = "hidden";
+
+  while (yPos > -yDelta) {
+    xPos = 0;
+    while (xPos < fullWidth) {
+      arrangements.push([xPos, yPos]);
+      xPos += xDelta;
+    }
+    yPos -= yDelta;
+  }
+
+  processArrangements(fullWidth, fullHeight);
+}
+
+function processArrangements(totalWidth, totalHeight) {
+  // finished taking snapshot
+  if (!arrangements.length) {
+    sendReceipt();
+    return;
+  }
+
+  var next = arrangements.shift(),
+      x = next[0], y = next[1];
+
+  window.scrollTo(x, y);
+
+  var data = {
+    request: "capturePage",
+    x: window.scrollX,
+    y: window.scrollY,
+    totalWidth: totalWidth,
+    totalHeight: totalHeight,
+    devicePixelRatio: window.devicePixelRatio
+  };
+
+  // Need to wait for things to settle
+  window.setTimeout(function() {
+    // in case the eventPage never returns, cleanup
+    cleanUpTimeout = window.setTimeout(cleanUp, 1250);
+
+    if (incomingPort != null) {
+      incomingPort.postMessage(data);
+    }
+  }, 150);
+}
+
+function cleanUp() {
+  console.log("cleaned up after snapshot");
+  if (oldOverflow != null && oldScrollX != null && oldScrollY != null) {
+    document.documentElement.style.overflow = oldOverflow;
+    window.scrollTo(oldScrollX, oldScrollY);
+    oldOverflow = null;
+    oldScrollX = null;
+    oldScrollY = null;
+  }
+  arrangements = [];
+}
+
 // only run function when user prompts to start, so links keep working
-/*$(document).click(function(event) {
+/*
+var lastClicked;
+var mouseDownElement;
+
+$(document).click(function(event) {
 		lastClicked = $(event.target);`
 		if (htmlGet !== "pull-off")	{
 			var element = $(event.target);
@@ -803,4 +944,5 @@ function sendReceipt() {
 			//return lastClicked & $(this)
 		}
 	});
-	}*/
+}
+*/
