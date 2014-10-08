@@ -1,14 +1,17 @@
 // stores all open receipt notification connections
-var receiptPorts = { /* tabId: receiptPort */ },
+var receiptPorts = { /* tabId: receiptPort */ };
 // track last non chrome- url tab
-currentTabId,
-oldWindowState,
+var currentTabId;
+var oldWindowState;
+var screenshot = {};
+var receipt;
+var cleanUpTimeout;
 
-aServerHost = "http://localhost:8888",
+var aServerHost = "http://localhost:8888";
 
-apiComm = new ControllerUrls(localStorage["webAppHost"]),
+var apiComm = new ControllerUrls(localStorage["webAppHost"]);
 
-facebookAPI = new FaceBookAPI();
+var facebookAPI = new FaceBookAPI();
 
 // this needs modification based on final receipt popup values
 function sendAttributeTemplate(html, url, domain, generated, attributes, savedData) {
@@ -93,56 +96,62 @@ function stringBetween(string, substring1, substring2) {
 
 function receiptSetup() {
 	// setup receipt notification message passing connection with current tab
-  if (receiptPorts[currentTabId] !== undefined) {
+  if (receiptPorts[currentTabId] != null) {
     receiptPorts[currentTabId].disconnect();
   }
-	receiptPorts[currentTabId] = chrome.tabs.connect(currentTabId, {name: "receiptPort"});
+	receiptPorts[currentTabId] = chrome.tabs.connect(currentTabId, { name: "receiptPort" });
   console.log(receiptPorts);
 	console.log("Connected to port " + receiptPorts[currentTabId].name + " for tab: " + currentTabId);
 
   // prompt content.js for data if new receipt popup
-  receiptPorts[currentTabId].postMessage({"request": "initializeReceipt"});
+  receiptPorts[currentTabId].postMessage({ request: "initializeReceipt" });
 
 	receiptPorts[currentTabId].onMessage.addListener(function(msg) {
     if (msg.request) {
       console.log("Received message: " + msg.request + " for port: " + receiptPorts[currentTabId].name);
-    }
 
-    // message node js server html & domain data
-		if (msg.request === "initializeReceipt") {
-      sendDomain(currentTabId, msg.html, msg.url, msg.domain);
-    }
-    // resize window in preparation for snapshot
-    else if (msg.request === "resizeWindow") {
-      resizeToPrinterPage();
-      receiptPorts[currentTabId].postMessage({ request: "takeSnapshot" });
-    }
-    // send receipt information and clean up
-    else if (msg.request === "saveReceipt") {
-      console.log(msg);
+      switch (msg.request) {
+        // message node js server html & domain data
+        case "initializeReceipt":
+          sendDomain(currentTabId, msg.html, msg.url, msg.domain);
+          break;
 
-      postReceiptToWebApp(msg.savedData);
-      sendAttributeTemplate(msg.html, msg.url, msg.domain, msg.generated, msg.attributes, msg.savedData);
+        // capture visible part of page
+        case "capturePage":
+          window.clearTimeout(cleanUpTimeout);
+          capturePage(msg);
+          break;
 
-      if (oldWindowState != null) {
-        resizeToOriginalPage();
+        // store receipt information and start snapshot capture (resize window)
+        case "saveReceipt":
+          receipt = msg;
+          resizeToPrinterPage();
+          break;
+
+        // send receipt information and clean up
+        case "sendReceipt":
+          window.clearTimeout(cleanUpTimeout);
+          trimCanvas(msg.left, msg.top, msg.width, msg.height);
+          sendReceipt();
+          break;
+
+        // prompt to close receipt connection
+        case "closeReceipt":
+          if (oldWindowState != null) {
+            resizeToOriginalPage();
+          } else {
+            closeReceipt();
+          }
+          break;
+
+        case "getFolders":
+          this.getFolders();
+          break;
+
+        case "getCurrencies":
+          this.getCurrencies();
+          break;
       }
-
-      closeReceipt();
-    }
-    // prompt to cloe receipt connection
-    else if (msg.request === "closeReceipt") {
-      if (oldWindowState != null) {
-        resizeToOriginalPage();
-      }
-
-      closeReceipt();
-    }
-    else if (msg.request === "getFolders"){
-      this.getFolders();
-    }
-    else if (msg.request === "getCurrencies") {
-      this.getCurrencies();
     }
 	});
 }
@@ -155,7 +164,7 @@ function getFolders(){
     dataType: 'json'
   }).done(function(data){
     // alert(data);
-    receiptPorts[currentTabId].postMessage({"request": "getFolders", folderData: data});
+    receiptPorts[currentTabId].postMessage({ request: "getFolders", folderData: data });
   }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
     console.error(
@@ -183,6 +192,43 @@ function getCurrencies(){
   });
 }
 
+function trimCanvas(left, top, width, height) {
+  if (Object.keys(screenshot).length !== 0) {
+    console.log("screenshot exists");
+
+    // receive optional element coordinates/data, if screenshot exists trim accordingly
+    if (left != null && top != null && width != null && height != null) {
+      var canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      screenshot.ctx = canvas.getContext("2d");
+      screenshot.ctx.drawImage(screenshot.canvas, left, top,
+                               width, height,
+                               0, 0,
+                               width, height);
+      screenshot.canvas = canvas;
+    }
+
+    // try with dataURI at first, change to blob after confirmed working
+    var dataURI = screenshot.canvas.toDataURL();
+    //chrome.tabs.create({ url: dataURI });
+    receipt.savedData.snapshot = dataURI;
+  } else {
+    console.log("screenshot does not exist");
+  }
+}
+
+function sendReceipt() {
+  postReceiptToWebApp(receipt.savedData);
+  sendAttributeTemplate(receipt.html, receipt.url, receipt.domain, receipt.generated, receipt.attributes, receipt.savedData);
+
+  if (oldWindowState != null) {
+    resizeToOriginalPage();
+  } else {
+    closeReceipt();
+  }
+}
+
 function postReceiptToWebApp(savedData) {
   var formData = { receipt: savedData };
 
@@ -207,10 +253,10 @@ function postReceiptToWebApp(savedData) {
 
   formData.receipt["title"] = "";
 
-  //formData.receipt["purchase_type_id"] = 1;
-
-  formData.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: formData.receipt["snapshot"] } };
-  delete formData.receipt["snapshot"];
+  if (formData.receipt["snapshot"] != null) {
+    formData.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: formData.receipt["snapshot"] } };
+    delete formData.receipt["snapshot"];
+  }
 
   delete formData.receipt["subtotal"];
   delete formData.receipt["taxes"];
@@ -237,41 +283,95 @@ function postReceiptToWebApp(savedData) {
 }
 
 function resizeToPrinterPage() {
-  chrome.windows.getCurrent(function(window) {
-    if (window.state === "minimized" || window.state === "maximized" || window.state === "fullscreen") {
+  chrome.windows.getCurrent(function(currentWindow) {
+    if (currentWindow.state === "minimized" || currentWindow.state === "maximized" || currentWindow.state === "fullscreen") {
       oldWindowState = {
-        state: window.state
+        state: currentWindow.state
       };
     } else {
       oldWindowState = {
-        width: window.width,
-        height: window.height,
-        left: window.left,
-        top: window.top
+        width: currentWindow.width,
+        height: currentWindow.height,
+        left: currentWindow.left,
+        top: currentWindow.top
       };
     }
 
     console.log(oldWindowState);
-    console.log(window.state);
+    console.log(currentWindow.state);
 
     var width = 1100;
     var height = 1700;
 
     var updateInfo = {
-      left: window.left,
-      top: window.top,
+      left: currentWindow.left,
+      top: currentWindow.top,
       width: width,
       height: height
     };
 
-    chrome.windows.update(window.id, updateInfo);
+    chrome.windows.update(currentWindow.id, updateInfo);
+
+    cleanUpTimeout = window.setTimeout(sendReceipt, 1250);
+    receiptPorts[currentTabId].postMessage({ request: "takeSnapshot" });
   });
+}
+
+
+function capturePage(data) {
+  var canvas;
+
+  // Get window.devicePixelRatio from the page, not the popup
+  var scale = data.devicePixelRatio && data.devicePixelRatio !== 1 ?
+      1 / data.devicePixelRatio : 1;
+
+  if (!screenshot.canvas) {
+    canvas = document.createElement("canvas");
+    canvas.width = data.totalWidth;
+    canvas.height = data.totalHeight;
+    screenshot.canvas = canvas;
+    screenshot.ctx = canvas.getContext("2d");
+
+    // Scale to account for device pixel ratios greater than one. (On a
+    // MacBook Pro with Retina display, window.devicePixelRatio = 2.)
+    if (scale !== 1) {
+      // TODO - create option to not scale? It's not clear if it's
+      // better to scale down the image or to just draw it twice
+      // as large.
+      screenshot.ctx.scale(scale, scale);
+    }
+  }
+
+  // if the canvas is scaled, then x- and y-positions have to make
+  // up for it in the opposite direction
+  if (scale !== 1) {
+    data.x = data.x / scale;
+    data.y = data.y / scale;
+  }
+
+  chrome.tabs.captureVisibleTab(
+    null, {format: "jpeg"/*, quality: 100*/}, function(dataURI) {
+      if (dataURI) {
+        var image = new Image();
+        image.onload = function() {
+          screenshot.ctx.drawImage(image, data.x, data.y);
+
+          // message content script to continue capturing
+          cleanUpTimeout = window.setTimeout(sendReceipt, 1250);
+          receiptPorts[currentTabId].postMessage({ request: "capturePage", totalWidth: data.totalWidth, totalHeight: data.totalHeight });
+        };
+        image.src = dataURI;
+      }
+    });
 }
 
 function resizeToOriginalPage() {
   chrome.windows.getCurrent(function(window) {
     chrome.windows.update(window.id, oldWindowState);
     oldWindowState = null;
+
+    receiptPorts[currentTabId].postMessage({ request: "cleanUp" });
+    closeReceipt();
   });
 }
 
@@ -307,7 +407,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 
 // track tab changes
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
-  if (currentTabId === null) {
+  if (currentTabId == null) {
     currentTabId = tabId;
   }
 
@@ -315,10 +415,10 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
   facebookAPI.GetAccessTokenFromLoginTab(tabId, changeInfo.url);
 
 	// tab created or refreshed (changeInfo.url only set if different from previous state - in loading status)
-	if (changeInfo.status === "complete" && changeInfo.url === undefined)
+	if (changeInfo.status === "complete" && changeInfo.url == null)
 	{
     // if tabId contains receipt notification, disconnect port and remove key/value
-    if (receiptPorts[tabId] !== undefined) {
+    if (receiptPorts[tabId] != null) {
       receiptPorts[tabId].disconnect();
       delete receiptPorts[tabId];
     }
@@ -345,6 +445,8 @@ function closeReceipt() {
     receiptPorts[currentTabId].disconnect();
     delete receiptPorts[currentTabId];
   }
+  receipt = null;
+  screenshot = {};
 }
 
 // message handling - by request.request
