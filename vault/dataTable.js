@@ -1,4 +1,3 @@
-var g_oControllers = new ControllersUrl("localhost");
 var ColIndex =
 {
   DATE : 0,
@@ -29,9 +28,8 @@ function DataTable (sId)
   this.sReceiptFilterField= "vault-receipt-filter";
 };
 
-DataTable.prototype.Init = function(controllers)
+DataTable.prototype.Init = function()
 {
-  this.oControllers = controllers;
   this.GetReceipts_();
 };
 
@@ -136,6 +134,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       }
     }
   });
+  TagHelper.SetupRemoveTagButtonCallbacks();
 
 };
 
@@ -146,7 +145,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
 DataTable.prototype.GetReceipts_ = function() {
     var self = this;
     var request = $.ajax({
-      url: self.oControllers.AppendCred(self.oControllers.GetUrl("receipts") + ".json"),
+      url: g_oControllers.AppendCred(g_oControllers.GetUrl("receipts") + ".json"),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
@@ -247,14 +246,13 @@ DataTable.prototype.FormatData_ = function(mRowData) {
  * @param sName the name of the tag
  */
 DataTable.prototype.AddTag_ = function(sElementId, sName) {
-  var self = this;
   console.log(sElementId);
   console.log(sName);
   var aIdSplit = sElementId.split("-");
   var sType = aIdSplit.length > 4 ? "receipt_item" : "receipt";
   var mData = { name : sName };
-  var sUrl = self.oControllers.AppendCred(
-    self.oControllers.GetUrl("tags") +
+  var sUrl = g_oControllers.AppendCred(
+    g_oControllers.GetUrl("tags") +
     "/" + sType +
     "/" + aIdSplit[aIdSplit.length - 1]+".json");
 

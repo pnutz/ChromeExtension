@@ -1,4 +1,4 @@
-var controllers;
+var g_oControllers;
 var vData = null;
 var Vault =
 {
@@ -28,7 +28,7 @@ var Vault =
     this.initMembers();
     vData = this.mData;
     // get the controller urls
-    controllers = new ControllerUrls(localStorage["webAppHost"]);
+    g_oControllers = new ControllerUrls(localStorage["webAppHost"]);
     // initialize the tab navigation bar
     $('#vault-navbar a').click(function (e) {
       e.preventDefault();
@@ -136,7 +136,7 @@ var Vault =
         self.getUserSettings_();
 
         var receiptRequest = $.ajax({
-          url: controllers.AppendCred(controllers.GetUrl("currencies") + '.json'),
+          url: g_oControllers.AppendCred(g_oControllers.GetUrl("currencies") + '.json'),
           type: 'GET',
           dataType: 'json'
         }).done(function(data){
@@ -165,7 +165,7 @@ var Vault =
       settingData.user_setting = self.mData.userSettings;
 
       $.ajax({
-        url: controllers.AppendCred(controllers.GetUrl("user_settings") + "/" + settingData.user_setting.id + ".json"),
+        url: g_oControllers.AppendCred(g_oControllers.GetUrl("user_settings") + "/" + settingData.user_setting.id + ".json"),
         type: 'PUT',
         data : settingData,
         dataType: 'json'
@@ -183,7 +183,7 @@ var Vault =
   getReceipts_: function() {
     var self = this;
     var request = $.ajax({
-      url: controllers.AppendCred(controllers.GetUrl("receipts") + ".json"),
+      url: g_oControllers.AppendCred(g_oControllers.GetUrl("receipts") + ".json"),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
@@ -209,7 +209,7 @@ var Vault =
       });
 
       // After getting all the dates, render the data table
-      vData.dataTable.Init(controllers);
+      vData.dataTable.Init();
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
@@ -220,7 +220,7 @@ var Vault =
   getUserSettings_: function() {
     var self = this;
     var request = $.ajax({
-      url: controllers.AppendCred(controllers.GetUrl("user_settings") + ".json"),
+      url: g_oControllers.AppendCred(g_oControllers.GetUrl("user_settings") + ".json"),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
@@ -246,14 +246,14 @@ var Vault =
   getDocuments_: function(is_snapshot) {
     var self = this;
     $.ajax({
-      url: controllers.AppendCred(controllers.GetUrl("documents") + ".json") + "&is_snapshot=" + is_snapshot.toString(),
+      url: g_oControllers.AppendCred(g_oControllers.GetUrl("documents") + ".json") + "&is_snapshot=" + is_snapshot.toString(),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
       // add image source to each receipt (by id) here
       // possibly store data and calculate this by event?
 
-      //$("body").append("<img src = '" + self.appendStyle_(controllers.AppendCred(controllers.GetUrl("documents") + "/" + data[51].id)) + "'></img>");
+      //$("body").append("<img src = '" + self.appendStyle_(g_oControllers.AppendCred(g_oControllers.GetUrl("documents") + "/" + data[51].id)) + "'></img>");
 
 
     }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -277,7 +277,7 @@ var Vault =
   getFolders_: function() {
     var self = this;
     var request = $.ajax({
-      url: controllers.AppendCred(controllers.GetUrl("folders") + ".json"),
+      url: g_oControllers.AppendCred(g_oControllers.GetUrl("folders") + ".json"),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
@@ -304,7 +304,7 @@ var Vault =
     };
 
     var request = $.ajax({
-      url: controllers.AppendCred(controllers.GetUrl("folders") + ".json"),
+      url: g_oControllers.AppendCred(g_oControllers.GetUrl("folders") + ".json"),
       type: 'POST',
       data: folderData,
       dataType: 'json'

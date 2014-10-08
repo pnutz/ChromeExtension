@@ -106,8 +106,32 @@ var TagHelper =
   SetupRemoveTagButtonCallbacks : function ()
   {
     $("." + TagClassIds.REMOVE_TAG_BUTTON).click( function () {
-      $(this).parent().find("input").parent().show();
-      $(this).parent().find("input").focus();
+      // The element with the database id information is 2 levels up
+      var aIdSplit = $(this).parent().parent().attr("id").split("-");
+      // depending on whether or not it is a receipt_item or receipt the string split
+      // will create a different size array
+      var iAddOne = aIdSplit.length > 3 ? 1 : 0;
+      var sType = iAddOne ? "receipt_item" : "receipt";
+      var iTagId = aIdSplit[2 + iAddOne];
+      var iReceiptId = aIdSplit[1 + iAddOne];
+      var sUrl = g_oControllers.AppendCred(
+        g_oControllers.GetUrl("tags") +
+        "/" + sType +
+        "/" + iReceiptId +
+        "/" + iTagId + ".json");
+
+      var request = $.ajax({
+          url: sUrl,
+          type: 'DELETE',
+          dataType: 'json'
+        }).done(function(data) {
+          console.log("Successfully removed tag");
+        }).fail(function (jqXHR, textStatus, errorThrown){
+        // log the error to the console
+          console.error(
+            "The following error occurred: " + textStatus,
+            errorThrown);
+        });
     });
   },
 
