@@ -1312,8 +1312,6 @@ function cleanHighlight() {
       node.parentNode.insertBefore(textNode, node);
       node.parentNode.removeChild(node);
 
-      console.log(nodeIndex);
-      console.log(textNodes);
       // set textNodes reference to new text node
       textNodes[nodeIndex] = textNode;
       console.log(textNode);

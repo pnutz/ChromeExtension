@@ -217,7 +217,7 @@ var TwoReceiptHandsOnTable =
       // cell textarea change event
       $(this.TEXTAREA).bind("input propertychange", function() {
         var tempThis = this;
-        var delay = 150;
+        var delay = 500;
 
         clearTimeout($(tempThis).data("timer"));
         $(tempThis).data("timer", setTimeout(function() {
@@ -332,20 +332,20 @@ var TwoReceiptHandsOnTable =
           break;
         }
       }
-      
+
       (function (that) {
-          Handsontable.PluginHooks.add( 'afterSelectionEnd', function(rower,column) { 
+          Handsontable.PluginHooks.add( 'afterSelectionEnd', function(rower,column) {
             self.index = rower;
-            
+
             var message = { request: "highlightSearchText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row, "value": self.index };
             window.parent.postMessage(message, "*");
           });
 
-          Handsontable.PluginHooks.add( 'afterDeselect', function() { 
+          Handsontable.PluginHooks.add( 'afterDeselect', function() {
               window.parent.postMessage({ request: "highlightText", "fieldName": that.instance.colToProp(that.col), "itemIndex": row }, "*");
           });
         })(this);
-      
+
 
       if (row != null && Handsontable.helper.isArray(this.cellProperties.source))
       {
@@ -440,7 +440,7 @@ var TwoReceiptHandsOnTable =
       // cell textarea change event
       $(this.TEXTAREA).bind("input propertychange", function() {
         var tempThis = this;
-        var delay = 150;
+        var delay = 750;
 
         clearTimeout($(tempThis).data("timer"));
         $(tempThis).data("timer", setTimeout(function() {

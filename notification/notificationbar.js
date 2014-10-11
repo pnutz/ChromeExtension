@@ -7,6 +7,34 @@ var fieldTypes  =
   TABLE : 5
 };
 
+var WebAppObserver = {
+  observers: {},
+
+  init: function() {
+    console.log("Started WebAppObserver");
+  },
+
+  notify: function(attribute) {
+    if (this.observers.hasOwnProperty(attribute)) {
+      // add additional attribute calculations as required
+      switch(attribute) {
+        case "currency":
+          NotiBar.setCurrencyByCode(this.observers.currency);
+          break;
+      }
+      this.removeObserver(attribute);
+    }
+  },
+
+  addObserver: function(attribute, value) {
+    this.observers[attribute] = value;
+  },
+
+  removeObserver: function(attribute) {
+    delete this.observers[attribute];
+  }
+};
+
 var NotiBar =
 {
   configurations:
@@ -75,9 +103,10 @@ var NotiBar =
                   }
   },
 
-  init: function()
-  {
+  init: function() {
     var self = this;
+
+    WebAppObserver.init();
 
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker({
@@ -99,15 +128,13 @@ var NotiBar =
     this.initGetCurrencies();
 
     // on receipt submit, validate data and send dictionary of form data to content script
-    $("#receipt-submit").click(function()
-    {
+    $("#receipt-submit").click(function() {
       var notiBarValid = $("#notification-form").valid();
       var handsOnTableValid = TwoReceiptHandsOnTable.isValid();
 
       console.log("submit");
 
-      if (notiBarValid && handsOnTableValid)
-      {
+      if (notiBarValid && handsOnTableValid) {
         var savedData = self.getAllValues();
         var rows = TwoReceiptHandsOnTable.getRows();
         var message = { request: "saveReceipt", "savedData": savedData, "rows": rows };
@@ -139,64 +166,77 @@ var NotiBar =
     // on text form propertychange, send form text and fieldName to content script for search (not triggered on autocomplete select)
     $("input").bind("input propertychange", function() {
       var that = this;
-      var delay = 150;
+      var textDelay = 500;
+      var numericDelay = 750;
       var type = self.configurations.formFields[this.name].type;
 
+      console.log("request: " + that.value);
+
       clearTimeout($(that).data("timer"));
-      $(that).data("timer", setTimeout(function() {
-        $(that).removeData("timer");
-        $(that).attr("data-value", null);
 
-        self.setAutoCompleteOptions(that.id, []);
+      // search for numeric field
+      if (type === fieldTypes.NUMBER && $(that).valid() && that.value.length > 0) {
+        $(that).data("timer", setTimeout(function() {
+          $(that).removeData("timer");
+          $(that).attr("data-value", null);
 
-        // search for numeric field
-        if (type === fieldTypes.NUMBER && $(that).valid() && that.value.length > 0) {
+          self.setAutoCompleteOptions(that.id, []);
+
           var message = { request: "searchMoney", "text": that.value, "fieldName": that.id };
           window.parent.postMessage(message, "*");
-        }
-        // search for regular field
-        else if (type !== fieldTypes.NUMBER && that.value.length > 2) {
+        }, numericDelay));
+      }
+      // search for regular field
+      else if (type !== fieldTypes.NUMBER && that.value.length > 2) {
+        $(that).data("timer", setTimeout(function() {
+          $(that).removeData("timer");
+          $(that).attr("data-value", null);
+
+          self.setAutoCompleteOptions(that.id, []);
+
           var message = { request: "searchText", "text": that.value, "fieldName": that.id };
           window.parent.postMessage(message, "*");
-        }
-      }, delay));
+        }, textDelay));
+      }
     });
   },
 
-  initGetFolders: function()
-  {
+  initGetFolders: function() {
     var message = { request: "getFolders"};
     window.parent.postMessage(message, "*");
   },
 
-  initGetCurrencies: function()
-  {
+  initGetCurrencies: function() {
     var message = { request: "getCurrencies"};
     window.parent.postMessage(message, "*");
   },
 
-  initValidation: function()
-  {
-    jQuery.validator.addMethod("isDate", function(value, element)
-    {
+  // sets currency to param code
+  setCurrencyByCode: function(code) {
+    $(NotiBar.configurations.formFields.currency.id + " option").each(function() {
+      var selectText = $(this).text();
+      var currencyCode = selectText.substring(0, selectText.indexOf(" "));
+      if (code === currencyCode) {
+        NotiBar.setFieldValue("currency", $(this).val());
+        return false;
+      }
+    });
+  },
+
+  initValidation: function() {
+    jQuery.validator.addMethod("isDate", function(value, element) {
       return !isNaN(new Date(value).getTime());
     }, "Invalid date.");
 
-    jQuery.validator.addMethod("isMoney", function(value, element)
-    {
-      if (value.length === 0)
-      {
+    jQuery.validator.addMethod("isMoney", function(value, element) {
+      if (value.length === 0) {
         return true;
-      }
-      else
-      {
-        if (value.charAt(0) === ".")
-        {
+      } else {
+        if (value.charAt(0) === ".") {
           value = "0" + value;
         }
 
-        if (value.charAt(value.length - 1) === ".")
-        {
+        if (value.charAt(value.length - 1) === ".") {
           value += "0";
         }
 
@@ -222,10 +262,8 @@ var NotiBar =
     });
   },
 
-  setFieldValue: function(fieldName, value)
-  {
-    if (fieldName in this.configurations.formFields)
-    {
+  setFieldValue: function(fieldName, value) {
+    if (fieldName in this.configurations.formFields) {
       var field = this.configurations.formFields[fieldName];
       switch(field.type)
       {
@@ -240,9 +278,9 @@ var NotiBar =
         default:
           console.error("Incorrect type");
       }
-    }
-    else
+    } else {
       console.error("Could not find field : " + fieldName);
+    }
   },
 
   /**
@@ -250,12 +288,12 @@ var NotiBar =
    * @params fieldId the id for the element
    * @params the id for the option
    */
-  setSelectOption: function(fieldId, optionId)
-  {
-    if (!isNaN(optionId))
+  setSelectOption: function(fieldId, optionId) {
+    if (!isNaN(optionId)) {
       $(fieldId).val(optionId);
-    else
+    } else {
       console.error("Expected a numeric value for id");
+    }
   },
 
   /**
@@ -263,8 +301,7 @@ var NotiBar =
    * @params fieldId the id for the element
    * @params value text value to be shown
    */
-  setInputFieldValue: function(fieldId, value)
-  {
+  setInputFieldValue: function(fieldId, value) {
     $(fieldId).val(value);
   },
 
@@ -273,36 +310,29 @@ var NotiBar =
    * @params fieldName the name for the element
    * @params options the option id
    */
-  setSelectFieldOptions: function(fieldName, options)
-  {
+  setSelectFieldOptions: function(fieldName, options) {
     if (fieldName in this.configurations.formFields &&
-        this.configurations.formFields[fieldName].type === fieldTypes.SELECT)
-    {
+        this.configurations.formFields[fieldName].type === fieldTypes.SELECT) {
       var field = $(this.configurations.formFields[fieldName].id);
-      $.each(options, function(index, option)
-      {
-        if ("id" in option)
-        {
+      $.each(options, function(index, option) {
+        if ("id" in option) {
           var selectItem = $("<option></option>");
           selectItem.attr("value", option.id);
           selectItem.text(option.name);
           field.append(selectItem);
-        }
-        else
+        } else {
           console.error("Input option missing id");
+        }
       });
-    }
-    else
+    } else {
       console.error("Invalid field name" + fieldName);
+    }
   },
 
-  getAllValues: function()
-  {
+  getAllValues: function() {
     var formDict = {};
-    $.each(this.configurations.formFields, function(key, value)
-    {
-      if (value.type !== fieldTypes.TABLE)
-      {
+    $.each(this.configurations.formFields, function(key, value) {
+      if (value.type !== fieldTypes.TABLE) {
         console.log(key);
         console.log(value);
         var formItem = $(value.id);
@@ -315,10 +345,8 @@ var NotiBar =
     return formDict;
   },
 
-  initAutoComplete: function(fieldName)
-  {
-    if (fieldName in this.configurations.formFields)
-    {
+  initAutoComplete: function(fieldName) {
+    if (fieldName in this.configurations.formFields) {
       var field = this.configurations.formFields[fieldName];
 
       switch(field.type)
@@ -331,56 +359,47 @@ var NotiBar =
               //delay: 500, // default 300
               source: [],
               // focus on selected option rather than autoFocus on 1st option if possible
-              open: function (event, ui)
-              {
+              open: function (event, ui) {
                 var item;
                 var menu = $(this).data("ui-autocomplete").menu;
                 var dataValue = $(this).attr("data-value");
                 // select option if it exists in menu list
-                if (dataValue !== undefined && dataValue !== null)
-                {
+                if (dataValue != null) {
                   var $items = $("li", menu.element);
                   var source = $(this).autocomplete("option", "source");
                   var index = 0;
 
-                  $.each($items, function(itemIndex, itemValue)
-                  {
+                  $.each($items, function(itemIndex, itemValue) {
                     // find matching source with item
-                    while (itemValue.innerText !== source[index].label && index < source.length)
-                    {
+                    while (itemValue.innerText !== source[index].label && index < source.length) {
                       index++;
                     }
 
                     // only take item if data-value matches source value
-                    if (dataValue === source[index].value)
-                    {
+                    if (dataValue === source[index].value) {
                       item = $(itemValue);
                     }
 
                     index++;
 
-                    if (item)
-                    {
+                    if (item) {
                       return false;
                     }
                   });
                 }
 
-                if (item)
-                {
+                if (item) {
                   menu.focus(null, item);
                 }
               },
-              focus: function (event, ui)
-              {
+              focus: function (event, ui) {
                 // highlight focus
                 var message = { request: "highlightSearchText", "fieldName": this.id, "value": ui.item.value };
                 window.parent.postMessage(message, "*");
 
                 return false;
               },
-              select: function (event, ui)
-              {
+              select: function (event, ui) {
                 $(this).val(ui.item.label);
                 $(this).attr("data-value", ui.item.value);
 
@@ -391,20 +410,15 @@ var NotiBar =
                 event.preventDefault();
               }
             })
-            .focus(function()
-            {
+            .focus(function() {
               console.log("focus");
               var $this = $(this);
               // displays autocomplete list on form focus
-              if ($this.autocomplete("option", "source").length !== 0)
-              {
-                setTimeout(function()
-                {
+              if ($this.autocomplete("option", "source").length !== 0) {
+                setTimeout(function() {
                   $this.autocomplete("search");
                 }, 140);
-              }
-              else if ($this.val().length > 0)
-              {
+              } else if ($this.val().length > 0) {
                 var message = { request: "searchNumber", "text": $this.val(), "fieldName": $this.attr('id') };
                 window.parent.postMessage(message, "*");
               }
@@ -413,14 +427,12 @@ var NotiBar =
               var message = { request: "highlightText", "fieldName": this.id };
               window.parent.postMessage(message, "*");
             })
-            .click(function()
-            {
+            .click(function() {
               // if form already focused, will re-open autocomplete on click - THIS ALWAYS TRIGGERS ON FOCUS BY ORIGINAL CLICK
               var $this = $(this);
               if ($this.is(":focus") && $this.autocomplete("option", "source").length !== 0) {
                 console.log("click");
-                setTimeout(function()
-                {
+                setTimeout(function() {
                   $this.autocomplete("search");
                 }, 140);
               }
@@ -438,56 +450,47 @@ var NotiBar =
               //delay: 500, // default 300
               source: [],
               // focus on selected option rather than autoFocus on 1st option if possible
-              open: function (event, ui)
-              {
+              open: function (event, ui) {
                 var item;
                 var menu = $(this).data("ui-autocomplete").menu;
                 var dataValue = $(this).attr("data-value");
                 // select option if it exists in menu list
-                if (dataValue != null)
-                {
+                if (dataValue != null) {
                   var $items = $("li", menu.element);
                   var source = $(this).autocomplete("option", "source");
                   var index = 0;
 
-                  $.each($items, function(itemIndex, itemValue)
-                  {
+                  $.each($items, function(itemIndex, itemValue) {
                     // find matching source with item
-                    while (itemValue.innerText !== source[index].label && index < source.length)
-                    {
+                    while (itemValue.innerText !== source[index].label && index < source.length) {
                       index++;
                     }
 
                     // only take item if data-value matches source value
-                    if (dataValue === source[index].value)
-                    {
+                    if (dataValue === source[index].value) {
                       item = $(itemValue);
                     }
 
                     index++;
 
-                    if (item)
-                    {
+                    if (item) {
                       return false;
                     }
                   });
                 }
 
-                if (item)
-                {
+                if (item) {
                   menu.focus(null, item);
                 }
               },
-              focus: function (event, ui)
-              {
+              focus: function (event, ui) {
                 // highlight focus
                 var message = { request: "highlightSearchText", "fieldName": this.id, "value": ui.item.value };
                 window.parent.postMessage(message, "*");
 
                 return false;
               },
-              select: function (event, ui)
-              {
+              select: function (event, ui) {
                 $(this).val(ui.item.label);
                 $(this).attr("data-value", ui.item.value);
 
@@ -498,19 +501,15 @@ var NotiBar =
                 event.preventDefault();
               }
             })
-            .focus(function()
-            {
+            .focus(function() {
               console.log("focus");
               var $this = $(this);
               // displays autocomplete list on form focus
               if ($this.autocomplete("option", "source").length !== 0) {
-                setTimeout(function()
-                {
+                setTimeout(function() {
                   $this.autocomplete("search");
                 }, 140);
-              }
-              else if ($this.val().length > 2)
-              {
+              } else if ($this.val().length > 2) {
                 var message = { request: "searchText", "text": $this.val(), "fieldName": $this.attr('id') };
                 window.parent.postMessage(message, "*");
               }
@@ -519,14 +518,12 @@ var NotiBar =
               var message = { request: "highlightText", "fieldName": this.id };
               window.parent.postMessage(message, "*");
             })
-            .click(function()
-            {
+            .click(function() {
               // if form already focused, will re-open autocomplete on click - THIS ALWAYS TRIGGERS ON FOCUS BY ORIGINAL CLICK
               var $this = $(this);
               if ($this.is(":focus") && $this.autocomplete("option", "source").length !== 0) {
                 console.log("click");
-                setTimeout(function()
-                {
+                setTimeout(function() {
                   $this.autocomplete("search");
                 }, 140);
               }
@@ -540,9 +537,9 @@ var NotiBar =
         default:
           console.error("Incorrect type");
       }
-    }
-    else
+    } else {
       console.error("Could not find field : " + fieldName);
+    }
   },
 
   /**
@@ -550,10 +547,8 @@ var NotiBar =
    * @params fieldName of the element
    * @params array of options for autocomplete
    */
-  setAutoCompleteOptions: function(fieldName, options)
-  {
-    if (fieldName in this.configurations.formFields)
-    {
+  setAutoCompleteOptions: function(fieldName, options) {
+    if (fieldName in this.configurations.formFields) {
       var field = this.configurations.formFields[fieldName];
 
       switch(field.type)
@@ -573,9 +568,9 @@ var NotiBar =
         default:
           console.error("Incorrect type");
       }
-    }
-    else
+    } else {
       console.error("Could not find field : " + fieldName);
+    }
   }
 };
 
@@ -584,7 +579,6 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     TwoReceiptHandsOnTable.init();
     /*var data = { itemtype: "hello", quantity: 3, cost: 43.2 };
-    TwoReceiptHandsOnTable.addItemRow(data);
     TwoReceiptHandsOnTable.addItemRow(data);*/
   }, 200);
 });
@@ -592,21 +586,27 @@ document.addEventListener('DOMContentLoaded', function() {
 // send message using window.parent.postMessage("yes", '*')
 window.addEventListener("message", function(event) {
   // TODO: chrome extension id
-  if (event.origin.indexOf("chrome-extension://") === -1)
-  {
-    console.log(event.data);
-
+  if (event.origin.indexOf("chrome-extension://") === -1) {
     switch(event.data.request) {
       // generated values for form fields
       case "generatedData":
         $.each(event.data.generated, function(key, value) {
-          if (key !== "templates" && key !== "elementPaths" && key !== "items") {
+          if (key !== "templates" && key !== "elementPaths" && key !== "items" && key !== "currency") {
             NotiBar.setFieldValue(key, value);
           } else if (key === "items") {
             $.each(value, function(itemKey, itemValue) {
               console.log(itemValue);
               TwoReceiptHandsOnTable.addItemRow(itemValue);
             });
+          } else if (key === "currency") {
+            if (NotiBar.configurations.formFields[key] != null) {
+              // if currency select list is already populated
+              if ($(NotiBar.configurations.formFields.currency.id + " option").length > 0) {
+                NotiBar.setCurrencyByCode(value);
+              } else {
+                WebAppObserver.addObserver(key, value);
+              }
+            }
           }
         });
         break;
@@ -636,6 +636,8 @@ window.addEventListener("message", function(event) {
           }
           select.appendChild(option);
         }
+
+        WebAppObserver.notify("currency");
         break;
 
       // interaction with highlighted data
