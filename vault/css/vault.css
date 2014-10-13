@@ -29,6 +29,11 @@ a.tabHeader
   padding: 10px;
 }
 
+#vault-folders-navbar
+{
+  margin-right : 5px;
+}
+
 #vault-folders-navbar > li > a
 {
   padding : 5px;
@@ -52,7 +57,7 @@ a.tabHeader
  /* width: 100%;*/
   height: 100%;
   overflow:auto;
-  background-color: #DDDFFE;
+  background-color: #F0F0F1;
 }
 
 #vault-main-view div.row
@@ -124,8 +129,8 @@ a.tabHeader
 
 .navbar-override > li > a 
 {
-  margin:0px;
-  border-radius:0px;
+  margin : 0px;
+  border-radius : 3px;
 }
 .navbar-override > li.active > a 
 {
@@ -137,6 +142,7 @@ a.tabHeader
 {
   padding: 5px;
   background-color: #90919C;
+  border-radius: 3px;
 }
 
 /* Laying out the start/end/preset/search fields */

@@ -15,6 +15,31 @@ function ControllerUrls(host)
                      };
 }
 
+/*
+ * @brief make a get request for the specified controller
+ * @param sController the name of the controller
+ * @param iId the id of the item in the database, null to request all
+ */
+ControllerUrls.prototype.GetRequest = function(sController, iId, fHandler)
+{
+  var sReceipt = "";
+  if (iId !== null)
+    sReceipt = "/" + iId;
+
+  var request = $.ajax({
+      url: this.AppendCred(this.GetUrl(sController) + sReceipt +".json"),
+      type: 'GET',
+      dataType: 'json'
+    }).done(function(data) {
+      fHandler(data);
+    }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+      console.error(
+        "The following error occurred: " + textStatus,
+        errorThrown);
+    });
+};
+
 ControllerUrls.prototype.GetUrl = function(controller)
 {
   var url = "";

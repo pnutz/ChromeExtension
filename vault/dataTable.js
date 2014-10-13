@@ -10,6 +10,13 @@ var ColIndex =
   RECEIPT : 7
 };
 
+var enum_Action =
+{
+  MODIFY : 0,
+  REMOVE : 1,
+  CREATE : 2
+};
+
 var KeyboardCode =
 {
   ENTER : 13,
@@ -48,6 +55,13 @@ DataTable.prototype.ShowDateRange = function (oStartDate, oEndDate) {
   this.oElem.dataTable().fnDraw();
   this.IsWithinDate_(oStartDate, oEndDate);
   this.oElem.dataTable().fnDraw();
+};
+
+DataTable.prototype.RePopulateTable_ = function ()
+{
+  this.oElem.dataTable().fnClearTable();
+  this.oElem.dataTable().fnDestroy();
+  this.PopulateTableData_(mReceiptsData);
 };
 
 DataTable.prototype.PopulateTableData_ = function(data) {
@@ -102,7 +116,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   //TODO: find a way to not have to call these callback functions twice
   TagHelper.SetupAddTagButtonCallbacks();
   TagHelper.SetupTagHoverCallbacks();
-  self.SetupTagKeyPress();
+  TagHelper.SetupTagKeyPress();
   $("#" + self.sReceiptFilterField).keyup(function(e) {
     self.oDataTable.search($(this).val()).draw();
   });
@@ -130,7 +144,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
         TagHelper.SetupAddTagButtonCallbacks();
         TagHelper.SetupTagHoverCallbacks();
         //Set up the enter key binding event for when enter key pressed
-        self.SetupTagKeyPress();
+        TagHelper.SetupTagKeyPress();
       }
     }
   });
@@ -240,57 +254,6 @@ DataTable.prototype.FormatData_ = function(mRowData) {
   return sFormat;
 };
 
-/**
- * @brief sends a POST request to the server to add a tag
- * @param sElementId the id of the receipt or receipt_item
- * @param sName the name of the tag
- */
-DataTable.prototype.AddTag_ = function(sElementId, sName) {
-  console.log(sElementId);
-  console.log(sName);
-  var aIdSplit = sElementId.split("-");
-  var sType = aIdSplit.length > 4 ? "receipt_item" : "receipt";
-  var mData = { name : sName };
-  var sUrl = g_oControllers.AppendCred(
-    g_oControllers.GetUrl("tags") +
-    "/" + sType +
-    "/" + aIdSplit[aIdSplit.length - 1]+".json");
-
-  var request = $.ajax({
-      url: sUrl,
-      type: 'POST',
-      data: mData,
-      dataType: 'json'
-    }).done(function(data) {
-      console.log("Successfully set tag");
-    }).fail(function (jqXHR, textStatus, errorThrown){
-    // log the error to the console
-      console.error(
-        "The following error occurred: " + textStatus,
-        errorThrown);
-    });
-};
-
-
-
-// TODO: Probably move this bitchass into Tag.js
-DataTable.prototype.SetupTagKeyPress = function ()
-{
-  self = this;
-
-  $("." + TagClassIds.ADD_TAG_FIELD).keyup(function(e) {
-    switch (e.keyCode)
-    {
-    case KeyboardCode.ENTER:
-      self.AddTag_($(this).attr("id"), $(this).val());
-      break;
-    case KeyboardCode.ESCAPE:
-      TagHelper.CancelAddNewTagInput($(e.currentTarget));
-      break;
-    }
-  });
-};
-
 /*
  * brief wrap a tag in a div that stops the row 
  * from expanding when the tag column is clicked
@@ -301,4 +264,27 @@ DataTable.prototype.WrapTag_ = function (sTagHtml)
   return sTagHtml;
 };
 
+/*
+ * brief notify the datatable of action performed on receipt
+ * and repopulates the table to reflect changes
+ */
+DataTable.prototype.ReceiptUpdated = function (iAction, iReceiptId)
+{
+  var self = this;
+  g_oControllers.GetRequest("receipts", iReceiptId, function(data) {
+    switch (iAction)
+    {
+      case enum_Action.REMOVE:
+      case enum_Action.CREATE:
+      case enum_Action.MODIFY:
+      default:
+        $.each(self.mReceiptsData, function(index, value) {
+          if (value.id === iReceiptId)
+            self.mReceiptsData[index] = data;
+        });
+        console.err("Bad action");
+    }
 
+    self.RePopulateTable_();
+  });
+};

@@ -23,6 +23,7 @@ var Vault =
     this.mData.endDate = $("#end-date");
     this.mData.startDate = $("#start-date");
   },
+
   init: function () {
     var self = this;
     this.initMembers();
@@ -51,7 +52,6 @@ var Vault =
       $(this).find(self.mData.sNavbarItemClass).stop().hide("slow");
       $("#vault-navbar-container").stop().animate({width : self.mData.iNavBarItemWidth + "px"});
     });
-
 
     // For when user clicks the new folder button
     $('#new-folder-submit').click(function (e) {
@@ -113,6 +113,7 @@ var Vault =
     vData.startDate.datepicker("setDate", thisDate);
     vData.startDate.change();
   },
+
   initDatePicker: function(dateFormId) {
     var self = this;
     // Apply date picker
@@ -127,6 +128,7 @@ var Vault =
       vData.dataTable.ShowDateRange(new Date($("#start-date").val()), new Date($("#end-date").val()));
     });
   },
+
   initSettingsTab: function() {
     var self = this;
     $("#settings-link").click(function() {
@@ -180,6 +182,7 @@ var Vault =
       });
     });
   },
+
   getReceipts_: function() {
     var self = this;
     var request = $.ajax({
@@ -217,6 +220,7 @@ var Vault =
         errorThrown);
     });
   },
+
   getUserSettings_: function() {
     var self = this;
     var request = $.ajax({
@@ -232,6 +236,7 @@ var Vault =
         errorThrown);
     });
   },
+
   /**
    *@brief renders receipts in the data table
    *       based on the folder
@@ -292,6 +297,7 @@ var Vault =
         errorThrown);
     });
   },
+
   addFolder_: function(iParentId) {
     var self = this;
     folderData = {};
@@ -317,6 +323,7 @@ var Vault =
         errorThrown);
     });
   },
+
   AddFolderEventCallbacks_: function () {
     var self = this;
     // Add hook for folder change, except the add new folder

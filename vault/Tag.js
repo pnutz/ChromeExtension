@@ -138,7 +138,7 @@ var TagHelper =
   /**
    * @brief Hides the input field and shows the add tag button again
   */
-  CancelAddNewTagInput : function (oTagField)
+  HideAddNewTagInput : function (oTagField)
   {
     $(oTagField).parent().hide();
     $(oTagField).parent().siblings("a").show();
@@ -162,6 +162,21 @@ var TagHelper =
   {
     // TODO: pass data back into callback
     $("." + TagClassIds.REMOVE_TAG_BUTTON).click(callbackFunction);
+  },
+
+  SetupTagKeyPress : function ()
+  {
+    self = this;
+    $("." + TagClassIds.ADD_TAG_FIELD).keyup(function(e) {
+      switch (e.keyCode)
+      {
+      // Fallthrough
+      case KeyboardCode.ENTER:
+        self.AddTag_($(this).attr("id"), $(this).val());
+      case KeyboardCode.ESCAPE:
+        self.HideAddNewTagInput($(e.currentTarget));
+      }
+    });
   },
 
   /**
@@ -193,6 +208,59 @@ var TagHelper =
           "The following error occurred: " + textStatus,
           errorThrown);
       });
+  },
+  /**
+   * @brief sends a POST request to the server to add a tag
+   * @param sElementId the id of the receipt or receipt_item
+   * @param sName the name of the tag
+   */
+  AddTag_ : function(sElementId, sName, fHandler) {
+    console.log(sElementId);
+    console.log(sName);
+    var self = this;
+    var aIdSplit = sElementId.split("-");
+    var iReceiptType = aIdSplit.length > 4 ? ReceiptType.RECEIPT_ITEM : ReceiptType.RECEIPT; 
+    var sType = iReceiptType === ReceiptType.RECEIPT_ITEM ? "receipt_item" : "receipt";
+    var mData = { name : sName };
+    var iReceiptId = aIdSplit[aIdSplit.length - 1];
+    var sUrl = g_oControllers.AppendCred(
+      g_oControllers.GetUrl("tags") +
+      "/" + sType +
+      "/" + iReceiptId +".json");
+
+    var request = $.ajax({
+        url: sUrl,
+        type: 'POST',
+        data: mData,
+        dataType: 'json'
+      }).done(function(data) {
+        console.log("Successfully set tag");
+        // Render for viewing
+        self.RenderNewTag_(iReceiptType, iReceiptId, sName);
+        // Setup the hover
+        self.SetupTagHoverCallbacks();
+      }).fail(function (jqXHR, textStatus, errorThrown){
+      // log the error to the console
+        console.error(
+          "The following error occurred: " + textStatus,
+          errorThrown);
+      });
+  },
+  
+  /*
+   * @brief show tag only for the purpose of presenting
+   * @param iReceiptType the type of receipt
+   * @param iReceiptId the id of the receipt (databasE)
+   * @param sTagName the tag name 
+   */
+  RenderNewTag_ : function (iReceiptType, iReceiptId, sTagName)
+  {
+    var sElementId = iReceiptType === ReceiptType.RECEIPT ? 
+      "add-tag-receipt-" + iReceiptId : 
+      "add-tag-receipt-item-" + iReceiptId;
+    var oNewTag = new Tag("NoId", iReceiptType, sTagName, iReceiptId);
+    console.log($("#" + sElementId));
+    $(oNewTag.GetHtml()).insertBefore("#" + sElementId);
   }
 }
 /*
@@ -201,6 +269,10 @@ var TagHelper =
 
 /*
  * brief Class to represent a Tag Object
+ * @param iTagId the id of the tag (database)
+ * @param iTagType the ReceiptType of the tag
+ * @param sName the name of the tag
+ * @param iReceiptId the id of the receipt/item that the tag belongs to
  */
 function Tag(iTagId, iTagType, sName, iReceiptId)
 {
