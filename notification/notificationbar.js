@@ -65,6 +65,11 @@ var NotiBar =
                         id : "#taxes",
                         type : fieldTypes.NUMBER
                       },
+                    "shipping" :
+                      {
+                        id : "#shipping",
+                        type : fieldTypes.NUMBER
+                      },
                     "note" :
                       {
                         id : "#note",
@@ -122,6 +127,7 @@ var NotiBar =
     this.initAutoComplete("subtotal");
     this.initAutoComplete("total");
     this.initAutoComplete("taxes");
+    this.initAutoComplete("shipping");
 
     this.initValidation();
     this.initGetFolders();
@@ -213,14 +219,16 @@ var NotiBar =
 
   // sets currency to param code
   setCurrencyByCode: function(code) {
-    $(NotiBar.configurations.formFields.currency.id + " option").each(function() {
-      var selectText = $(this).text();
-      var currencyCode = selectText.substring(0, selectText.indexOf(" "));
-      if (code === currencyCode) {
-        NotiBar.setFieldValue("currency", $(this).val());
-        return false;
-      }
-    });
+    if (code !== "") {
+      $(NotiBar.configurations.formFields.currency.id + " option").each(function() {
+        var selectText = $(this).text();
+        var currencyCode = selectText.substring(0, selectText.indexOf(" "));
+        if (code === currencyCode) {
+          NotiBar.setFieldValue("currency", $(this).val());
+          return false;
+        }
+      });
+    }
   },
 
   initValidation: function() {
