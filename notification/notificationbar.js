@@ -1,5 +1,4 @@
-var fieldTypes  =
-{
+var fieldTypes = {
   NUMBER : 1,
   TEXT : 2,
   DATE : 3,
@@ -35,10 +34,8 @@ var WebAppObserver = {
   }
 };
 
-var NotiBar =
-{
-  configurations:
-  {
+var NotiBar = {
+  configurations: {
     formFields : {
                     "subtotal" :
                       {
@@ -63,7 +60,7 @@ var NotiBar =
                     "taxes" :
                       {
                         id : "#taxes",
-                        type : fieldTypes.NUMBER
+                        type : fieldTypes.TABLE
                       },
                     "shipping" :
                       {
@@ -111,6 +108,31 @@ var NotiBar =
   init: function() {
     var self = this;
 
+    setTimeout(function() {
+      self.itemTable = TwoReceiptHandsOnTable().init("items", ["Receipt Item", "Quantity", "Cost"], ["itemtype", "quantity", "cost"], ["text", "number", "money"], [0.6, 0.2, 0.2]);
+      /*var data = { itemtype: "hello", quantity: 3, cost: 43.2 };
+      self.itemTable.addDataRow(data);*/
+
+      self.taxTable = TwoReceiptHandsOnTable().init("taxes", ["Tax/Fee Type", "Cost"], ["tax", "price"], ["text", "money"], [0.7, 0.3]);
+
+      // on receipt submit, validate data and send dictionary of form data to content script
+      $("#receipt-submit").click(function() {
+        var notiBarValid = $("#notification-form").valid();
+        var itemTableValid = self.itemTable.isValid();
+        var taxTableValid = self.taxTable.isValid();
+
+        console.log("submit");
+
+        if (notiBarValid && itemTableValid && taxTableValid) {
+          var savedData = self.getAllValues();
+          var rows = self.itemTable.getRows();
+          // rows for taxTable?
+          var message = { request: "saveReceipt", "savedData": savedData, "rows": rows };
+          window.parent.postMessage(message, "*");
+        }
+      });
+    }, 200);
+
     WebAppObserver.init();
 
     // set datepicker ui element
@@ -126,27 +148,11 @@ var NotiBar =
     this.initAutoComplete("transaction");
     this.initAutoComplete("subtotal");
     this.initAutoComplete("total");
-    this.initAutoComplete("taxes");
     this.initAutoComplete("shipping");
 
     this.initValidation();
     this.initGetFolders();
     this.initGetCurrencies();
-
-    // on receipt submit, validate data and send dictionary of form data to content script
-    $("#receipt-submit").click(function() {
-      var notiBarValid = $("#notification-form").valid();
-      var handsOnTableValid = TwoReceiptHandsOnTable.isValid();
-
-      console.log("submit");
-
-      if (notiBarValid && handsOnTableValid) {
-        var savedData = self.getAllValues();
-        var rows = TwoReceiptHandsOnTable.getRows();
-        var message = { request: "saveReceipt", "savedData": savedData, "rows": rows };
-        window.parent.postMessage(message, "*");
-      }
-    });
 
     // resetting the source of iframe causes a window unload
     $("#receipt-close").click(function() {
@@ -258,7 +264,8 @@ var NotiBar =
         date: { required: true, isDate: true },
         total: { /*required: true,*/ isMoney: true },
         subtotal: { isMoney: true },
-        taxes: { isMoney: true }
+        shipping: { isMoney: true }/*,
+        taxes: { isMoney: true }*/
       },
 
       highlight: function(element) {
@@ -348,7 +355,8 @@ var NotiBar =
       }
     });
 
-    formDict[$(this.configurations.formFields.items.id).attr('name')] = TwoReceiptHandsOnTable.getReceiptItems();
+    formDict[$(this.configurations.formFields.items.id).attr('name')] = this.itemTable.getTableData();
+    formDict[$(this.configurations.formFields.taxes.id).attr('name')] = this.taxTable.getTableData();
     console.log(formDict);
     return formDict;
   },
@@ -584,11 +592,6 @@ var NotiBar =
 
 document.addEventListener('DOMContentLoaded', function() {
   NotiBar.init();
-  setTimeout(function() {
-    TwoReceiptHandsOnTable.init();
-    /*var data = { itemtype: "hello", quantity: 3, cost: 43.2 };
-    TwoReceiptHandsOnTable.addItemRow(data);*/
-  }, 200);
 });
 
 // send message using window.parent.postMessage("yes", '*')
@@ -604,7 +607,12 @@ window.addEventListener("message", function(event) {
           } else if (key === "items") {
             $.each(value, function(itemKey, itemValue) {
               console.log(itemValue);
-              TwoReceiptHandsOnTable.addItemRow(itemValue);
+              NotiBar.itemTable.addDataRow(itemValue);
+            });
+          } else if (key === "taxes") {
+            $.each(value, function(taxKey, taxValue) {
+              console.log(taxValue);
+              NotiBar.taxTable.addDataRow(taxValue);
             });
           } else if (key === "currency") {
             if (NotiBar.configurations.formFields[key] != null) {
@@ -660,26 +668,37 @@ window.addEventListener("message", function(event) {
         }
         // handsontable
         else {
-          // store search results in source so handsontable can switch between sources for different cells
-          if (!TwoReceiptHandsOnTable.source.hasOwnProperty(event.data.itemIndex)) {
-            TwoReceiptHandsOnTable.source[event.data.itemIndex] = {};
-          }
-          TwoReceiptHandsOnTable.source[event.data.itemIndex][event.data.fieldName] = event.data.results;
+          if (event.data.tableType === "item") {
+            // store search results in source so handsontable can switch between sources for different cells
+            if (!NotiBar.itemTable.source.hasOwnProperty(event.data.itemIndex)) {
+              NotiBar.itemTable.source[event.data.itemIndex] = {};
+            }
+            NotiBar.itemTable.source[event.data.itemIndex][event.data.fieldName] = event.data.results;
 
-          // update table autocomplete source and open TwoReceiptEditor
-          TwoReceiptHandsOnTable.updateTableSource(event.data.fieldName, event.data.itemIndex);
+            // update table autocomplete source and open TwoReceiptEditor
+            NotiBar.itemTable.updateTableSource(event.data.fieldName, event.data.itemIndex);
+          } else {
+            // store search results in source so handsontable can switch between sources for different cells
+            if (!NotiBar.taxTable.source.hasOwnProperty(event.data.itemIndex)) {
+              NotiBar.taxTable.source[event.data.itemIndex] = {};
+            }
+            NotiBar.taxTable.source[event.data.itemIndex][event.data.fieldName] = event.data.results;
+
+            // update table autocomplete source and open TwoReceiptEditor
+            NotiBar.taxTable.updateTableSource(event.data.fieldName, event.data.itemIndex);
+          }
         }
         break;
 
       // generated item row
       case "newItemRows":
         for (var i = 0; i < event.data.items.length; i++) {
-          TwoReceiptHandsOnTable.addItemRow(event.data.items[i]);
+          NotiBar.itemTable.addDataRow(event.data.items[i]);
         }
         break;
 
       case "getRowData":
-        var row = TwoReceiptHandsOnTable.getDataAtRow(event.data.itemIndex);
+        var row = NotiBar.itemTable.getDataAtRow(event.data.itemIndex);
         var message = { request: "returnRowData", data: row };
         window.parent.postMessage(message, "*");
         break;
