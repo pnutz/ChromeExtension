@@ -124,6 +124,7 @@ a.tabHeader
 
 .navbar-override 
 {
+  border-radius : 3px;
   background-color: #CDCDCD;
 }
 

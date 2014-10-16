@@ -133,7 +133,7 @@ var Vault =
     var self = this;
     $("#settings-link").click(function() {
       // If authentication token and email exist then grab receipt data.
-      if ("authToken" in localStorage && "userEmail" in localStorage && Object.keys(self.mData.userSettings).length === 0) {
+        if ("authToken" in localStorage && "userEmail" in localStorage && Object.keys(self.mData.userSettings).length === 0) {
         // the only purpose for this for now (with only currency user setting) is to set self.mData.userSettings
         self.getUserSettings_();
 
@@ -190,26 +190,31 @@ var Vault =
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
-      self.mData.receipts = data;
-      // painfully convert each item to the desired date format before
-      var earliestDate = new Date(data[0]["date"]);
-      var latestDate = new Date(data[0]["date"]);
-      $.each(data, function(index, value) {
-        // create a date object for comparison
-        var thisDate = new Date(value["date"]);
+      $("#start-date").datepicker("setDate", new Date());
+      $("#end-date").datepicker("setDate", new Date());
+      if ( data.length > 0 )
+      {
+        self.mData.receipts = data;
+        // painfully convert each item to the desired date format before
+        var earliestDate = new Date(data[0]["date"]);
+        var latestDate = new Date(data[0]["date"]);
+        $.each(data, function(index, value) {
+          // create a date object for comparison
+          var thisDate = new Date(value["date"]);
 
-        // Update the end-date so that it has the latest date value
-        if (thisDate > latestDate) {
-          latestDate = thisDate;
-          $("#end-date").datepicker("setDate", thisDate);
-        } else if (thisDate < earliestDate) {
-          earliestDate = thisDate;
-          $("#start-date").datepicker("setDate", thisDate);
-        }
+          // Update the end-date so that it has the latest date value
+          if (thisDate > latestDate) {
+            latestDate = thisDate;
+            $("#end-date").datepicker("setDate", thisDate);
+          } else if (thisDate < earliestDate) {
+            earliestDate = thisDate;
+            $("#start-date").datepicker("setDate", thisDate);
+          }
 
-        // In the mean time modify the date format for each date
-        value["date"] = $.datepicker.formatDate(self.mData.dateFormat, new Date(value["date"]));
-      });
+          // In the mean time modify the date format for each date
+          value["date"] = $.datepicker.formatDate(self.mData.dateFormat, new Date(value["date"]));
+        });
+      }
 
       // After getting all the dates, render the data table
       vData.dataTable.Init();
@@ -324,15 +329,23 @@ var Vault =
     });
   },
 
+  //TODO: this function should be moved into FolderSideBar
+  //to handle the clicks, then we should provide the interface
+  //to return the name of the currently selected folder etc etc
   AddFolderEventCallbacks_: function () {
     var self = this;
     // Add hook for folder change, except the add new folder
     $("#vault-folders-navbar > li > a").not(".add-folder-button > a").click(function(e) {
-      $("#folder-name").text(this.text);
+      var parentFolderName = "";
+      if ( $(this).parent().hasClass("subfolder") )
+      {
+        var $parentAnchor = $("#vault-folders-navbar").find("a[folder_database_id='" + $(this).parent().attr("parent_id") +"']");
+        parentFolderName = $parentAnchor.text() + " / ";
+      }
+      $("#folder-name").text(parentFolderName + this.text);
       var folder = $(this)
       self.filterReceiptList_(folder.attr("folder_database_id"));
     });
-
   }
 };
 
