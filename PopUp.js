@@ -172,7 +172,10 @@ var PopUp =
         // store userID in localStorage
         localStorage["userID"] = data["user"];
       }).fail(function (jqXHR, textStatus, errorThrown){
-      // log the error to the console
+        var failMessage = "Login failed. Check your credentials and try again.";
+        alert(failMessage);
+        $inputs.prop("disabled", false);
+        // log the error to the console
         console.error(
           "The following error occurred: " + textStatus,
           errorThrown);

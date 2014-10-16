@@ -19,7 +19,7 @@
           <div class="row">
               <div class="form-group col-xs-4 col-md-4" >
                 <label for="vendor" >Vendor</label>
-                <input id="vendor" class="form-control" type="text" name="vendor" placeholder="Vendor">
+                <input id="vendor" class="form-control" type="text" name="vendor" placeholder="Vendor" autofocus>
               </div>
               <div class="form-group col-xs-4 col-md-4" >
                 <label for="date">Receipt Date</label>
@@ -74,17 +74,17 @@
             <div class="form-group col-xs-12 col-md-12">
               <label for="receipt-items-container" >Receipt Items</label>
               <div id="receipt-items-container" >
-                <div id="items" name="items">
-                  <!--<button id="receipt-items-add" type="button" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-plus"></span></button>-->
-                </div>
+                <div id="items" name="items"></div>
               </div>
             </div>
           </div>
         </div>
         <div id="receipt-div-mid" class="col-md-2">
           <div class="form-group col-xs-12 col-md-12">
-          <label for="taxes">Taxes</label>
-          <input id="taxes" type="text" class="form-control" name="taxes">
+            <label for="taxes-container" >Taxes, Fees, & Discounts</label>
+            <div id="taxes-container" >
+              <div id="taxes" name="taxes"></div>
+            </div>
           </div>
           <div class="form-group col-xs-12 col-md-12">
             <label for="subtotal">SubTotal</label>
@@ -98,6 +98,10 @@
 
         </div>
         <div id="receipt-div-right" class="col-md-2">
+          <div class="form-group col-xs-12 col-md-12">
+            <label for="shipping">Shipping</label>
+            <input id="shipping" type="text" class="form-control" name="shipping">
+          </div>
           <div class="row">
             <div class="form-group col-xs-11 col-md-11">
               <label for="note">Notes</label>

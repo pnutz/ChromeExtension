@@ -432,7 +432,14 @@ function sortedSearchRequest(source, type, fieldName, text, itemIndex, rowElemen
 
   var results = getMatches(field, itemIndex, type);
   if (results.length > 0) {
-    var message = { request: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex };
+    var tableType;
+    if (fieldName === "itemtype" || fieldName === "quantity" || fieldName === "cost") {
+      tableType = "item";
+    } else {
+      tableType = "tax";
+    }
+
+    var message = { request: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex, tableType: tableType };
     console.log(message);
     source.postMessage(message, event.origin);
     console.log(searchTerms);
@@ -461,7 +468,15 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
     findRelevantMatches(field, type);
 
     var results = getMatches(field, itemIndex, type);
-    var message = { request: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex };
+
+    var tableType;
+    if (fieldName === "itemtype" || fieldName === "quantity" || fieldName === "cost") {
+      tableType = "item";
+    } else {
+      tableType = "tax";
+    }
+
+    var message = { request: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex, tableType: tableType };
     console.log(message);
     source.postMessage(message, event.origin);
     console.log(searchTerms);
@@ -486,6 +501,16 @@ function prepareReceipt(data, rows, parent) {
       });
     }
 
+    // track deleted items for generated templates
+    if (generated != null && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("taxes")) {
+      $.each(generated.templates.taxes, function(key, value) {
+        var intKey = parseInt(key);
+        if (!isNaN(intKey) && rows[intKey] === null) {
+          generated.templates.taxes[key].deleted = true;
+        }
+      });
+    }
+
     // set each attribute value to be its elementPath
     console.log("ATTRIBUTES");
     attributes = ElementPath.processAttributePaths(attributes);
@@ -502,7 +527,7 @@ function prepareReceipt(data, rows, parent) {
       console.log(key);
       console.log(generated[key]);
       console.log(data[key]);
-      if (key !== "items" && key !== "templates" && key !== "elementPaths"
+      if (key !== "items" && key !== "taxes" && key !== "templates" && key !== "elementPaths"
           && generated[key] === data[key]) {
 
         generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths[key]);
@@ -512,6 +537,14 @@ function prepareReceipt(data, rows, parent) {
         $.each(generated.items, function(itemKey, itemValue) {
           if (generated.templates.items[itemKey].deleted == null) {
             generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths.items[itemKey]);
+            console.log("set parent element path");
+            console.log(generatedElementPath);
+          }
+        });
+      } else if (key === "taxes") {
+        $.each(generated.taxes, function(itemKey, itemValue) {
+          if (generated.templates.taxes[itemKey].deleted == null) {
+            generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths.taxes[itemKey]);
             console.log("set parent element path");
             console.log(generatedElementPath);
           }
