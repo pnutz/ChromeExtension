@@ -107,7 +107,8 @@ var TagHelper =
   {
     $("." + TagClassIds.REMOVE_TAG_BUTTON).click( function () {
       // The element with the database id information is 2 levels up
-      var aIdSplit = $(this).parent().parent().attr("id").split("-");
+      var $wrapper = $(this).parent().parent();
+      var aIdSplit = $wrapper.attr("id").split("-");
       // depending on whether or not it is a receipt_item or receipt the string split
       // will create a different size array
       var iAddOne = aIdSplit.length > 3 ? 1 : 0;
@@ -126,6 +127,7 @@ var TagHelper =
           dataType: 'json'
         }).done(function(data) {
           console.log("Successfully removed tag");
+          $wrapper.hide();
         }).fail(function (jqXHR, textStatus, errorThrown){
         // log the error to the console
           console.error(
