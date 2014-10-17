@@ -6,6 +6,8 @@ var fieldTypes = {
   TABLE : 5
 };
 
+// static observer to detect changes in system
+// tracks generated attributes and applies them once the notificationbar has finished loading
 var WebAppObserver = {
   observers: {},
 
@@ -19,6 +21,18 @@ var WebAppObserver = {
       switch(attribute) {
         case "currency":
           NotiBar.setCurrencyByCode(this.observers.currency);
+          break;
+        case "items":
+          $.each(value, function(itemKey, itemValue) {
+            console.log(itemValue);
+            NotiBar.itemTable.addDataRow(itemValue);
+          });
+          break;
+        case "taxes":
+          $.each(value, function(taxKey, taxValue) {
+            console.log(taxValue);
+            NotiBar.taxTable.addDataRow(taxValue);
+          });
           break;
       }
       this.removeObserver(attribute);
@@ -110,10 +124,12 @@ var NotiBar = {
 
     setTimeout(function() {
       self.itemTable = TwoReceiptHandsOnTable().init("items", ["Receipt Item", "Quantity", "Cost"], ["itemtype", "quantity", "cost"], ["text", "number", "money"], [0.6, 0.2, 0.2]);
+      WebAppObserver.notify("items");
       /*var data = { itemtype: "hello", quantity: 3, cost: 43.2 };
       self.itemTable.addDataRow(data);*/
 
       self.taxTable = TwoReceiptHandsOnTable().init("taxes", ["Tax/Fee Type", "Cost"], ["tax", "price"], ["text", "money"], [0.7, 0.3]);
+      WebAppObserver.notify("taxes");
 
       // on receipt submit, validate data and send dictionary of form data to content script
       $("#receipt-submit").click(function() {
@@ -602,18 +618,26 @@ window.addEventListener("message", function(event) {
       // generated values for form fields
       case "generatedData":
         $.each(event.data.generated, function(key, value) {
-          if (key !== "templates" && key !== "elementPaths" && key !== "items" && key !== "currency") {
+          if (key !== "templates" && key !== "elementPaths" && key !== "items" && key !== "taxes" && key !== "currency") {
             NotiBar.setFieldValue(key, value);
           } else if (key === "items") {
-            $.each(value, function(itemKey, itemValue) {
-              console.log(itemValue);
-              NotiBar.itemTable.addDataRow(itemValue);
-            });
+            if (NotiBar.itemTable.addDataRow != null) {
+              $.each(value, function(itemKey, itemValue) {
+                console.log(itemValue);
+                NotiBar.itemTable.addDataRow(itemValue);
+              });
+            } else {
+              WebAppObserver.addObserver(key, value);
+            }
           } else if (key === "taxes") {
-            $.each(value, function(taxKey, taxValue) {
-              console.log(taxValue);
-              NotiBar.taxTable.addDataRow(taxValue);
-            });
+            if (NotiBar.taxTable.addDataRow != null) {
+              $.each(value, function(taxKey, taxValue) {
+                console.log(taxValue);
+                NotiBar.taxTable.addDataRow(taxValue);
+              });
+            } else {
+              WebAppObserver.addObserver(key, value);
+            }
           } else if (key === "currency") {
             if (NotiBar.configurations.formFields[key] != null) {
               // if currency select list is already populated
@@ -701,6 +725,23 @@ window.addEventListener("message", function(event) {
         var row = NotiBar.itemTable.getDataAtRow(event.data.itemIndex);
         var message = { request: "returnRowData", data: row };
         window.parent.postMessage(message, "*");
+        break;
+
+      case "close":
+        window.onunload = function() {
+          window.parent.postMessage({ request: "reopenReceipt" }, "*");
+        };
+
+        location.href = "";
+
+        setTimeout(function() {
+          // javascript doesn't run while onbeforeunload dialog is open
+          // if it makes it to this timeout, it means that user rejected closing notification
+          console.log("timed out");
+          window.onunload = function() {
+            window.parent.postMessage({ request: "closeReceipt" }, "*");
+          };
+        }, 100);
         break;
     }
   }

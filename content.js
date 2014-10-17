@@ -22,52 +22,79 @@ function createNotification() {
 
 	// remove element if it already exists
 	if ($('#notificationdiv').length > 0)
-	{
-		var notdiv = document.getElementById("notificationdiv");
-		notdiv.parentNode.removeChild(notdiv);
-	}
+  {
+    // message notificationdiv to trigger close
+    document.getElementById('twoReceiptIFrame').contentWindow.postMessage({ request: "close" }, '*');
+  } else {
+    // css for iframe
+    var style = document.createElement("style");
+    style.type = "text/css";
+    style.innerHTML = ".twoReceiptIFrame { width: 100%; }";
+    document.getElementsByTagName("head")[0].appendChild(style);
 
-	// css for iframe
-	var style = document.createElement("style");
-	style.type = "text/css";
-	style.innerHTML = ".twoReceiptIFrame { width: 100%; }";
-	document.getElementsByTagName("head")[0].appendChild(style);
+    document.getElementsByTagName("body")[0].style.paddingTop = "300px";
 
-  document.getElementsByTagName("body")[0].style.paddingTop = "300px";
+    // append iframe notification within div to body
+    var div = document.createElement("div");
+    div.id = "notificationdiv";
+    div.setAttribute("style", "top: 0px; left: 0px; height: 300px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
+    var iframe = document.createElement("iframe");
+    iframe.id = "twoReceiptIFrame";
+    iframe.className = "twoReceiptIFrame";
+    iframe.scrolling = "no";
+    iframe.style.width = "100%";
+    iframe.setAttribute("style", 'height: 300px; border: 0px; overflow: visible;');
+    iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
+    div.appendChild(iframe);
 
-	// append iframe notification within div to body
-	var div = document.createElement("div");
-	div.id = "notificationdiv";
-	div.setAttribute("style", "top: 0px; left: 0px; height: 300px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
-	var iframe = document.createElement("iframe");
-	iframe.id = "twoReceiptIFrame";
-	iframe.className = "twoReceiptIFrame";
-	iframe.scrolling = "no";
-	iframe.style.width = "100%";
-  iframe.setAttribute("style", 'height: 300px; border: 0px; overflow: visible;');
-	iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
-	div.appendChild(iframe);
+    // before appending, hide the div
+    $(div).hide();
+    document.documentElement.appendChild(div);
+    $(div).toggle("slide");
 
-  // before appending, hide the div
-  $(div).hide();
-	document.documentElement.appendChild(div);
-  $(div).toggle("slide");
+    // message requesting generated data from aServer
+    // delay response so generated data comes later, giving notification a chance to load
+    setTimeout(function() {
+      var messageDomain;
+      if (document.domain == null || document.domain === "") {
+        messageDomain = "DOMAIN";
+      } else {
+        messageDomain = document.domain;
+      }
+
+      var msgData = {
+        request: "initializeReceipt",
+        html: document.body.outerHTML,
+        url: location.href,
+        domain: messageDomain
+      };
+
+      incomingPort.postMessage(msgData);
+    }, 400);
+  }
 }
 
-// long-lived connection from background
+function closeReceipt() {
+  var notificationdiv = $("#notificationdiv");
+  // check if notification has already been removed (from saveReceipt)
+  if (notificationdiv.length > 0) {
+    var notdiv = notificationdiv[0];
+    document.getElementsByTagName("body")[0].style.paddingTop = "0px";
+    notdiv.parentNode.removeChild(notdiv);
+  }
+
+  cleanHighlight();
+  cleanElementData();
+  cleanFieldText();
+}
+
+// long-lived connection from eventPage
 chrome.runtime.onConnect.addListener(function(port) {
 	// connect if not an iframe
 	if (self === top) {
     console.log("Connected to port: " + port.name);
     if (port.name === "receiptPort") {
       incomingPort = port;
-    }
-
-    var messageDomain;
-    if (document.domain === null || document.domain === "") {
-      messageDomain = "DOMAIN";
-    } else {
-      messageDomain = document.domain;
     }
 
     port.onMessage.addListener(function(msg) {
@@ -77,19 +104,7 @@ chrome.runtime.onConnect.addListener(function(port) {
         switch (msg.request) {
           // send basic page data so aServer can generate data
           case "initializeReceipt":
-            var msgData = {
-              request: msg.request,
-              html: document.body.outerHTML,
-              url: location.href,
-              domain: messageDomain
-            };
-
             createNotification();
-
-            // delay response so generated data comes later (handsontable not fully generated yet)
-            setTimeout(function() {
-              incomingPort.postMessage(msgData);
-            }, 400);
             break;
 
           // receive generated data
@@ -169,6 +184,7 @@ chrome.runtime.onConnect.addListener(function(port) {
   }
 });
 
+// messages from PopUp
 chrome.runtime.onMessage.addListener(
 	function(request, sender, sendResponse) {
     console.log("running listener function for " + request.request);
@@ -211,9 +227,9 @@ chrome.runtime.onMessage.addListener(
 		}
 });
 
+// messages from notificationbar
 window.addEventListener("message", function(event) {
-  if (event.origin.indexOf("chrome-extension://") !== -1)
-  {
+  if (event.origin.indexOf("chrome-extension://") !== -1) {
     console.log(event.data);
 
     switch (event.data.request) {
@@ -238,17 +254,14 @@ window.addEventListener("message", function(event) {
 
       // close notification bar
       case "closeReceipt":
-        var notificationdiv = $("#notificationdiv");
-        // check if notification has already been removed (from saveReceipt)
-        if (notificationdiv.length > 0) {
-          var notdiv = notificationdiv[0];
-          document.getElementsByTagName("body")[0].style.paddingTop = "0px";
-          notdiv.parentNode.removeChild(notdiv);
-        }
+        closeReceipt();
+        break;
 
-        cleanHighlight();
-        cleanElementData();
-        cleanFieldText();
+      // close then reopen notification bar
+      // processed whether close/reopen on notification side since cannot set timeout for reopen here
+      case "reopenReceipt":
+        closeReceipt();
+        createNotification();
         break;
 
       // user requests search
