@@ -2,12 +2,12 @@ var ColIndex =
 {
   DATE : 0,
   VENDOR: 1,
-  TRANSACTION: 2,
-  TOTAL : 3,
-  TITLE : 4,
-  TAGS : 5,
-  FOLDER : 6,
-  RECEIPT : 7
+  TOTAL : 2,
+  TITLE : 3,
+  TAGS : 4,
+  FOLDER : 5,
+  RECEIPT : 6,
+  TRANSACTION: 7,
 };
 
 var enum_Action =
@@ -74,18 +74,21 @@ DataTable.prototype.PopulateTableData_ = function(data) {
     "paging" : false,
     "columnDefs" : [
      {
-        "targets" : [6, 7], // hide folder ids since we only want them for filtering
+        //Hide these columns
+        "targets" : [ColIndex.TRANSACTION,
+                     ColIndex.FOLDER,
+                     ColIndex.RECEIPT], 
         "visible" : false
      },
      { // For formatting the date column
-       "targets" : [0],
+       "targets" : [ColIndex.DATE],
        "render" : function (data, type, row) {
          var oDate = new Date(data);
          return oDate.getDate() + '-' + (oDate.getMonth() + 1) + '-' + oDate.getFullYear();
        }
      },
      { // For displaying tags on the receipt level
-       "targets" : 5,
+       "targets" : ColIndex.TAGS,
        "render" : function (data, type, row) {
          // create an input element to add new tags
          var input = "";
@@ -101,15 +104,16 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       },
      },
     ],
+    // Use "." to reference nested members
     "columns" : [
       {"data" : "date", "width" : "5%"},
-      {"data" : "vendor_id", "width" : "5%"},
-      {"data" : "transaction_number", "width" : "5%"},
+      {"data" : "vendor.name", "width" : "5%"},
       {"data" : "total", "width" : "5%"},
       {"data" : "title", "width" : "15%"},
       {"data" : "tags", "width" : "5%"},
       {"data" : "folder_id", "width": "0%"},
-      {"data" : "id", "width": "0%"}
+      {"data" : "id", "width": "0%"},
+      {"data" : "transaction_number", "width" : "5%"},
     ],
   });
 

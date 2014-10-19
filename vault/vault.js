@@ -22,6 +22,7 @@ var Vault =
     this.mData.rangePreset = $("#vault-date-preset");
     this.mData.endDate = $("#end-date");
     this.mData.startDate = $("#start-date");
+    this.mData.mainNavBar = $("#vault-navbar");
   },
 
   init: function () {
@@ -37,17 +38,26 @@ var Vault =
     });
     this.initSettingsTab();
 
+    var oInterval = null;
+
     $(".vault-navbar-item-name").hide();
     self.mData.iNavBarItemWidth = $("#vault-navbar > li").width();
-    $("#vault-navbar").mouseenter(function() {
-      $("#vault-navbar-container").stop().animate({width : "11%"},
-      {
-        done : function(animation, jumpedToEnd) {
-          $(this).find(self.mData.sNavbarItemClass).stop().show("slow");
+    self.mData.mainNavBar.mouseenter(function() {
+        setTimeout(function() {
+        if (self.mData.mainNavBar.is(":hover"))
+        {
+          $("#vault-navbar-container").stop().animate({width : "11%"},
+          {
+            done : function(animation, jumpedToEnd) {
+              $(this).find(self.mData.sNavbarItemClass).stop().show("slow");
+            }
+          });
         }
-      });
-      $(this).find(self.mData.sNavbarItemClass).stop().show();
+      }, 
+      300);
     });
+
+    // when mouse leave the navbar 
     $("#vault-navbar").mouseleave(function() {
       $(this).find(self.mData.sNavbarItemClass).stop().hide("slow");
       $("#vault-navbar-container").stop().animate({width : self.mData.iNavBarItemWidth + "px"});
@@ -263,7 +273,7 @@ var Vault =
       // add image source to each receipt (by id) here
       // possibly store data and calculate this by event?
 
-      //$("body").append("<img src = '" + self.appendStyle_(g_oControllers.AppendCred(g_oControllers.GetUrl("documents") + "/" + data[51].id)) + "'></img>");
+      $("body").append("<img src = '" + self.appendStyle_(g_oControllers.AppendCred(g_oControllers.GetUrl("documents") + "/" + data[51].id)) + "'></img>");
 
 
     }).fail(function(jqXHR, textStatus, errorThrown) {
