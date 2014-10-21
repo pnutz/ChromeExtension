@@ -76,11 +76,11 @@ var NotiBar = {
                         id : "#taxes",
                         type : fieldTypes.TABLE
                       },
-                    "shipping" :
+                    /*"shipping" :
                       {
                         id : "#shipping",
                         type : fieldTypes.NUMBER
-                      },
+                      },*/
                     "note" :
                       {
                         id : "#note",
