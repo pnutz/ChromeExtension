@@ -1,0 +1,170 @@
+<html>
+  <head>
+    <!-- jquery -->
+    <script src="../jquery-2.0.3.min.js"></script>
+
+    <!-- jquery-ui -->
+		<script src="../js/jquery-ui-1.10.4.min.js"></script>
+    <link rel="stylesheet" href="../css/jquery-ui-1.9.2.custom.min.css">
+
+    <!-- validation -->
+    <script src="../js/jquery.validate.min.js"></script>
+
+    <!-- bootstrap -->
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/jquery.bootstrap.wizard.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
+
+    <!-- handsontable -->
+    <script src="dist/jquery.handsontable.full.js"></script>
+    <link rel="stylesheet" media="screen" href="dist/jquery.handsontable.full.css">
+
+    <!-- custom source -->
+    <script src="tworeceipt-handsontable.js"></script>
+    <script src="webapp-observer.js"></script>
+    <script src="wizard.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/notificationbar.css">
+    <link rel="stylesheet" type="text/css" href="css/wizard.css">
+  </head>
+  <body>
+    <div id="rootwizard">
+      <div class="navbar navbar-inverse-custom">
+        <div class="navbar-inner">
+          <div class="container">
+            <ul class="nav navbar-nav custom-hover">
+              <li><a href="#tab1" data-toggle="tab">Vendor</a></li>
+              <li><a href="#tab2" data-toggle="tab">Date</a></li>
+              <li><a href="#tab3" data-toggle="tab">Invoice Number</a></li>
+              <li><a href="#tab4" data-toggle="tab">Receipt Items</a></li>
+              <li><a href="#tab5" data-toggle="tab">Taxes</a></li>
+              <li><a href="#tab6" data-toggle="tab">Total</a></li>
+              <li><a href="#tab7" data-toggle="tab">Notes</a></li>
+              <li><a href="#tab8" data-toggle="tab">Options</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <form id="wizard-form">
+        <div class="tab-content">
+          <div class="tab-pane" id="tab1">
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3" >
+                <!--<label for="vendor" >Vendor</label>-->
+                1
+                <input id="vendor" class="form-control" type="text" name="vendor" placeholder="Vendor">
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="tab2">
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3" >
+                2
+                <!--<label for="date">Receipt Date</label>-->
+                <input id="date" type="text" name="date" placeholder="Purchase Date" class="form-control col-xs-3">
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="tab3">
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3">
+                3<!--<label for="transaction">Invoice</label>-->
+                <input id="transaction" type="text" class="form-control" name="transaction" placeholder="Invoice #">
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="tab4">
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3">
+                4<!--<label for="receipt-items-container" >Receipt Items</label>-->
+                <div id="receipt-items-container" >
+                  <div id="items" name="items"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3">
+                <!--<label for="subtotal">SubTotal</label>-->
+                <input id="subtotal" type="text" class="form-control" name="subtotal" placeholder="SubTotal">
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="tab5">
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3">
+                5<!--<label for="taxes-container" >Taxes, Fees, & Discounts</label>-->
+                <div id="taxes-container" >
+                  <div id="taxes" name="taxes"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="tab6">
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3">
+                6<!--<label for="total">Total</label>-->
+                <input id="total" type="text" class="form-control" name="total" placeholder="Total">
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="tab7">
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3">
+                7<!--<label for="note">Notes</label>-->
+                <textarea id="note" name="note" class="form-control" placeholder="Notes"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="tab8">
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3" >
+                8<label for="currency">Currency</label>
+                <select id="currency" type="text" name="currency" class="form-control"></select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3" >
+                <label for="folder">Folder</label>
+                <select id="folder" type="text" name="folder" class="form-control"></select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3" >
+                <label for="profile" >Profile</label>
+                <div >
+                  <select id="profile" type="text" name="profile" class="form-control" >
+                    <option>Profile 1</option>
+                    <option>Profile 2</option>
+                    <option>Profile 3</option>
+                    <option>Profile 4</option>
+                    <option>Profile 5</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-xs-3 col-md-3" >
+                <label for="category">Category</label>
+                <div>
+                  <select id="category" type="text" name="category" class="form-control">
+                    <option>Category 1</option>
+                    <option>Category 2</option>
+                    <option>Category 3</option>
+                    <option>Category 4</option>
+                    <option>Category 5</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ul class="pager wizard">
+            <li class="previous first"><a href="#">Cancel</a></li>
+            <li class="previous"><a href="#">Previous</a></li>
+            <li class="next last"><a href="#">Finish</a></li>
+            <li class="next"><a href="#">Next</a></li>
+          </ul>
+        </div>
+      </div>
+    </form>
+
+  </body>
+</html>

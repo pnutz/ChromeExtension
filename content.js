@@ -42,7 +42,9 @@ function createNotification() {
     iframe.id = "twoReceiptIFrame";
     iframe.className = "twoReceiptIFrame";
     iframe.scrolling = "no";
+    //iframe.setAttribute("style", "width:400px;height:200px;position:absolute;top:650;left:225;");
     iframe.style.width = "100%";
+    iframe.style.height = "100%";
     iframe.setAttribute("style", 'height: 300px; border: 0px; overflow: visible;');
     iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
     div.appendChild(iframe);

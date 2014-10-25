@@ -122,6 +122,8 @@ var NotiBar = {
   init: function() {
     var self = this;
 
+    WebAppObserver.init();
+
     setTimeout(function() {
       self.itemTable = TwoReceiptHandsOnTable().init("items", ["Receipt Item", "Quantity", "Cost"], ["itemtype", "quantity", "cost"], ["text", "number", "money"], [0.6, 0.2, 0.2]);
       WebAppObserver.notify("items");
@@ -149,8 +151,6 @@ var NotiBar = {
       });
     }, 200);
 
-    WebAppObserver.init();
-
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker({
       showOn: "button",
@@ -164,7 +164,7 @@ var NotiBar = {
     this.initAutoComplete("transaction");
     this.initAutoComplete("subtotal");
     this.initAutoComplete("total");
-    this.initAutoComplete("shipping");
+    //this.initAutoComplete("shipping");
 
     this.initValidation();
     this.initGetFolders();
