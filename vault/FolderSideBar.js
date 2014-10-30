@@ -109,7 +109,7 @@ FolderSideBar.prototype.RenderFolderOnList_ = function(folderData) {
       newFolder.attr("data-toggle", "modal");
       newFolder.attr("data-target", "#add-folder-modal");
       newFolder.attr("href", "#");
-      folderData.name = "New Folder";
+      folderData.name = "<span class='glyphicon glyphicon-plus'></span>New Folder";
     } else { // Actual folder type
       // Attribute is based on the id of the folder in the WebApp DB
       newFolder.attr("data-toggle", "pill");
@@ -127,7 +127,7 @@ FolderSideBar.prototype.RenderFolderOnList_ = function(folderData) {
     }
 
     // Common data all "folders" have
-    newFolder.text(folderData.name);
+    newFolder.html(folderData.name);
     newListItem.append(newFolder);
     this.oElem.append(newListItem);
 };

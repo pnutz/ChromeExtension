@@ -36,7 +36,7 @@ FaceBookAPI.prototype.GetAccessTokenFromLoginTab = function (tabId, url)
   console.log("tabId" + tabId + "our tabid = " + this.tabId);
   if (!this.bIsLoggingIn || tabId != this.tabId)
     return;
-  console.log("checkainggg");
+  console.log("Checking FB auth url");
   // Make sure we have a match
   if ((url != undefined) && (url.match(k_loginSuccessUrl).length == 1));
   {

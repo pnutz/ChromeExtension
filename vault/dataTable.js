@@ -82,6 +82,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
      },
      { // For formatting the date column
        "targets" : [ColIndex.DATE],
+       "searchable" : false,
        "render" : function (data, type, row) {
          var oDate = new Date(data);
          return oDate.getDate() + '-' + (oDate.getMonth() + 1) + '-' + oDate.getFullYear();
@@ -227,15 +228,17 @@ DataTable.prototype.FilterFolders_ =  function(aFolders) {
  */
 DataTable.prototype.FormatData_ = function(mRowData) {
   var self = this;
-  var sDetailsFormat =
+  var sDetailsTable ='<table><tr><th>Items</th><th>Details</th><th>Snapshot</th></tr>';
+  var sRow = "<tr>";
+
+  var sDetailsCell = 
+    '<td><table>' +  
     '<tr><td>Transaction Number</td><td>' + mRowData.transaction_number +'</td></tr>' +
-    '<tr><td>Note</td><td>' + mRowData.note +'</td></tr>';
-  var sFormat =
-    '<table>' + sDetailsFormat + '</table>';
-  console.log(sFormat);
-  var sReceiptItemsList = "<tr><th>Item</th><th>Name</th><th>Cost</th><th>Tags</th></tr>" ; 
+    '<tr><td>Note</td><td>' + mRowData.note +'</td></tr>' + 
+    '</table></td>';
+  var sReceiptItemsList = "<td><table><tr><th>Name</th><th>Cost</th><th>Tags</th></tr>" ; 
   $.each(mRowData.receipt_items, function(index, value) {
-    sReceiptItemsList += '<tr><td>' + index + '</td><td>' + value["item_name"] + '</td><td>' + value["cost"] + "</td>";
+    sReceiptItemsList += '<tr><td>' + value["item_name"] + '</td><td>' + value["cost"] + "</td>";
 
     //Add tags if they exist for this receipt item
     sReceiptItemsList += "<td>";
@@ -249,13 +252,15 @@ DataTable.prototype.FormatData_ = function(mRowData) {
     // Add the text input fields for tags after each receipt item
     sReceiptItemsList += TagHelper.GetTagFieldHtml(ReceiptType.RECEIPT_ITEM, value.id);
     sReceiptItemsList += TagHelper.GetAddTagHtml(ReceiptType.RECEIPT_ITEM, value.id);
-    sReceiptItemsList += "</td>";
+    sReceiptItemsList += "</td></tr>";
   });
+  
+  sReceiptItemsList += '</table></td>'
 
-  sReceiptItemsList += '</tr>'
-  sFormat += '<table>' + sReceiptItemsList + '</table>';
+  sRow += sReceiptItemsList + sDetailsCell + "</tr>";
 
-  return sFormat;
+  sDetailsTable += sRow + "</table>";
+  return sDetailsTable;
 };
 
 /*

@@ -93,35 +93,37 @@ var Vault =
     if (select == 0)
       return;
 
-    var thisDate = new Date();
+    var endDate = new Date();
     vData.endDate.datepicker("setDate", new Date());
+    var startDate = new Date();
+    vData.startDate.datepicker("setDate", new Date());
 
     switch(parseInt(vData.rangePreset.val())) {
       case 1: //today
-        thisDate.setHours(0);
+        endDate.setHours(0);
         break;
       case 2: //Yesterday
-        thisDate.setDate(thisDate.getDate() - 1);
+        startDate.setDate(startDate.getDate() - 1);
+        endDate.setDate(endDate.getDate() - 1);
         break;
       case 3: //this week
-        thisDate.setDate(thisDate.getDate() - thisDate.getDay());
+        endDate.setDate(endDate.getDate() - endDate.getDay());
         break;
       case 4: //last weeks
         //Get some day in last week
-        thisDate.setDate(thisDate.getDate() - 7 - thisDate.getDay());
+        endDate.setDate(endDate.getDate() - 7 - endDate.getDay());
+        startDate.setDate(startDate.getDate() - startDate.getDay());
         break;
       case 5: //this month
-        thisDate.setDate(1);
+        endDate.setDate(1);
         break;
       case 6: //last month
-        thisDate.setMonth(thisDate.getMonth() - 1);
-        thisDate.setDate(1);
+        endDate.setMonth(endDate.getMonth() - 1);
+        startDate.setDate(1);
         break;
     }
-
-    thisDate.setHours(0);
-    vData.startDate.datepicker("setDate", thisDate);
-    vData.startDate.change();
+    vData.endDate.datepicker("setDate", endDate);
+    vData.startDate.datepicker("setDate", startDate);
   },
 
   initDatePicker: function(dateFormId) {
@@ -273,7 +275,7 @@ var Vault =
       // add image source to each receipt (by id) here
       // possibly store data and calculate this by event?
 
-      $("body").append("<img src = '" + self.appendStyle_(g_oControllers.AppendCred(g_oControllers.GetUrl("documents") + "/" + data[51].id)) + "'></img>");
+   //   $("body").append("<img src = '" + self.appendStyle_(g_oControllers.AppendCred(g_oControllers.GetUrl("documents") + "/1")) + "'></img>");
 
 
     }).fail(function(jqXHR, textStatus, errorThrown) {

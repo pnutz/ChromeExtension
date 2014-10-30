@@ -6,7 +6,7 @@ var PopUp =
 {
   configurations:
   {
-    host : "http://localhost:3000"
+    host : "http://lvh.me:3000"
   },
 
   initButtons: function() {
@@ -74,6 +74,11 @@ var PopUp =
         console.error(
           "The following error occurred: " + textStatus,
           errorThrown);
+        delete localStorage["authToken"];
+        delete localStorage["fbAccessToken"];
+        delete localStorage["userEmail"];
+        location.reload(true);
+
       });
     }
     //else prompt for credentials

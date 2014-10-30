@@ -40,6 +40,11 @@ a.tabHeader
   font-size: 14px;
 }
 
+#vault-folders-navbar > .subfolder 
+{
+  background-color: #999999;
+}
+
 #vault-folders-navbar > .subfolder > a 
 {
   padding: 2px 15px;
@@ -57,7 +62,7 @@ a.tabHeader
  /* width: 100%;*/
   height: 100%;
   overflow:auto;
-  background-color: #F0F0F1;
+  background-color: #a4a4a4;
 }
 
 #vault-main-view div.row
@@ -128,12 +133,28 @@ a.tabHeader
   background-color: #CDCDCD;
 }
 
+.navbar-override > li+li
+{
+  margin-top: 0px;
+}
+
+
 .navbar-override > li > a 
 {
   margin : 0px;
   border-radius : 3px;
+  color : #333333;
+  
 }
-.navbar-override > li.active > a 
+
+/* when the mouse hovers over the folder/category pills */
+.navbar-override > li > a:hover
+{
+  background-color : #666666;
+}
+
+.navbar-override > li.active > a, 
+.navbar-override > li.active > a:hover 
 {
   /* must match background-color for vault-receipts-pane*/
   background-color: #90919C;
