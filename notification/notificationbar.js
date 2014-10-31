@@ -45,6 +45,14 @@ var WebAppObserver = {
 
   removeObserver: function(attribute) {
     delete this.observers[attribute];
+  },
+
+  hasObserver: function(attribute) {
+    if (this.observers.hasOwnProperty(attribute)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 };
 
@@ -617,6 +625,17 @@ window.addEventListener("message", function(event) {
     switch(event.data.request) {
       // generated values for form fields
       case "generatedData":
+        // add subtotal to event.data.generated
+        if (event.data.generated.hasOwnProperty("total") && event.data.generated.hasOwnProperty("taxes")) {
+          var subtotal = event.data.generated.total;
+
+          var taxKeys = Object.keys(event.data.generated.taxes);
+          for (var i = 0; i < taxKeys.length; i++) {
+            subtotal -= event.data.generated.taxes[taxKeys[i]].price;
+          }
+          event.data.generated.subtotal = subtotal;
+        }
+
         $.each(event.data.generated, function(key, value) {
           if (key !== "templates" && key !== "elementPaths" && key !== "items" && key !== "taxes" && key !== "currency") {
             NotiBar.setFieldValue(key, value);
