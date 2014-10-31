@@ -5,7 +5,7 @@
 // element attribute: data-tworeceipt-field-search=index
 var searchTerms = {};
 // attributes = { field: true, items: { 0: { itemField: true } } };
-var attributes = { "items": {} };
+var attributes = { "items": {}, "taxes": {} };
 // array of each non-whitespace text node in the document
 var textNodes = [];
 
@@ -1316,6 +1316,8 @@ function cleanHighlight() {
       textNodes[nodeIndex] = textNode;
       console.log(textNode);
     });
+
+    console.log(textNodes);
   }
 }
 
@@ -1398,7 +1400,7 @@ function isValidNode(node) {
     valid = true;
   }
   // iterateText through children of non-style/script elements
-  else if (node.nodeType === 1 && node.childNodes.length > 0 && !/(style|script)/i.test(node.tagName)) {
+  else if (node.nodeType === 1 && node.childNodes.length > 0 && !/(style|script|select)/i.test(node.tagName)) {
     var style = window.getComputedStyle(node);
     // ignore hidden elements
     if (style.visibility !== "hidden" && style.display !== "none") {
@@ -1419,7 +1421,7 @@ function iterateText(node, method, methodParams) {
     methodParams = method(node, methodParams);
   }
   // iterateText through children of non-style/script elements
-  else if (node.nodeType === 1 && node.childNodes.length > 0 && !/(style|script)/i.test(node.tagName)) {
+  else if (node.nodeType === 1 && node.childNodes.length > 0 && !/(style|script|select)/i.test(node.tagName)) {
     var style = window.getComputedStyle(node);
     // ignore hidden elements
     if (style.visibility !== "hidden" && style.display !== "none") {
@@ -1442,10 +1444,17 @@ function setFieldText(element, start, end, field, index, startNodeIndex) {
   var dataField = "data-tworeceipt-" + field;
   if (index != null) {
     dataField += index;
-    if (attributes.items[index] == null) {
-      attributes.items[index] = {};
+    if ((field === "itemtype" || field === "quantity" || field === "cost")) {
+      if (attributes.items[index] == null) {
+        attributes.items[index] = {};
+      }
+      attributes.items[index][field] = true;
+    } else {
+      if (attributes.taxes[index] == null) {
+        attributes.taxes[index] = {};
+      }
+      attributes.taxes[index][field] = true;
     }
-    attributes.items[index][field] = true;
   } else {
     attributes[field] = true;
   }
@@ -1453,6 +1462,7 @@ function setFieldText(element, start, end, field, index, startNodeIndex) {
   element.attr(dataField + "-start", start);
   element.attr(dataField + "-end", end);
   element.attr(dataField + "-node", startNodeIndex);
+  console.log(element);
 }
 
 // removes data-tworeceipt-field-start and -end attributes for selected field (index for receipt items)
@@ -1467,6 +1477,11 @@ function cleanFieldText(field, index) {
         delete attributes.items[index][field];
         if (Object.keys(attributes.items[index]).length === 0) {
           delete attributes.items[index];
+        }
+      } else if (attributes.taxes.hasOwnProperty(index) && attributes.taxes[index].hasOwnProperty(field)) {
+        delete attributes.taxes[index][field];
+        if (Object.keys(attributes.taxes[index]).length === 0) {
+          delete attributes.taxes[index];
         }
       }
     } else if (attributes.hasOwnProperty(field)) {
@@ -1486,7 +1501,7 @@ function cleanFieldText(field, index) {
     for (var i = 0; i < keys.length; i++) {
       var field = keys[i];
 
-      if (field === "items") {
+      if (field === "items" || field === "taxes") {
         var itemKeys = Object.keys(attributes.items);
         for (var j = 0; j < itemKeys.length; j++) {
           var itemIndex = itemKeys[j];
@@ -1519,7 +1534,7 @@ function cleanFieldText(field, index) {
       }
     }
 
-    attributes = { "items": {} };
+    attributes = { "items": {}, "taxes": {} };
   }
 }
 

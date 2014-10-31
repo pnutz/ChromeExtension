@@ -61,20 +61,23 @@ function sendDomain(tabId, html, url, domain) {
     generated.elementPaths = {};
     // message attribute field text to receipt popup
     $.each(response[0], function(key, value) {
-      if (key !== "items" && key !== "templates" && key !== "elementPaths") {
+      if (key !== "items" && key !== "taxes" && key !== "templates" && key !== "elementPaths") {
         generated[key] = value;
         generated.templates[key] = response[0].templates[key];
         generated.elementPaths[key] = response[0].elementPaths[key];
-      } else if (key === "items") {
-        generated.items = {};
-        generated.templates.items = {};
-        generated.elementPaths.items = {};
-        var itemIndex = 0;
-        $.each(value, function(key2, itemAttributes) {
-          generated.items[itemIndex] = itemAttributes;
-          generated.templates.items[itemIndex] = response[0].templates.items[key2];
-          generated.elementPaths.items[itemIndex] = response[0].elementPaths.items[key2];
-          itemIndex++;
+      } else if (key === "items" || key === "taxes") {
+        generated[key] = {};
+        generated.templates[key] = {};
+        generated.elementPaths[key] = {};
+        console.log(value);
+        var index = 0;
+        $.each(value, function(key2, attributes) {
+          console.log(key2);
+          console.log(attributes);
+          generated[key][index] = attributes;
+          generated.templates[key][index] = response[0].templates[key][key2];
+          generated.elementPaths[key][index] = response[0].elementPaths[key][key2];
+          index++;
         });
       }
     });
@@ -263,6 +266,8 @@ function postReceiptToWebApp(savedData) {
   delete formData.receipt["profile"];
   delete formData.receipt["category"];
   formData.receipt["tag_names"] = [ "test1", "test2", "test3" ];
+
+  formData.receipt["user_id"] = localStorage["userID"];
 
   console.log(formData);
 

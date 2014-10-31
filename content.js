@@ -113,6 +113,8 @@ chrome.runtime.onConnect.addListener(function(port) {
           case "generatedData":
             generated = msg.generated;
 
+            initGeneratedHighlight();
+
             // send generated data to receipt notification
             document.getElementById('twoReceiptIFrame').contentWindow.postMessage(msg, "*");
             break;
@@ -402,6 +404,41 @@ window.addEventListener("message", function(event) {
   }
 });
 
+// loop through generated attributes and select them (for highlight purposes)
+function initGeneratedHighlight() {
+  console.log(textNodes);
+  console.log(generated);
+  $.each(generated, function(key, value) {
+    // individual attributes
+    if (key !== "items" && key !== "taxes" && key !== "templates" && key !== "elementPaths") {
+      if (generated.templates.hasOwnProperty(key)) {
+        var elementPath = new ElementPath(null, null, generated.elementPaths[key]);
+        var element = elementPath.element;
+
+        setFieldText(element, generated.templates[key].start, generated.templates[key].end, key, null, generated.templates[key].node);
+      }
+    }
+    // grouped attributes
+    else if (key === "items" || key === "taxes") {
+      console.log(key);
+      console.log(value);
+      $.each(value, function(itemKey, itemValue) {
+        var attributes = Object.keys(itemValue);
+        for (var i = 0; i < attributes.length; i++) {
+          var attr = attributes[i];
+          if (generated.templates[key].hasOwnProperty(itemKey) && generated.templates[key][itemKey].hasOwnProperty(attr)) {
+            console.log(attr);
+            var elementPath = new ElementPath(null, null, generated.elementPaths[key][itemKey][attr]);
+            var element = elementPath.element;
+
+            setFieldText(element, generated.templates[key][itemKey][attr].start, generated.templates[key][itemKey][attr].end, attr, itemKey, generated.templates[key][itemKey][attr].node);
+          }
+        }
+      });
+    }
+  });
+}
+
 // check if all row attributes are filled out and return generated rows to handsontable
 function generateRows(event) {
   var row = event.data.data;
@@ -454,6 +491,11 @@ function sortedSearchRequest(source, type, fieldName, text, itemIndex, rowElemen
       tableType = "tax";
     }
 
+    // only clean field text if search obtained results, signifying change in field element
+    if (results.length !== 0) {
+      cleanFieldText(fieldName, itemIndex);
+    }
+
     var message = { request: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex, tableType: tableType };
     console.log(message);
     source.postMessage(message, event.origin);
@@ -472,7 +514,6 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
 
   cleanHighlight();
   cleanElementData(field);
-  cleanFieldText(fieldName, itemIndex);
 
   var total = occurrences(documentText, text, true);
 
@@ -489,6 +530,11 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
       tableType = "item";
     } else {
       tableType = "tax";
+    }
+
+    // only clean field text if search obtained results, signifying change in field element
+    if (results.length !== 0) {
+      cleanFieldText(fieldName, itemIndex);
     }
 
     var message = { request: "searchResults", results: results, fieldName: fieldName, itemIndex: itemIndex, tableType: tableType };
@@ -510,7 +556,7 @@ function prepareReceipt(data, rows, parent) {
     if (generated != null && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("items")) {
       $.each(generated.templates.items, function(key, value) {
         var intKey = parseInt(key);
-        if (!isNaN(intKey) && rows[intKey] === null) {
+        if (!isNaN(intKey) && rows[intKey] == null) {
           generated.templates.items[key].deleted = true;
         }
       });
@@ -520,7 +566,7 @@ function prepareReceipt(data, rows, parent) {
     if (generated != null && generated.hasOwnProperty("templates") && generated.templates.hasOwnProperty("taxes")) {
       $.each(generated.templates.taxes, function(key, value) {
         var intKey = parseInt(key);
-        if (!isNaN(intKey) && rows[intKey] === null) {
+        if (!isNaN(intKey) && rows[intKey] == null) {
           generated.templates.taxes[key].deleted = true;
         }
       });
@@ -557,13 +603,14 @@ function prepareReceipt(data, rows, parent) {
           }
         });
       } else if (key === "taxes") {
-        $.each(generated.taxes, function(itemKey, itemValue) {
-          if (generated.templates.taxes[itemKey].deleted == null) {
-            generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths.taxes[itemKey]);
+        // TODO: track taxes deleted? IS THIS DONE? - check if taxes/itemKey exists in templates
+        /*$.each(generated.taxes, function(taxKey, taxValue) {
+          if (generated.templates.taxes[taxKey].deleted == null) {
+            generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths.taxes[taxKey]);
             console.log("set parent element path");
             console.log(generatedElementPath);
           }
-        });
+        });*/
       }
     });
 
@@ -628,6 +675,7 @@ function sendReceipt() {
       message.width = elementWidth;
       message.height = elementHeight;
     } else {
+      // WHAT DOES THIS MEAN?
       // just don't send anything in this case - take entire body
       //parent = $("body");
     }
