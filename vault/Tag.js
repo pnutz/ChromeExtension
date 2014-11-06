@@ -166,10 +166,10 @@ var TagHelper =
     $("." + TagClassIds.REMOVE_TAG_BUTTON).click(callbackFunction);
   },
 
-  SetupTagKeyPress : function ()
+  SetupTagKeyPress : function (sSelector)
   {
     self = this;
-    $("." + TagClassIds.ADD_TAG_FIELD).keyup(function(e) {
+    $(sSelector).keyup(function(e) {
       switch (e.keyCode)
       {
       // Fallthrough

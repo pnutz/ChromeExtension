@@ -46,7 +46,7 @@ var Vault =
         setTimeout(function() {
         if (self.mData.mainNavBar.is(":hover"))
         {
-          $("#vault-navbar-container").stop().animate({width : "11%"},
+          $("#vault-navbar-container").stop().animate({width : "150px"},
           {
             done : function(animation, jumpedToEnd) {
               $(this).find(self.mData.sNavbarItemClass).stop().show("slow");

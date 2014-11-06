@@ -183,3 +183,29 @@ a.tabHeader
   padding-left:10px;
   padding-right:10px;
 }
+
+/* main table that holds all the receipt rows */
+#vault-receipts td
+{
+/* padding : 0; */
+}
+
+.receipt-details-info
+{
+  float:left;
+  margin-left: 3px;
+  margin-right: 3px;
+  width:33%;
+}
+
+.receipt-details-items
+{
+  float:left;
+  width:30%;
+}
+
+.receipt-details-snapshot
+{
+  float:left;
+  width:200px;
+}

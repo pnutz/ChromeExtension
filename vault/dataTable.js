@@ -33,6 +33,7 @@ function DataTable (sId)
   this.mReceiptsData = null;
   this.sNoClickExpand = "no-expand";
   this.sReceiptFilterField= "vault-receipt-filter";
+  this.sReceiptExtraDetailsClass = "extra-details"
 };
 
 DataTable.prototype.Init = function()
@@ -121,7 +122,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   //TODO: find a way to not have to call these callback functions twice
   TagHelper.SetupAddTagButtonCallbacks();
   TagHelper.SetupTagHoverCallbacks();
-  TagHelper.SetupTagKeyPress();
+  TagHelper.SetupTagKeyPress("." + TagClassIds.ADD_TAG_FIELD);
   $("#" + self.sReceiptFilterField).keyup(function(e) {
     self.oDataTable.search($(this).val()).draw();
   });
@@ -141,7 +142,10 @@ DataTable.prototype.PopulateTableData_ = function(data) {
         $row.removeClass("shown");
         $row.removeClass("selected");
       } else {
-        oRow.child(self.FormatData_(oRow.data())).show();
+//        oRow.child(self.FormatData_(oRow.data())).show();
+        var sReceiptDetailsId = "receipt-details-" + oRow.data().id;
+        oRow.child($("<div id='" + sReceiptDetailsId + "'></div>")).show();
+        self.RenderDetails_(oRow.data(), sReceiptDetailsId);
         $row.addClass("shown");
         $row.addClass("selected");
         //TODO: temporary, we should only apply the handler to 
@@ -149,7 +153,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
         TagHelper.SetupAddTagButtonCallbacks();
         TagHelper.SetupTagHoverCallbacks();
         //Set up the enter key binding event for when enter key pressed
-        TagHelper.SetupTagKeyPress();
+        TagHelper.SetupTagKeyPress("#" + sReceiptDetailsId + " " + "." + TagClassIds.ADD_TAG_FIELD);
       }
     }
   });
@@ -221,6 +225,61 @@ DataTable.prototype.FilterFolders_ =  function(aFolders) {
   });
 };
 
+DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
+{
+  var self = this;
+  // Make table for receipt items
+  $("#" + sDetailsId).append(this.GetReceiptItemsJObject_(mRowData.receipt_items));
+
+  // Other receipt Details
+  var $detailsTable = $("<table class='receipt-details-info'></table>");
+  $detailsTable.append("<tr><th colspan='2'>Details</th></tr>");
+  $detailsTable.append("<tr><td><b>Transaction Number</b></td><td>" + mRowData.transaction_number + "</td></tr>");
+  $detailsTable.append("<tr><td><b>Note</b></td><td>" + mRowData.note + "</td></tr>");
+  $("#" + sDetailsId).append($detailsTable);
+
+  // Snapshot
+  var $snapshotDiv = $("<div class='receipt-details-snapshot''><b>Snapshot</b></div>");
+  $snapshotDiv.append("<img style='width:100%; height:100%;'src='http://upload.wikimedia.org/wikipedia/commons/0/0b/ReceiptSwiss.jpg'>");
+  $("#" + sDetailsId).append($snapshotDiv);
+};
+
+
+DataTable.prototype.GetReceiptItemsJObject_ = function (aReceiptItems) {
+  var $mainTable = $("<table class='receipt-details-items' style='float:left; width:40%;'></table>");
+  var aHeaders = ["Item", "Quantity", "Unit Price", "Tags"]
+  var $headerRow = $("<tr></tr>");
+  // Apply the headers
+  $.each(aHeaders, function (index, value) {
+    var $header = $("<th></th>");
+    $header.text(value);
+    $headerRow.append($header);
+  });
+  $mainTable.append($headerRow);
+
+  // put items in the table
+  $.each(aReceiptItems, function(index, value) {
+    var $itemRow = $("<tr></tr>");
+    $itemRow.append("<td>" + value.item_name + "</td>");
+    $itemRow.append("<td>" + value.quantity + "</td>");
+    $itemRow.append("<td>" + value.cost + "</td>");
+
+    var $tagsList = $("<td></td>");
+    $.each(value["tags"], function(index, tagValue) {
+      var oTag = new Tag(tagValue.id, ReceiptType.RECEIPT_ITEM, tagValue.name, value.id);
+      $tagsList.append(oTag.GetHtml());
+    });
+
+    // Add the text input fields for tags after each receipt item
+    $tagsList.append(TagHelper.GetTagFieldHtml(ReceiptType.RECEIPT_ITEM, value.id));
+    $tagsList.append(TagHelper.GetAddTagHtml(ReceiptType.RECEIPT_ITEM, value.id));
+
+    $itemRow.append($tagsList);
+    $mainTable.append($itemRow);
+  });
+  return $mainTable;
+};
+
 /**
  * @brief returns the formatted HTML <table> to be displayed
  * when a row has been clicked
@@ -228,7 +287,7 @@ DataTable.prototype.FilterFolders_ =  function(aFolders) {
  */
 DataTable.prototype.FormatData_ = function(mRowData) {
   var self = this;
-  var sDetailsTable ='<table><tr><th>Items</th><th>Details</th><th>Snapshot</th></tr>';
+  var sDetailsTable ='<table class="' + this.sReceiptExtraDetailsClass + '"><tr><th>Items</th><th>Details</th><th>Snapshot</th></tr>';
   var sRow = "<tr>";
 
   var sDetailsCell = 
