@@ -165,8 +165,8 @@ var NotiBar = {
       buttonText: '<span class="glyphicon glyphicon-calendar"></span>',
       constrainInput: false
     });
+
     // set autocomplete ui element
-    // loop through all fields, apply to TEXT & NUMBER. except note??
     this.initAutoComplete("vendor");
     this.initAutoComplete("date");
     this.initAutoComplete("transaction");
@@ -238,12 +238,12 @@ var NotiBar = {
   },
 
   initGetFolders: function() {
-    var message = { request: "getFolders"};
+    var message = { request: "getFolders" };
     window.parent.postMessage(message, "*");
   },
 
   initGetCurrencies: function() {
-    var message = { request: "getCurrencies"};
+    var message = { request: "getCurrencies" };
     window.parent.postMessage(message, "*");
   },
 

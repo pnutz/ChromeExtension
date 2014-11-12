@@ -37,5 +37,13 @@ var WebAppObserver = {
 
   removeObserver: function(attribute) {
     delete this.observers[attribute];
+  },
+
+  hasObserver: function(attribute) {
+    if (this.observers.hasOwnProperty(attribute)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 };

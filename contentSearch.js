@@ -572,6 +572,12 @@ function findElementMatch(field, key, type) {
       if (dollarSign === 0 || isNaN(parseInt(elementText.substring(0, dollarSign)))) {
         elementText = elementText.substring(dollarSign + 1);
         startIndex += 1 + dollarSign;
+
+        var start = 0;
+        while (elementText.charAt(start) === " ") {
+          startIndex++;
+          start++;
+        }
       }
 
       // money value must contain a decimal, trim symbol from end of dollar amount
@@ -728,6 +734,12 @@ function findNodeMatch(field, key, type) {
       if (dollarSign === 0 || isNaN(parseInt(elementText.substring(0, dollarSign)))) {
         elementText = elementText.substring(dollarSign + 1);
         startIndex += 1 + dollarSign;
+
+        var start = 0;
+        while (elementText.charAt(start) === " ") {
+          startIndex++;
+          start++;
+        }
       }
 
       // money value must contain a decimal, trim symbol from end of dollar amount
@@ -890,6 +902,12 @@ function findWordMatch(field, key, type) {
       if (dollarSign === 0 || isNaN(parseInt(finalText.substring(0, dollarSign)))) {
         finalText = finalText.substring(dollarSign + 1);
         startIndex += 1 + dollarSign;
+
+        var start = 0;
+        while (elementText.charAt(start) === " ") {
+          startIndex++;
+          start++;
+        }
       }
 
       // money value must contain a decimal, trim symbol from end of dollar amount
@@ -1316,8 +1334,6 @@ function cleanHighlight() {
       textNodes[nodeIndex] = textNode;
       console.log(textNode);
     });
-
-    console.log(textNodes);
   }
 }
 
