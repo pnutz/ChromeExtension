@@ -17,6 +17,27 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 	</head>
   <body>
+    <div id="receipt-details-template" style="display:none;">
+      <div class="row">
+        <div class="form-group col-xs-2"> 
+          <label for="vendor-name" style="font-size:10px;">Vendor</label>
+          <input type="text" name="vendor-name" class="form-control"/>
+        </div>
+        <div class="form-group col-xs-2"> 
+          <label for="receipt-date" style="font-size:10px;">Purchase Date</label>
+          <input type="text" name="receipt-date" class="form-control"/>
+        </div>
+        <div class="form-group col-xs-2"> 
+          <label for="receipt-tags" style="font-size:10px;">Tags</label>
+          <div name="receipt-tags">Tags</div>
+        </div>
+
+
+        <div class="col-xs-2">
+        </div>
+
+      </div>
+    </div>
     <div class="modal fade" id="add-folder-modal">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -99,6 +120,32 @@
                 <h3 id="folder-name">All</h3>
               </div>
             </div>
+            <div id="vault-top-bar" class="row">
+              <label for="start-date" class="col-sm-1 control-label">From</label>
+              <div class="col-sm-1">
+                <input id="start-date" class="form-control" name="start-date" type="text">
+              </div>
+              <label for="end-date" class="col-sm-1 control-label">To</label>
+              <div class="col-sm-1">
+                <input id="end-date" class="form-control" name="end-date" type="text">
+              </div>
+              <label for="preset-range" class="col-sm-1 control-label">Preset</label>
+              <div class="col-sm-2">
+                <select id="vault-date-preset" class="form-control "name="present-range">
+                  <option value="1">Today</option>
+                  <option value="2">Yesterday</option>
+                  <option value="3">This Week</option>
+                  <option value="4">Last Week</option>
+                  <option value="5">This Month</option>
+                  <option value="6">Last Month</option>
+                  <option value="0">Custom</option>
+                </select>
+              </div>
+              <label for="receipt-filter" class="col-sm-1 control-label">Search</label>
+              <div class="col-sm-2">
+                <input id="vault-receipt-filter" class="form-control" type="text" name="receipt-filter"/>
+              </div>
+            </div>
             <div class="row">
               <div id="vault-page-content" class="tab-content">
                 <div id="vault-folders-navbar-column" class="col-xs-1 col-md-1">
@@ -106,33 +153,7 @@
                     <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">All</a></li>
                   </ul>
                 </div>
-                <div class="tab-pane col-md-11 active receipts-background" id="vault-receipts-pane">
-                  <div id="vault-top-bar" class="row">
-                    <label for="start-date" class="col-sm-1 control-label">From</label>
-                    <div class="col-sm-1">
-                      <input id="start-date" class="form-control" name="start-date" type="text">
-                    </div>
-                    <label for="end-date" class="col-sm-1 control-label">To</label>
-                    <div class="col-sm-1">
-                      <input id="end-date" class="form-control" name="end-date" type="text">
-                    </div>
-                    <label for="preset-range" class="col-sm-1 control-label">Preset</label>
-                    <div class="col-sm-2">
-                      <select id="vault-date-preset" class="form-control "name="present-range">
-                        <option value="1">Today</option>
-                        <option value="2">Yesterday</option>
-                        <option value="3">This Week</option>
-                        <option value="4">Last Week</option>
-                        <option value="5">This Month</option>
-                        <option value="6">Last Month</option>
-                        <option value="0">Custom</option>
-                      </select>
-                    </div>
-                    <label for="receipt-filter" class="col-sm-1 control-label">Search</label>
-                    <div class="col-sm-2">
-                      <input id="vault-receipt-filter" class="form-control" type="text" name="receipt-filter"/>
-                    </div>
-                  </div>
+                <div class="tab-pane col-md-4 active receipts-background" id="vault-receipts-pane">
                   <div class="row">
                     <table id="vault-receipts" class="display" width="100%">
                     <thead>
@@ -149,8 +170,7 @@
                     </table>
                   </div>
                 </div>
-                <div class="tab-pane col-xs-11 col-md-11" id="folders">
-                </div>
+                <div class="col-md-7 receipts-background" id="receipt-detail-div"></div>
               </div>
             </div>
           </div>

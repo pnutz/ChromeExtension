@@ -187,12 +187,17 @@ a.tabHeader
 /* main table that holds all the receipt rows */
 #vault-receipts td
 {
-/* padding : 0; */
+  padding : 5px; 
+  font-size:12px;
+}
+
+.receipt-details-card 
+{
+/*  background-color : #99CCFF;*/
 }
 
 .receipt-details-info
 {
-  float:left;
   margin-left: 3px;
   margin-right: 3px;
   width:33%;
@@ -200,12 +205,10 @@ a.tabHeader
 
 .receipt-details-items
 {
-  float:left;
   width:30%;
 }
 
 .receipt-details-snapshot
 {
-  float:left;
   width:200px;
 }

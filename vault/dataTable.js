@@ -140,16 +140,23 @@ DataTable.prototype.PopulateTableData_ = function(data) {
     {
       var $row = $(this).parent();
       var oRow = self.oDataTable.row($row);
-      if (oRow.child.isShown()) {
-        oRow.child.hide();
+      var sReceiptDetailsId = "receipt-details-" + oRow.data().id;
+      if ($row.hasClass("selected")) {
+//      if (oRow.child.isShown()) {
+//        oRow.child.hide();
         $row.removeClass("shown");
         $row.removeClass("selected");
+        $("#" + sReceiptDetailsId).remove();
       } else {
 //        oRow.child(self.FormatData_(oRow.data())).show();
-        var sReceiptDetailsId = "receipt-details-" + oRow.data().id;
-        oRow.child($("<div id='" + sReceiptDetailsId + "'></div>")).show();
+        $("#receipt-detail-div").append("<div id='" + sReceiptDetailsId + "'></div>");
+        $("#" + sReceiptDetailsId).addClass("receipt-details-card");
+        $("#" + sReceiptDetailsId).addClass("well");
+        $("#receipt-details-template").clone().show().appendTo("#" + sReceiptDetailsId);
+//       oRow.child($("<div id='" + sReceiptDetailsId + "'></div>")).show();
+//        self.RenderDetails_(oRow.data(), sReceiptDetailsId);
         self.RenderDetails_(oRow.data(), sReceiptDetailsId);
-        $row.addClass("shown");
+//        $row.addClass("shown");
         $row.addClass("selected");
         //TODO: temporary, we should only apply the handler to 
         // visible buttons for this receipt only
@@ -240,7 +247,7 @@ DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
   $("#" + sDetailsId).append(this.GetReceiptItemsJObject_(mRowData.receipt_items));
 
   // Other receipt Details
-  var $detailsTable = $("<table class='receipt-details-info'></table>");
+  var $detailsTable = $("<table class='receipt-details-info table table-condensed'></table>");
   $detailsTable.append("<tr><th colspan='2'>Details</th></tr>");
   $detailsTable.append("<tr><td><b>Transaction Number</b></td><td>" + mRowData.transaction_number + "</td></tr>");
   $detailsTable.append("<tr><td><b>Note</b></td><td>" + mRowData.note + "</td></tr>");
@@ -261,7 +268,7 @@ DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
 
 
 DataTable.prototype.GetReceiptItemsJObject_ = function (aReceiptItems) {
-  var $mainTable = $("<table class='receipt-details-items' style='float:left; width:40%;'></table>");
+  var $mainTable = $("<table class='receipt-details-items table table-condensed' style='float:left; width:40%;'></table>");
   var fItemTotal = 0.0;
   var aHeaders = ["Item", "Quantity", "Unit Price", "Tags"]
   var $headerRow = $("<tr></tr>");
