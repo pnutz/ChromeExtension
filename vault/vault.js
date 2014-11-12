@@ -41,7 +41,8 @@ var Vault =
     var oInterval = null;
 
     $(".vault-navbar-item-name").hide();
-    self.mData.iNavBarItemWidth = $("#vault-navbar > li").width();
+//    self.mData.iNavBarItemWidth = $("#vault-navbar > li").width();
+    self.mData.iNavBarItemWidth = 45;
     self.mData.mainNavBar.mouseenter(function() {
         setTimeout(function() {
         if (self.mData.mainNavBar.is(":hover"))

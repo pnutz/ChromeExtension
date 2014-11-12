@@ -101,11 +101,17 @@ var TagHelper =
   },
 
   /**
-   * @brief Remove 
+   * @brief Setup callback to remove a tag
+   * @param sSelector the selector of the tag label that contains the 
+   * receipt id and tag id, not the actual button id
    */
-  SetupRemoveTagButtonCallbacks : function ()
+  SetupRemoveTagButtonCallbacks : function (sSelector)
   {
-    $("." + TagClassIds.REMOVE_TAG_BUTTON).click( function () {
+    var $callbackSelector = sSelector === null ? 
+      $("." + TagClassIds.REMOVE_TAG_BUTTON) : $(sSelector + " ." + TagClassIds.REMOVE_TAG_BUTTON);
+    console.log("setup removecallback");
+    console.log($callbackSelector);
+    $callbackSelector.click( function () {
       // The element with the database id information is 2 levels up
       var $wrapper = $(this).parent().parent();
       var aIdSplit = $wrapper.attr("id").split("-");
@@ -236,9 +242,9 @@ var TagHelper =
         data: mData,
         dataType: 'json'
       }).done(function(data) {
-        console.log("Successfully set tag");
+        console.log("Successfully set tag (data is " + data + ")");
         // Render for viewing
-        self.RenderNewTag_(iReceiptType, iReceiptId, sName);
+        self.RenderNewTag_(iReceiptType, iReceiptId, sName, data);
         // Setup the hover
         self.SetupTagHoverCallbacks();
       }).fail(function (jqXHR, textStatus, errorThrown){
@@ -255,14 +261,16 @@ var TagHelper =
    * @param iReceiptId the id of the receipt (databasE)
    * @param sTagName the tag name 
    */
-  RenderNewTag_ : function (iReceiptType, iReceiptId, sTagName)
+  RenderNewTag_ : function (iReceiptType, iReceiptId, sTagName, iTagDbId)
   {
+    var iReceiptItemId = iTagDbId === null ? "NoId" : iTagDbId; 
     var sElementId = iReceiptType === ReceiptType.RECEIPT ? 
       "add-tag-receipt-" + iReceiptId : 
       "add-tag-receipt-item-" + iReceiptId;
-    var oNewTag = new Tag("NoId", iReceiptType, sTagName, iReceiptId);
-    console.log($("#" + sElementId));
+    var oNewTag = new Tag(iTagDbId, iReceiptType, sTagName, iReceiptId);
     $(oNewTag.GetHtml()).insertBefore("#" + sElementId);
+    console.log(sElementId);
+    TagHelper.SetupRemoveTagButtonCallbacks("#" + oNewTag.sId);
   }
 }
 /*
@@ -292,10 +300,10 @@ function Tag(iTagId, iTagType, sName, iReceiptId)
  */
 Tag.prototype.GetHtml = function ()
 {
-  var sTagHtml = "<span id='" + this.sId +  "' class='" + TagClassIds.TAG + " label label-default'>" + this.sTagName + 
+  var sTagHtml = "<div id='" + this.sId +  "' class='" + TagClassIds.TAG + " label label-default'>" + this.sTagName + 
                  "<a href='#'><span style='display:none;' class='" + TagClassIds.REMOVE_TAG_BUTTON + 
                  " glyphicon glyphicon-remove'></span></a>" + 
-                 "</span>";
+                 "</div>";
   return sTagHtml;
 };
 

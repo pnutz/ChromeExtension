@@ -69,10 +69,13 @@ DataTable.prototype.PopulateTableData_ = function(data) {
   var self = this;
   this.mReceiptsData = data;
     this.oDataTable = this.oElem.DataTable({
-    "dom" : "",
+    // datatable dom setting "t" allows for scrolling
+    "dom" : "t",
     "autoWidth" : false,
     "data" :  this.mReceiptsData,
     "paging" : false,
+    "scrollY" : "100%",
+    //"scrollCollapse" : true,
     "columnDefs" : [
      {
         //Hide these columns
@@ -157,7 +160,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       }
     }
   });
-  TagHelper.SetupRemoveTagButtonCallbacks();
+  TagHelper.SetupRemoveTagButtonCallbacks(null);
 
 };
 
@@ -225,6 +228,11 @@ DataTable.prototype.FilterFolders_ =  function(aFolders) {
   });
 };
 
+/** 
+ * @brief render the html of the child rows
+ * @params mRowData a map of the row data
+ * @params sDetailId the id of the div to append the html to (no '#')
+ */
 DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
 {
   var self = this;
@@ -238,6 +246,13 @@ DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
   $detailsTable.append("<tr><td><b>Note</b></td><td>" + mRowData.note + "</td></tr>");
   $("#" + sDetailsId).append($detailsTable);
 
+  //TODO:
+  //NOTE:
+  // When entering/modifying receipt item details the subtotal and the total should be recalculated.
+  // Any discrepancies between what the total calculated by the sum of the receipt items and the 
+  // user given total should be taken care of by adding "modifiers" (credit/coupon) so that the totals will match
+
+
   // Snapshot
   var $snapshotDiv = $("<div class='receipt-details-snapshot''><b>Snapshot</b></div>");
   $snapshotDiv.append("<img style='width:100%; height:100%;'src='http://upload.wikimedia.org/wikipedia/commons/0/0b/ReceiptSwiss.jpg'>");
@@ -247,6 +262,7 @@ DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
 
 DataTable.prototype.GetReceiptItemsJObject_ = function (aReceiptItems) {
   var $mainTable = $("<table class='receipt-details-items' style='float:left; width:40%;'></table>");
+  var fItemTotal = 0.0;
   var aHeaders = ["Item", "Quantity", "Unit Price", "Tags"]
   var $headerRow = $("<tr></tr>");
   // Apply the headers
@@ -263,6 +279,7 @@ DataTable.prototype.GetReceiptItemsJObject_ = function (aReceiptItems) {
     $itemRow.append("<td>" + value.item_name + "</td>");
     $itemRow.append("<td>" + value.quantity + "</td>");
     $itemRow.append("<td>" + value.cost + "</td>");
+    fItemTotal += value.cost * value.quantity;
 
     var $tagsList = $("<td></td>");
     $.each(value["tags"], function(index, tagValue) {
@@ -277,6 +294,8 @@ DataTable.prototype.GetReceiptItemsJObject_ = function (aReceiptItems) {
     $itemRow.append($tagsList);
     $mainTable.append($itemRow);
   });
+  // Append the subtotal, for now pretend item total without taxes and modifiers is the sub total
+  $mainTable.append("<tr><td colspan=3><b>SubTotal</b></td><td>$" + fItemTotal + "</td></tr>"); 
   return $mainTable;
 };
 
