@@ -24,8 +24,7 @@ var KeyboardCode =
 };
 
 function DataTable (sId)
-{
-  this.oElem = $(sId);
+{  this.oElem = $(sId);
   this.oDataTable = null;
   this.sDateFormat = "yy-mm-dd";
   this.oEarliestDate = new Date(0);
@@ -34,6 +33,14 @@ function DataTable (sId)
   this.sNoClickExpand = "no-expand";
   this.sReceiptFilterField= "vault-receipt-filter";
   this.sReceiptExtraDetailsClass = "extra-details"
+  this.oReceiptDetailTemplateClasses = {
+    date : ".receipt-detail-date-field",
+    category : ".receipt-detail-category-field",
+    tags : ".receipt-detail-tags-field",
+    itemsTable : ".receipt-detail-items-table",
+    detailsTable : ".receipt-detail-details-table",
+    snapshot : ".receipt-detail-items-table",
+  }
 };
 
 DataTable.prototype.Init = function()
@@ -142,22 +149,18 @@ DataTable.prototype.PopulateTableData_ = function(data) {
       var oRow = self.oDataTable.row($row);
       var sReceiptDetailsId = "receipt-details-" + oRow.data().id;
       if ($row.hasClass("selected")) {
-//      if (oRow.child.isShown()) {
-//        oRow.child.hide();
         $row.removeClass("shown");
         $row.removeClass("selected");
         $("#" + sReceiptDetailsId).remove();
       } else {
-//        oRow.child(self.FormatData_(oRow.data())).show();
         $("#receipt-detail-div").append("<div id='" + sReceiptDetailsId + "'></div>");
         $("#" + sReceiptDetailsId).addClass("receipt-details-card");
         $("#" + sReceiptDetailsId).addClass("well");
+
+        // clone the template and unhide
         $("#receipt-details-template").clone().show().appendTo("#" + sReceiptDetailsId);
         $("#" + sReceiptDetailsId).find("img").attr("src", "http://upload.wikimedia.org/wikipedia/commons/0/0b/ReceiptSwiss.jpg");
-//       oRow.child($("<div id='" + sReceiptDetailsId + "'></div>")).show();
-//        self.RenderDetails_(oRow.data(), sReceiptDetailsId);
         self.RenderDetails_(oRow.data(), sReceiptDetailsId);
-//        $row.addClass("shown");
         $row.addClass("selected");
         //TODO: temporary, we should only apply the handler to 
         // visible buttons for this receipt only
@@ -245,42 +248,24 @@ DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
 {
   var self = this;
   // Make table for receipt items
-  $("#" + sDetailsId).append(this.GetReceiptItemsJObject_(mRowData.receipt_items));
+  this.PopulateReceiptItemsTable_("#" + sDetailsId, mRowData.receipt_items, mRowData.total);
 
   // Other receipt Details
-  var $detailsTable = $("<table class='receipt-details-info table table-condensed'></table>");
-  $detailsTable.append("<tr><th colspan='2'>Details</th></tr>");
-  $detailsTable.append("<tr><td><b>Transaction Number</b></td><td>" + mRowData.transaction_number + "</td></tr>");
-  $detailsTable.append("<tr><td><b>Note</b></td><td>" + mRowData.note + "</td></tr>");
-  $("#" + sDetailsId).append($detailsTable);
+ // var $detailsTable = $("#" + sDetailsId).find(self.oReceiptDetailTemplateClasses.detailsTable);
+ // $detailsTable.append("<tr><td><b>Transaction Number</b></td><td>" + mRowData.transaction_number + "</td></tr>");
+  //$detailsTable.append("<tr><td><b>Note</b></td><td>" + mRowData.note + "</td></tr>");
 
   //TODO:
   //NOTE:
   // When entering/modifying receipt item details the subtotal and the total should be recalculated.
   // Any discrepancies between what the total calculated by the sum of the receipt items and the 
   // user given total should be taken care of by adding "modifiers" (credit/coupon) so that the totals will match
-
-
-  // Snapshot
-  var $snapshotDiv = $("<div class='receipt-details-snapshot''><b>Snapshot</b></div>");
-  $snapshotDiv.append("<img style='width:100%; height:100%;'src='http://upload.wikimedia.org/wikipedia/commons/0/0b/ReceiptSwiss.jpg'>");
-  $("#" + sDetailsId).append($snapshotDiv);
 };
 
 
-DataTable.prototype.GetReceiptItemsJObject_ = function (aReceiptItems) {
-  var $mainTable = $("<table class='receipt-details-items table table-condensed' style='float:left; width:40%;'></table>");
+DataTable.prototype.PopulateReceiptItemsTable_ = function (sItemsTableId, aReceiptItems, fTotal) {
   var fItemTotal = 0.0;
-  var aHeaders = ["Item", "Quantity", "Unit Price", "Tags"]
-  var $headerRow = $("<tr></tr>");
-  // Apply the headers
-  $.each(aHeaders, function (index, value) {
-    var $header = $("<th></th>");
-    $header.text(value);
-    $headerRow.append($header);
-  });
-  $mainTable.append($headerRow);
-
+  var $mainTable = $(sItemsTableId).find(this.oReceiptDetailTemplateClasses.itemsTable);;
   // put items in the table
   $.each(aReceiptItems, function(index, value) {
     var $itemRow = $("<tr></tr>");
@@ -304,6 +289,7 @@ DataTable.prototype.GetReceiptItemsJObject_ = function (aReceiptItems) {
   });
   // Append the subtotal, for now pretend item total without taxes and modifiers is the sub total
   $mainTable.append("<tr><td colspan=3><b>SubTotal</b></td><td>$" + fItemTotal + "</td></tr>"); 
+  $mainTable.append("<tr><td colspan=3><b>Total</b></td><td>$" + fTotal + "</td></tr>"); 
   return $mainTable;
 };
 

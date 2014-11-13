@@ -21,7 +21,7 @@
       <div class="row">
         <div class="form-group col-xs-2"> 
           <label for="vendor-snapshot" style="font-size:10px;">Snapshot</label>
-          <img name="vendor-snapshot" class="img-thumbnail" style="width:90px; height:120px;"/>
+          <img name="vendor-snapshot" class="img-thumbnail receipt-detail-snapshot" style="width:90px; height:90px;"/>
         </div>
         <div class="form-group col-xs-2"> 
           <label for="vendor-name" style="font-size:10px;">Vendor</label>
@@ -29,28 +29,38 @@
         </div>
         <div class="form-group col-xs-2">
           <label for="receipt-date" style="font-size:10px;">Purchase Date</label>
-          <input type="text" name="receipt-date" class="form-control"/>
+          <input class="receipt-detail-date-field form-control" type="text" name="receipt-date" />
+        </div>
+        <div class="form-group col-xs-2">
+          <label for="receipt-category" style="font-size:10px;">Category</label>
+          <div class="receipt-detail-category-field" name="receipt-category">...</div>
         </div>
         <div class="form-group col-xs-2">
           <label for="receipt-tags" style="font-size:10px;">Tags</label>
-          <div name="receipt-tags">...</div>
+          <div class="receipt-detail-tags-field" name="receipt-tags">...</div>
         </div>
       </div>
       <div class="row">
-        <div class="form-group col-xs-6">
+        <div class="form-group col-xs-2">
+          <label for="receipt-transaction-number" style="font-size:10px;">Trans. No.</label>
+          <input class="receipt-detail-transaction-number form-control" type="text" name="receipt-transaction-number" />
+        </div>
+        <div class="form-group col-xs-2">
+          <label for="receipt-note" style="font-size:10px;">Note</label>
+          <textarea class="receipt-detail-note form-control" name="receipt-Note"></textarea>
+        </div>
+
+      </div>
+      <div class="row">
+        <div class="form-group col-xs-9">
           <label for="receipt-detail-items">Items</label>
           <table name="receipt-detail-items" class="receipt-detail-items-table table table-condensed">
             <tr>
-              <th>Item</th>
+              <th>Name</th>
               <th>Quanitity</th>
               <th>Unit Price</th>
               <th>Tags</th>
             </tr>
-          </table>
-        </div>
-        <div class="form-group col-xs-3">
-          <label for="receipt-detail-details">Details</label>
-          <table name="receipt-detail-details" class="receipt-detail-details-table table table-condensed">
           </table>
         </div>
       </div>

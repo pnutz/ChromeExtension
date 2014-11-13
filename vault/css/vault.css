@@ -212,3 +212,12 @@ a.tabHeader
 {
   width:200px;
 }
+
+.receipt-detail-items-table th
+{
+  font-size: 10px;
+}
+.receipt-detail-items-table td
+{
+  font-size: 12px;
+}
