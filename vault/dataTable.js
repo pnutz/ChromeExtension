@@ -153,6 +153,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
         $("#" + sReceiptDetailsId).addClass("receipt-details-card");
         $("#" + sReceiptDetailsId).addClass("well");
         $("#receipt-details-template").clone().show().appendTo("#" + sReceiptDetailsId);
+        $("#" + sReceiptDetailsId).find("img").attr("src", "http://upload.wikimedia.org/wikipedia/commons/0/0b/ReceiptSwiss.jpg");
 //       oRow.child($("<div id='" + sReceiptDetailsId + "'></div>")).show();
 //        self.RenderDetails_(oRow.data(), sReceiptDetailsId);
         self.RenderDetails_(oRow.data(), sReceiptDetailsId);

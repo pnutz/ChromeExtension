@@ -20,6 +20,10 @@
     <div id="receipt-details-template" style="display:none;">
       <div class="row">
         <div class="form-group col-xs-2"> 
+          <label for="vendor-snapshot" style="font-size:10px;">Snapshot</label>
+          <img name="vendor-snapshot" class="img-thumbnail" style="width:90px; height:120px;"/>
+        </div>
+        <div class="form-group col-xs-2"> 
           <label for="vendor-name" style="font-size:10px;">Vendor</label>
           <input type="text" name="vendor-name" class="form-control"/>
         </div>
@@ -29,15 +33,29 @@
         </div>
         <div class="form-group col-xs-2"> 
           <label for="receipt-tags" style="font-size:10px;">Tags</label>
-          <div name="receipt-tags">Tags</div>
+          <div name="receipt-tags">...</div>
         </div>
-
-
-        <div class="col-xs-2">
+      </div>
+      <div class="row">
+        <div class="form-group col-xs-6">
+          <label for="receipt-detail-items">Items</label>
+          <table name="receipt-detail-items" class="receipt-detail-items-table table table-condensed">
+            <tr>
+              <th>Item</th>
+              <th>Quanitity</th>
+              <th>Unit Price</th>
+              <th>Tags</th>
+            </tr>
+          </table>
         </div>
-
+        <div class="form-group col-xs-3">
+          <label for="receipt-detail-details">Details</label>
+          <table name="receipt-detail-details" class="receipt-detail-details-table table table-condensed">
+          </table>
+        </div>
       </div>
     </div>
+    <!-- Modal for adding folders -->
     <div class="modal fade" id="add-folder-modal">
       <div class="modal-dialog">
         <div class="modal-content">
