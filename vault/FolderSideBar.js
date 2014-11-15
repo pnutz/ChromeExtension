@@ -22,7 +22,7 @@ function FolderSideBar (oElement) {
 FolderSideBar.prototype.Init = function(data) {
   var self = this;
   self.mFolders = {};
-  // Create an empty option for the modal box's parent select 
+  // Create an empty option for the modal box's parent select
   var parentOption = $("<option></option>");
   parentOption.attr("value", "");
   parentOption.text("<New Parent Folder>");
@@ -30,7 +30,7 @@ FolderSideBar.prototype.Init = function(data) {
   // create a dictionary modelling the structure of the folders
   $.each(data, function(index, value) {
     // if this is an upper layer folder
-    if (value.folder_id === null) {
+    if (value.folder_id == null) {
       value["type"] = folderType.PARENT;
       console.log(value.id);
       // if it doesn't exist!
@@ -82,7 +82,7 @@ FolderSideBar.prototype.ClearFolders = function() {
 
 FolderSideBar.prototype.GetFolderIds = function(iFolderId) {
   var aFolders = [];
-  if (iFolderId !== null && iFolderId !== undefined)
+  if (iFolderId != null)
     aFolders.push(parseInt(iFolderId));
 
   this.oElem.find("li.subfolder[parent_id='" + iFolderId +"'] > a").each(function(index){
@@ -95,7 +95,7 @@ FolderSideBar.prototype.GetFolderIds = function(iFolderId) {
 /**
  * @brief creates a folder element and adds it to the folder
  *  side bar
- */ 
+ */
 FolderSideBar.prototype.RenderFolderOnList_ = function(folderData) {
     var newListItem = $("<li></li>");
     // Add class for later removal when adding new folders
@@ -115,10 +115,10 @@ FolderSideBar.prototype.RenderFolderOnList_ = function(folderData) {
       newFolder.attr("data-toggle", "pill");
       newFolder.attr("href", "#vault-receipts-pane");
       newFolder.attr("folder_database_id", folderData.id);
-    } 
+    }
 
     // sub folder specific data
-    if (folderData.folder_id !== null) {
+    if (folderData.folder_id != null) {
       newListItem.addClass(this.mClassNames.sSubFolder);
       newListItem.attr("parent_id", folderData.folder_id);
       newListItem.hide();

@@ -6,6 +6,8 @@ var oldWindowState;
 var screenshot = {};
 var receipt;
 var cleanUpTimeout;
+var receiptHotkeyTimeout = true;
+var vaultHotkeyTimeout = true;
 
 var aServerHost = "http://localhost:8888";
 
@@ -98,7 +100,8 @@ function stringBetween(string, substring1, substring2) {
 }
 
 function receiptSetup() {
-	// setup receipt notification message passing connection with current tab
+
+  // setup receipt notification message passing connection with current tab
   if (receiptPorts[currentTabId] != null) {
     receiptPorts[currentTabId].disconnect();
   }
@@ -457,9 +460,19 @@ function closeReceipt() {
 // message handling - by request.request
 /*
 addReceipt:
-	from: PopUp.js
-	trigger: Add Receipt selected from popup
+	from: PopUp.js/content.js
+	trigger: Add Receipt selected from popup/hotkey trigger from content script
 	action: sets up connection with content script and creates a receipt notification on page
+
+openVault:
+  from: content.js
+  trigger: hotkey trigger from content script
+  action: opens vault
+
+getHotkeys:
+  from: content.js
+  trigger: onload content.js
+  action: sends the localStorage hotkey keycodes to content script to initialize hotkeys
 */
 
 // TODO: In the future we need to encapsulate this into it's own class.
@@ -468,25 +481,41 @@ addReceipt:
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	console.log("onMessage:", request);
 
-	switch (request.request)
-	{
+	switch (request.request) {
 		// user tried to add receipt from popup
 		case "addReceipt":
       // sets up message passing between eventPage and content script
-      receiptSetup();
+      if (receiptHotkeyTimeout === true) {
+        receiptSetup();
+        receiptHotkeyTimeout = window.setTimeout(function() { receiptHotkeyTimeout = true; }, 2000);
+      }
 			break;
+
+    case "openVault":
+      if (vaultHotkeyTimeout === true) {
+        chrome.tabs.create({url: "vault/vault.html"});
+        vaultHotkeyTimeout = window.setTimeout(function() { vaultHotkeyTimeout = true; }, 2000);
+      }
+      break;
 
     // Facebook login flow
     case "FB_LOGIN_OAUTH":
       facebookAPI.StartLoginFlow();
       break;
+
+    // content script requests hotkeys onload
+    case "getHotkeys":
+      sendResponse({ receipt: localStorage["hotkeyReceipt"], vault: localStorage["hotkeyVault"] });
+      break;
+
 		default:
 	}
 });
 
+// DEPRECIATED HOTKEY METHOD
 // extension hotkeys defined in manifest.json
 // if new hotkeys are added, completely remove extension and re-add it to your chrome browser to enable
-chrome.commands.onCommand.addListener(function(command) {
+/*chrome.commands.onCommand.addListener(function(command) {
   if (localStorage["authToken"] != null) {
     switch (command)
     {
@@ -499,4 +528,4 @@ chrome.commands.onCommand.addListener(function(command) {
       default:
     }
   }
-});
+});*/

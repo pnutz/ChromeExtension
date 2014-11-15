@@ -19,11 +19,11 @@
   <body>
     <div id="receipt-details-template" style="display:none;">
       <div class="row">
-        <div class="form-group col-xs-2"> 
+        <div class="form-group col-xs-2">
           <label for="vendor-snapshot" style="font-size:10px;">Snapshot</label>
           <img name="vendor-snapshot" class="img-thumbnail receipt-detail-snapshot" style="width:90px; height:90px;"/>
         </div>
-        <div class="form-group col-xs-2"> 
+        <div class="form-group col-xs-2">
           <label for="vendor-name" style="font-size:10px;">Vendor</label>
           <input type="text" name="vendor-name" class="form-control"/>
         </div>
@@ -107,7 +107,7 @@
               <span class="vault-navbar-item-name">Vault</span>
             </a>
           </li>
-          <li>
+          <!--<li>
             <a id="bills-link" href="#bills" class="tabHeader">
               <span class="glyphicon glyphicon-pencil"></span>
               <span class="vault-navbar-item-name">Bills</span>
@@ -124,7 +124,7 @@
               <span class="glyphicon glyphicon-plane"></span>
               <span class="vault-navbar-item-name">Orders</span>
             </a>
-          </li>
+          </li>-->
           <li>
             <a id="settings-link" href="#settings" class="tabHeader">
               <span class="glyphicon glyphicon-cog"></span>
@@ -202,7 +202,7 @@
               </div>
             </div>
           </div>
-          <div class="tab-pane" id="bills">
+           <!--<div class="tab-pane" id="bills">
             <p>Bills this is</p>
           </div>
           <div class="tab-pane" id="subscriptions">
@@ -210,12 +210,15 @@
           </div>
           <div class="tab-pane" id="orders">
             <p>orders this is</p>
-          </div>
+          </div>-->
           <div class="tab-pane" id="settings">
-            <div class="col-md-2 col-md-offset-5">
+            <div class="col-md-5 col-md-offset-5">
               <h3><b>User Settings</b></h3>
               <table id="vault-settings" width="80%">
-                <tr><th>Default Currency</th><td><select id="currency-setting"></select></td></tr>
+                <tr><td>Default Currency</td><td><select id="currency-setting"></select></td></tr>
+                <tr><th>Hotkeys</th><td></td></tr>
+                <tr><td>- Add A New Receipt</td><td><input type="text" id="hotkey-receipt-setting" name="hotkey" /></td></tr>
+                <tr><td>- Open My TwoReceipt Vault</td><td><input type="text" id="hotkey-vault-setting" name="hotkey" /></td></tr>
               </table>
               <br />
               <button id="vault-settings-save" type="button" class="btn btn-primary">Save</button>

@@ -132,6 +132,20 @@ var NotiBar = {
 
     WebAppObserver.init();
 
+    var hotkeys;
+    document.onkeydown = function keydown(evt) {
+      if (!evt) {
+        evt = event;
+      }
+
+      if (self.hotkeys.hasOwnProperty("receipt") && self.hotkeys.receipt !== "null" && evt.altKey && evt.keyCode == self.hotkeys.receipt) {
+        chrome.runtime.sendMessage({ request: "addReceipt" });
+      }
+      else if (self.hotkeys.hasOwnProperty("vault") && self.hotkeys.vault !== "null" && evt.altKey && evt.keyCode == self.hotkeys.vault) {
+        chrome.runtime.sendMessage({ request: "openVault" });
+      }
+    };
+
     setTimeout(function() {
       self.itemTable = TwoReceiptHandsOnTable().init("items", ["Receipt Item", "Quantity", "Cost"], ["itemtype", "quantity", "cost"], ["text", "number", "money"], [0.6, 0.2, 0.2]);
       WebAppObserver.notify("items");
@@ -389,8 +403,7 @@ var NotiBar = {
     if (fieldName in this.configurations.formFields) {
       var field = this.configurations.formFields[fieldName];
 
-      switch(field.type)
-      {
+      switch(field.type) {
         case fieldTypes.NUMBER:
           $(this.configurations.formFields[fieldName].id).autocomplete(
             {
@@ -623,6 +636,12 @@ window.addEventListener("message", function(event) {
   // TODO: chrome extension id
   if (event.origin.indexOf("chrome-extension://") === -1) {
     switch(event.data.request) {
+
+      // initialize hotkeys
+      case "getHotkeys":
+        NotiBar.hotkeys = event.data;
+        break;
+
       // generated values for form fields
       case "generatedData":
         // add subtotal to event.data.generated
@@ -672,7 +691,7 @@ window.addEventListener("message", function(event) {
 
       case "getFolders":
         var select = document.getElementById("folder");
-        option = document.createElement("option");
+        var option = document.createElement("option");
         option.value = "";
         option.innerHTML = "";
         select.appendChild(option);
@@ -686,14 +705,41 @@ window.addEventListener("message", function(event) {
 
       case "getCurrencies":
         var select = document.getElementById("currency");
+        var defaultOption = document.createElement("option");
+        var usdOption = document.createElement("option");
+
+        var optgroup = document.createElement("optgroup");
+        // process html entities so they will appear properly
+        var emDash = $("<label />").html("&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;").text();
+        optgroup.label = emDash;
+        select.appendChild(optgroup);
+
         for (var i = 0; i < event.data.currencyData.length; i++) {
-          option = document.createElement("option");
+          var option = document.createElement("option");
           option.value = event.data.currencyData[i].id;
           option.innerHTML = event.data.currencyData[i].code + " " + event.data.currencyData[i].description;
+
+          if (event.data.currencyData[i].code === "USD") {
+            usdOption.value = option.value;
+            usdOption.innerHTML = option.innerHTML;
+          }
+
           if (event.data.currencyData[i].selected === "true") {
-            option.setAttribute("selected", true);
+            defaultOption.value = option.value;
+            defaultOption.innerHTML = option.innerHTML;
+            defaultOption.setAttribute("selected", true);
           }
           select.appendChild(option);
+        }
+
+        if (defaultOption.value === usdOption.value) {
+          select.insertBefore(defaultOption, optgroup);
+        } else if (usdOption.value > defaultOption.value) {
+          select.insertBefore(usdOption, optgroup);
+          select.insertBefore(defaultOption, usdOption);
+        } else {
+          select.insertBefore(defaultOption, optgroup);
+          select.insertBefore(usdOption, defaultOption);
         }
 
         WebAppObserver.notify("currency");

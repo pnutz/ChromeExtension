@@ -8,12 +8,30 @@ var oldScrollY;
 var oldOverflow;
 var arrangements = [];
 var cleanUpTimeout;
+var hotkeys = { request: "getHotkeys" };
 
 $(document).ready(function () {
 	if (self === top) {
 		console.log("document ready");
+    chrome.runtime.sendMessage(hotkeys, function(response) {
+      hotkeys.receipt = response.receipt;
+      hotkeys.vault = response.vault;
+    });
   }
 });
+
+document.onkeydown = function keydown(evt) {
+  if (!evt) {
+    evt = event;
+  }
+
+  if (hotkeys.hasOwnProperty("receipt") && hotkeys.receipt !== "null" && evt.altKey && evt.keyCode == hotkeys.receipt) {
+    chrome.runtime.sendMessage({ request: "addReceipt" });
+  }
+  else if (hotkeys.hasOwnProperty("vault") && hotkeys.vault !== "null" && evt.altKey && evt.keyCode == hotkeys.vault) {
+    chrome.runtime.sendMessage({ request: "openVault" });
+  }
+};
 
 function createNotification() {
   if (documentText == null) {
@@ -21,8 +39,7 @@ function createNotification() {
   }
 
 	// remove element if it already exists
-	if ($('#notificationdiv').length > 0)
-  {
+	if ($('#notificationdiv').length > 0) {
     // message notificationdiv to trigger close
     document.getElementById('twoReceiptIFrame').contentWindow.postMessage({ request: "close" }, '*');
   } else {
@@ -55,6 +72,7 @@ function createNotification() {
     $(div).toggle("slide");
 
     // message requesting generated data from aServer
+    // also send hotkey information to notificationbar
     // delay response so generated data comes later, giving notification a chance to load
     setTimeout(function() {
       var messageDomain;
@@ -72,6 +90,8 @@ function createNotification() {
       };
 
       incomingPort.postMessage(msgData);
+
+      document.getElementById('twoReceiptIFrame').contentWindow.postMessage(hotkeys, "*");
     }, 400);
   }
 }

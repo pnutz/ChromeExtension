@@ -11,7 +11,8 @@
     "default_icon": "icon.png",
     "default_popup": "popup.html"
   },
-  "commands": {
+  // DEPRECIATED HOTKEY METHOD - correlated to eventPage
+  /*"commands": {
     "addReceipt": {
       "suggested_key": { "default": "Ctrl+Shift+A" },
       "description": "Send an 'addReceipt' event to the extension"
@@ -20,7 +21,7 @@
       "suggested_key": { "default": "Ctrl+Shift+V" },
       "description": "Send an 'accessVault' event to the extension"
     }
-  },
+  },*/
 	"content_scripts": [
 		{
       "matches": ["<all_urls>"],

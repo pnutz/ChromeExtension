@@ -78,7 +78,6 @@ var PopUp =
         delete localStorage["fbAccessToken"];
         delete localStorage["userEmail"];
         location.reload(true);
-
       });
     }
     //else prompt for credentials
@@ -176,6 +175,22 @@ var PopUp =
         localStorage["userEmail"] = $("#user-email").val();
         // store userID in localStorage
         localStorage["userID"] = data["user"];
+
+        // initialize hotkeys
+        request2 = $.ajax({
+          url: g_oControllers.AppendCred(g_oControllers.GetUrl("user_settings") + ".json"),
+          type: 'GET',
+          dataType: 'json'
+        }).done(function(settingsData) {
+          localStorage["hotkeyReceipt"] = settingsData.hotkey_receipt;
+          localStorage["hotkeyVault"] = settingsData.hotkey_vault;
+        }).fail(function (jqXHR, textStatus, errorThrown){
+          // log the error to the console
+          console.error(
+            "The following error occurred: " + textStatus,
+            errorThrown);
+        });
+
       }).fail(function (jqXHR, textStatus, errorThrown){
         var failMessage = "Login failed. Check your credentials and try again.";
         alert(failMessage);
