@@ -96,7 +96,7 @@ DataTable.prototype.PopulateTableData_ = function(data) {
        "searchable" : false,
        "render" : function (data, type, row) {
          var oDate = new Date(data);
-         return oDate.getDate() + '-' + (oDate.getMonth() + 1) + '-' + oDate.getFullYear();
+         return oDate.getFullYear() + '-' + (oDate.getMonth() + 1) + '-' + oDate.getDate();
        }
      },
      { // For displaying tags on the receipt level

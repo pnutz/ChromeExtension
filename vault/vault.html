@@ -17,51 +17,54 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 	</head>
   <body>
-    <div id="receipt-details-template" style="display:none;">
-      <div class="row">
-        <div class="form-group col-xs-2">
+    <div id="receipt-details-template" class="row" style="display:none;">
+      <div class="col-xs-9">
+        <div class="row">
+          <div class="form-group col-xs-4">
+            <label for="vendor-name" style="font-size:10px;">Vendor</label>
+            <input type="text" name="vendor-name" class="form-control"/>
+          </div>
+          <div class="form-group col-xs-2">
+            <label for="receipt-date" style="font-size:10px;">Purchase Date</label>
+            <input class="receipt-detail-date-field form-control" type="text" name="receipt-date" />
+          </div>
+          <div class="form-group col-xs-2">
+            <label for="receipt-category" style="font-size:10px;">Category</label>
+            <div class="receipt-detail-category-field" name="receipt-category">...</div>
+          </div>
+          <div class="form-group col-xs-4">
+            <label for="receipt-tags" style="font-size:10px;">Tags</label>
+            <div class="receipt-detail-tags-field" name="receipt-tags">...</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="form-group col-xs-2">
+            <label for="receipt-transaction-number" style="font-size:10px;">Trans. No.</label>
+            <input class="receipt-detail-transaction-number form-control" type="text" name="receipt-transaction-number" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="form-group col-xs-12">
+            <label for="receipt-detail-items">Items</label>
+            <table name="receipt-detail-items" class="receipt-detail-items-table table table-condensed">
+              <tr>
+                <th>Name</th>
+                <th>Quanitity</th>
+                <th>Unit Price</th>
+                <th>Tags</th>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-xs-3">
+        <div class="form-group">
           <label for="vendor-snapshot" style="font-size:10px;">Snapshot</label>
-          <img name="vendor-snapshot" class="img-thumbnail receipt-detail-snapshot" style="width:90px; height:90px;"/>
+          <img name="vendor-snapshot" class="img-thumbnail receipt-detail-snapshot"/>
         </div>
-        <div class="form-group col-xs-2">
-          <label for="vendor-name" style="font-size:10px;">Vendor</label>
-          <input type="text" name="vendor-name" class="form-control"/>
-        </div>
-        <div class="form-group col-xs-2">
-          <label for="receipt-date" style="font-size:10px;">Purchase Date</label>
-          <input class="receipt-detail-date-field form-control" type="text" name="receipt-date" />
-        </div>
-        <div class="form-group col-xs-2">
-          <label for="receipt-category" style="font-size:10px;">Category</label>
-          <div class="receipt-detail-category-field" name="receipt-category">...</div>
-        </div>
-        <div class="form-group col-xs-2">
-          <label for="receipt-tags" style="font-size:10px;">Tags</label>
-          <div class="receipt-detail-tags-field" name="receipt-tags">...</div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="form-group col-xs-2">
-          <label for="receipt-transaction-number" style="font-size:10px;">Trans. No.</label>
-          <input class="receipt-detail-transaction-number form-control" type="text" name="receipt-transaction-number" />
-        </div>
-        <div class="form-group col-xs-2">
+        <div class="form-group">
           <label for="receipt-note" style="font-size:10px;">Note</label>
-          <textarea class="receipt-detail-note form-control" name="receipt-Note"></textarea>
-        </div>
-
-      </div>
-      <div class="row">
-        <div class="form-group col-xs-9">
-          <label for="receipt-detail-items">Items</label>
-          <table name="receipt-detail-items" class="receipt-detail-items-table table table-condensed">
-            <tr>
-              <th>Name</th>
-              <th>Quanitity</th>
-              <th>Unit Price</th>
-              <th>Tags</th>
-            </tr>
-          </table>
+          <textarea class="receipt-detail-note form-control" name="receipt-note" style="width:100%;"></textarea>
         </div>
       </div>
     </div>
@@ -137,67 +140,65 @@
               <span class="vault-navbar-item-name">Logout</span>
             </a>
           </li>
-
         </ul>
       </div>
       <div id="vault-main-view">
         <div class="tab-content">
           <div class="tab-pane active" id="vault">
             <div class="row">
-              <div class="col-xs-12">
-                <h3 id="folder-name">All</h3>
-              </div>
-            </div>
-            <div id="vault-top-bar" class="row">
-              <label for="start-date" class="col-sm-1 control-label">From</label>
-              <div class="col-sm-1">
-                <input id="start-date" class="form-control" name="start-date" type="text">
-              </div>
-              <label for="end-date" class="col-sm-1 control-label">To</label>
-              <div class="col-sm-1">
-                <input id="end-date" class="form-control" name="end-date" type="text">
-              </div>
-              <label for="preset-range" class="col-sm-1 control-label">Preset</label>
-              <div class="col-sm-2">
-                <select id="vault-date-preset" class="form-control "name="present-range">
-                  <option value="1">Today</option>
-                  <option value="2">Yesterday</option>
-                  <option value="3">This Week</option>
-                  <option value="4">Last Week</option>
-                  <option value="5">This Month</option>
-                  <option value="6">Last Month</option>
-                  <option value="0">Custom</option>
-                </select>
-              </div>
-              <label for="receipt-filter" class="col-sm-1 control-label">Search</label>
-              <div class="col-sm-2">
-                <input id="vault-receipt-filter" class="form-control" type="text" name="receipt-filter"/>
-              </div>
-            </div>
-            <div class="row">
               <div id="vault-page-content" class="tab-content">
-                <div id="vault-folders-navbar-column" class="col-xs-1 col-md-1">
-                  <ul id="vault-folders-navbar" class="nav nav-pills nav-stacked navbar-override">
-                    <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">All</a></li>
-                  </ul>
-                </div>
-                <div class="tab-pane col-md-4 active receipts-background" id="vault-receipts-pane">
-                  <div class="row">
-                    <table id="vault-receipts" class="display" width="100%">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Vendor</th>
-                        <th>Price</th>
-                        <th>Note</th>
-                        <th>Tags</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                    </table>
+                <div id="vault-receipts-list-column" class="col-xs-5">
+                  <div id="vault-top-bar" class="row">
+                    <div class="form-group col-xs-2">
+                      <label for="start-date" class="control-label">From</label>
+                      <input id="start-date" class="form-control" name="start-date" type="text">
+                    </div>
+                    <div class="form-group col-xs-2">
+                      <label for="end-date" class="control-label">To</label>
+                      <input id="end-date" class="form-control" name="end-date" type="text">
+                    </div>
+                    <div class="form-group col-xs-3">
+                    <label for="preset-range" class="control-label">Preset</label>
+                      <select id="vault-date-preset" class="form-control "name="present-range">
+                        <option value="1">Today</option>
+                        <option value="2">Yesterday</option>
+                        <option value="3">This Week</option>
+                        <option value="4">Last Week</option>
+                        <option value="5">This Month</option>
+                        <option value="6">Last Month</option>
+                        <option value="0">Custom</option>
+                      </select>
+                    </div>
+                    <div class="form-group col-xs-5">
+                      <label for="receipt-filter" class="control-label">Search</label>
+                      <input id="vault-receipt-filter" class="form-control" type="text" name="receipt-filter"/>
+                    </div>
+                  </div>
+                  <div class="row">  
+                    <!-- Category/Folder whatever column -->
+                    <div id="vault-folders-navbar-column" class="col-xs-2">
+                      <ul id="vault-folders-navbar" class="nav nav-pills nav-stacked navbar-override">
+                        <li class="active"><a href="#vault-receipts-pane" data-toggle="pill" folder_id="">All</a></li>
+                      </ul>
+                    </div>
+                    <div class="tab-pane col-xs-10 active receipts-background" id="vault-receipts-pane">
+                      <table id="vault-receipts" class="display" width="100%">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Vendor</th>
+                          <th>Price</th>
+                          <th>Note</th>
+                          <th>Tags</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
+                <!-- Receipt Details Column -->
                 <div class="col-md-7 receipts-background" id="receipt-detail-div"></div>
               </div>
             </div>
