@@ -46,7 +46,7 @@ function createNotification() {
     // css for iframe
     var style = document.createElement("style");
     style.type = "text/css";
-    style.innerHTML = ".twoReceiptIFrame { width: 100%; }";
+    style.innerHTML = ".twoReceiptIFrame { width: 100%; height: 100% }";
     document.getElementsByTagName("head")[0].appendChild(style);
 
     document.getElementsByTagName("body")[0].style.paddingTop = "300px";
@@ -54,15 +54,13 @@ function createNotification() {
     // append iframe notification within div to body
     var div = document.createElement("div");
     div.id = "notificationdiv";
-    div.setAttribute("style", "top: 0px; left: 0px; height: 300px; width: 100%; position: fixed; background-color: black; z-index: 1000000099; visibility: visible; position");
+    div.setAttribute("style", "top: 0px; left: 0px; height: 300px; width: 100%; position: fixed; background-color: black; z-index: 88; visibility: visible; padding-bottom: 0.1em;");
     var iframe = document.createElement("iframe");
     iframe.id = "twoReceiptIFrame";
     iframe.className = "twoReceiptIFrame";
     iframe.scrolling = "no";
     //iframe.setAttribute("style", "width:400px;height:200px;position:absolute;top:650;left:225;");
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.setAttribute("style", 'height: 300px; border: 0px; overflow: visible;');
+    iframe.setAttribute("style", 'border: 0px; overflow: visible;');
     iframe.src = chrome.extension.getURL("/notification/notificationbar.html");
     div.appendChild(iframe);
 
@@ -70,6 +68,14 @@ function createNotification() {
     $(div).hide();
     document.documentElement.appendChild(div);
     $(div).toggle("slide");
+
+    $(div).resizable({
+      minHeight: 50,
+      handles: "s",
+      resize: function(event, ui) {
+        document.getElementsByTagName("body")[0].style.paddingTop = ui.size.height + "px";
+      }
+    });
 
     // message requesting generated data from aServer
     // also send hotkey information to notificationbar
