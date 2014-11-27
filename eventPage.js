@@ -9,7 +9,7 @@ var cleanUpTimeout;
 var receiptHotkeyTimeout = true;
 var vaultHotkeyTimeout = true;
 
-var aServerHost = "http://localhost:8888";
+var aServerHost = "https://warm-eyrie-9414.herokuapp.com/";
 
 var apiComm = new ControllerUrls(localStorage["webAppHost"]);
 
@@ -157,12 +157,20 @@ function receiptSetup() {
         case "getCurrencies":
           this.getCurrencies();
           break;
+
+        case "getProfiles":
+          this.getProfiles();
+          break;
+
+        case "getCategories":
+          this.getCategories();
+          break;
       }
     }
 	});
 }
 
-function getFolders(){
+function getFolders() {
   console.log('URL: ' + apiComm.AppendCred(apiComm.GetUrl("folders")));
   var receiptRequest = $.ajax({
     url: apiComm.AppendCred(apiComm.GetUrl("folders") + '.json'),
@@ -180,7 +188,7 @@ function getFolders(){
   });
 }
 
-function getCurrencies(){
+function getCurrencies() {
   console.log('URL: ' + apiComm.AppendCred(apiComm.GetUrl("currencies")));
   var receiptRequest = $.ajax({
     url: apiComm.AppendCred(apiComm.GetUrl("currencies") + '.json'),
@@ -189,6 +197,42 @@ function getCurrencies(){
   }).done(function(data){
     // alert(data);
     receiptPorts[currentTabId].postMessage({"request": "getCurrencies", currencyData: data});
+  }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+    console.error(
+      "The following error occurred: " + textStatus,
+      errorThrown);
+    //alert(jqXHR.responseText);
+  });
+}
+
+function getProfiles() {
+  console.log('URL: ' + apiComm.AppendCred(apiComm.GetUrl("profiles")));
+  var receiptRequest = $.ajax({
+    url: apiComm.AppendCred(apiComm.GetUrl("profiles") + '.json'),
+    type: 'GET',
+    dataType: 'json'
+  }).done(function(data){
+    // alert(data);
+    receiptPorts[currentTabId].postMessage({ request: "getProfiles", profileData: data });
+  }).fail(function (jqXHR, textStatus, errorThrown){
+    // log the error to the console
+    console.error(
+      "The following error occurred: " + textStatus,
+      errorThrown);
+    //alert(jqXHR.responseText);
+  });
+}
+
+function getCategories() {
+  console.log('URL: ' + apiComm.AppendCred(apiComm.GetUrl("receipt_categories")));
+  var receiptRequest = $.ajax({
+    url: apiComm.AppendCred(apiComm.GetUrl("receipt_categories") + '.json'),
+    type: 'GET',
+    dataType: 'json'
+  }).done(function(data){
+    // alert(data);
+    receiptPorts[currentTabId].postMessage({ request: "getCategories", categoryData: data });
   }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
     console.error(
@@ -257,17 +301,19 @@ function postReceiptToWebApp(savedData) {
   formData.receipt["currency_id"] = formData.receipt["currency"];
   delete formData.receipt["currency"];
 
-  formData.receipt["title"] = "";
-
   if (formData.receipt["snapshot"] != null) {
     formData.receipt["documents_attributes"] = { 0: { "is_snapshot": true, data: formData.receipt["snapshot"] } };
     delete formData.receipt["snapshot"];
   }
 
-  delete formData.receipt["subtotal"];
-  delete formData.receipt["taxes"];
+  formData.receipt["profile_id"] = formData.receipt["profile"];
   delete formData.receipt["profile"];
+
+  formData.receipt["category_id"] = formData.receipt["category"];
   delete formData.receipt["category"];
+
+  delete formData.receipt["taxes"];
+
   formData.receipt["tag_names"] = [ "test1", "test2", "test3" ];
 
   formData.receipt["user_id"] = localStorage["userID"];

@@ -58,6 +58,7 @@ var TwoReceiptHandsOnTable = function() {
             data.validator = this.twoReceiptNumericValidator;
             data.format = "$0, 0.00";
             break;
+
           default:
             data.editor = TwoReceiptEditor;
             data.renderer = "autocomplete";
@@ -81,6 +82,7 @@ var TwoReceiptHandsOnTable = function() {
       console.log(colWidths);
 
       this.table.handsontable({
+        startRows: 0, // required for newer version of handsontable
         stretchH : 'last', // Setting this to 'all' causes resizing issues
         colWidths : colWidths,
         width : tableWidth + 100,
@@ -641,6 +643,7 @@ var TwoReceiptHandsOnTable = function() {
       // open TwoReceiptEditor
       cellProperties.instance.getActiveEditor().close();
       cellProperties.instance.getActiveEditor().open();
+      console.log(cellProperties);
     },
 
     isValid: function() {

@@ -22,3 +22,37 @@
   overflow-y: auto !important;
   overflow-x: hidden !important;
 }
+
+/*TwoReceipt Header at top of iframe*/
+#header
+{
+  height: 20px;
+  background-color: #B5C8ED;
+  text-align: center;
+}
+
+#header-label
+{
+  vertical-align: middle;
+  font-size: 10px;
+}
+
+.receipt-label
+{
+  font-size:10px;
+}
+
+/*input[type="text"]
+{
+  height: 25px;
+  font-size: 12px;
+  line-height: 25px;
+}*/
+
+/*this cuts off y, g, q, p, and j characters*/
+/*select[type="text"]
+{
+  height: 25px;
+  font-size: 10px;
+  line-height: 25px;
+}*/

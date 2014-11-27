@@ -171,7 +171,7 @@ var NotiBar = {
           window.parent.postMessage(message, "*");
         }
       });
-    }, 200);
+    }, 250);
 
     // set datepicker ui element
     $(this.configurations.formFields.date.id).datepicker({
@@ -191,6 +191,8 @@ var NotiBar = {
     this.initValidation();
     this.initGetFolders();
     this.initGetCurrencies();
+    this.initGetProfiles();
+    this.initGetCategories();
 
     // resetting the source of iframe causes a window unload
     $("#receipt-close").click(function() {
@@ -261,6 +263,16 @@ var NotiBar = {
     window.parent.postMessage(message, "*");
   },
 
+  initGetProfiles: function() {
+    var message = { request: "getProfiles" };
+    window.parent.postMessage(message, "*");
+  },
+
+  initGetCategories: function() {
+    var message = { request: "getCategories" };
+    window.parent.postMessage(message, "*");
+  },
+
   // sets currency to param code
   setCurrencyByCode: function(code) {
     if (code !== "") {
@@ -302,7 +314,9 @@ var NotiBar = {
         date: { required: true, isDate: true },
         total: { /*required: true,*/ isMoney: true },
         subtotal: { isMoney: true },
-        shipping: { isMoney: true }/*,
+        shipping: { isMoney: true },
+        category: "required",
+        profile: "required"/*,
         taxes: { isMoney: true }*/
       },
 
@@ -743,6 +757,30 @@ window.addEventListener("message", function(event) {
         }
 
         WebAppObserver.notify("currency");
+        break;
+
+      case "getProfiles":
+        var select = document.getElementById("profile");
+        for (var i = 0; i < event.data.profileData.length; i++) {
+          option = document.createElement("option");
+          option.value = event.data.profileData[i].id;
+          option.innerHTML = event.data.profileData[i].name;
+          select.appendChild(option);
+        }
+        break;
+
+     case "getCategories":
+        var select = document.getElementById("category");
+        var option = document.createElement("option");
+        option.value = "";
+        option.innerHTML = "";
+        select.appendChild(option);
+        for (var i = 0; i < event.data.categoryData.length; i++) {
+          option = document.createElement("option");
+          option.value = event.data.categoryData[i].id;
+          option.innerHTML = event.data.categoryData[i].category;
+          select.appendChild(option);
+        }
         break;
 
       // interaction with highlighted data

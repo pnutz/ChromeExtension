@@ -49,12 +49,12 @@ function createNotification() {
     style.innerHTML = ".twoReceiptIFrame { width: 100%; height: 100% }";
     document.getElementsByTagName("head")[0].appendChild(style);
 
-    document.getElementsByTagName("body")[0].style.paddingTop = "300px";
+    document.getElementsByTagName("body")[0].style.paddingTop = "310px";
 
     // append iframe notification within div to body
     var div = document.createElement("div");
     div.id = "notificationdiv";
-    div.setAttribute("style", "top: 0px; left: 0px; height: 300px; width: 100%; position: fixed; background-color: black; z-index: 88; visibility: visible; padding-bottom: 0.1em;");
+    div.setAttribute("style", "top: 0px; left: 0px; height: 310px; width: 100%; position: fixed; background-color: black; z-index: 2147483646; visibility: visible; padding-bottom: 0.1em;");
     var iframe = document.createElement("iframe");
     iframe.id = "twoReceiptIFrame";
     iframe.className = "twoReceiptIFrame";
@@ -70,10 +70,18 @@ function createNotification() {
     $(div).toggle("slide");
 
     $(div).resizable({
-      minHeight: 50,
+      minHeight: 20,
       handles: "s",
       resize: function(event, ui) {
         document.getElementsByTagName("body")[0].style.paddingTop = ui.size.height + "px";
+      },
+      // add a mask over iframe to prevent it from stealing mouse event
+      start: function(event, ui) {
+        $(div).append("<div id=\"mask\" style=\"position: absolute; z-index: 2147483647; left: 0pt; top: 0pt; right: 0pt; bottom: 0pt;\"></div>");
+      },
+      // remove mask when dragging ends
+      stop: function(event, ui) {
+        $("#mask").remove();
       }
     });
 
@@ -201,6 +209,20 @@ chrome.runtime.onConnect.addListener(function(port) {
             var message = { request: "getCurrencies", currencyData: msg.currencyData };
             document.getElementById('twoReceiptIFrame').contentWindow.postMessage(message, '*');
             break;
+
+          case "getProfiles":
+            console.log(msg.profileData);
+
+            var message = { request: "getProfiles", profileData: msg.profileData };
+            document.getElementById('twoReceiptIFrame').contentWindow.postMessage(message, '*');
+            break;
+
+          case "getCategories":
+            console.log(msg.categoryData);
+
+            var message = { request: "getCategories", categoryData: msg.categoryData };
+            document.getElementById('twoReceiptIFrame').contentWindow.postMessage(message, '*');
+            break;
         }
       }
     });
@@ -270,6 +292,14 @@ window.addEventListener("message", function(event) {
 
       case "getCurrencies":
         incomingPort.postMessage({ request: "getCurrencies" });
+        break;
+
+      case "getProfiles":
+        incomingPort.postMessage({ request: "getProfiles" });
+        break;
+
+      case "getCategories":
+        incomingPort.postMessage({ request: "getCategories" });
         break;
 
       // user submitted receipt, send all data to eventPage
