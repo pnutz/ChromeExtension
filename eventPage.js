@@ -9,7 +9,7 @@ var cleanUpTimeout;
 var receiptHotkeyTimeout = true;
 var vaultHotkeyTimeout = true;
 
-var aServerHost = "https://warm-eyrie-9414.herokuapp.com/";
+var aServerHost = "https://warm-eyrie-9414.herokuapp.com/";//"http://localhost:8888";
 
 var apiComm = new ControllerUrls(localStorage["webAppHost"]);
 
@@ -282,6 +282,21 @@ function sendReceipt() {
 function postReceiptToWebApp(savedData) {
   var formData = { receipt: savedData };
 
+  // rename tax_cost to cost
+  var taxKeys = Object.keys(formData.receipt.taxes);
+  for (var i = 0; i < taxKeys.length; i++) {
+    formData.receipt.taxes[taxKeys[i]].cost = formData.receipt.taxes[taxKeys[i]].tax_cost;
+    delete formData.receipt.taxes[taxKeys[i]].tax_cost;
+  }
+  formData.receipt["receipt_taxes_attributes"] = formData.receipt.taxes;
+  delete formData.receipt.taxes;
+
+  // rename item_cost to cost
+  var itemKeys = Object.keys(formData.receipt.items);
+  for (var i = 0; i < itemKeys.length; i++) {
+    formData.receipt.items[itemKeys[i]].cost = formData.receipt.items[itemKeys[i]].item_cost;
+    delete formData.receipt.items[itemKeys[i]].item_cost;
+  }
   formData.receipt["receipt_items_attributes"] = formData.receipt.items;
   delete formData.receipt.items;
 
@@ -311,8 +326,6 @@ function postReceiptToWebApp(savedData) {
 
   formData.receipt["category_id"] = formData.receipt["category"];
   delete formData.receipt["category"];
-
-  delete formData.receipt["taxes"];
 
   formData.receipt["tag_names"] = [ "test1", "test2", "test3" ];
 

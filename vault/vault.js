@@ -285,7 +285,7 @@ var Vault =
       }
 
       // After getting all the dates, render the data table
-      vData.dataTable.Init();
+      vData.dataTable.Init(data);
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(

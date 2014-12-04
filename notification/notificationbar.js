@@ -147,12 +147,12 @@ var NotiBar = {
     };
 
     setTimeout(function() {
-      self.itemTable = TwoReceiptHandsOnTable().init("items", ["Receipt Item", "Quantity", "Cost"], ["itemtype", "quantity", "cost"], ["text", "number", "money"], [0.6, 0.2, 0.2]);
+      self.itemTable = TwoReceiptHandsOnTable().init("items", ["Receipt Item", "Quantity", "Cost"], ["itemtype", "quantity", "item_cost"], ["text", "number", "money"], [0.6, 0.2, 0.2]);
       WebAppObserver.notify("items");
-      /*var data = { itemtype: "hello", quantity: 3, cost: 43.2 };
+      /*var data = { itemtype: "hello", quantity: 3, item_cost: 43.2 };
       self.itemTable.addDataRow(data);*/
 
-      self.taxTable = TwoReceiptHandsOnTable().init("taxes", ["Tax/Fee Type", "Cost"], ["tax", "price"], ["text", "money"], [0.7, 0.3]);
+      self.taxTable = TwoReceiptHandsOnTable().init("taxes", ["Tax/Fee Type", "Cost"], ["taxtype", "tax_cost"], ["text", "money"], [0.7, 0.3]);
       WebAppObserver.notify("taxes");
 
       // on receipt submit, validate data and send dictionary of form data to content script
@@ -664,7 +664,7 @@ window.addEventListener("message", function(event) {
 
           var taxKeys = Object.keys(event.data.generated.taxes);
           for (var i = 0; i < taxKeys.length; i++) {
-            subtotal -= event.data.generated.taxes[taxKeys[i]].price;
+            subtotal -= event.data.generated.taxes[taxKeys[i]].tax_cost;
           }
           event.data.generated.subtotal = subtotal;
         }

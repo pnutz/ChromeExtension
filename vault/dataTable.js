@@ -43,9 +43,9 @@ function DataTable (sId)
   }
 };
 
-DataTable.prototype.Init = function()
+DataTable.prototype.Init = function(data)
 {
-  this.GetReceipts_();
+  this.GetReceipts_(data);
 };
 
 DataTable.prototype.ShowFolders = function (aFolders) {
@@ -119,9 +119,9 @@ DataTable.prototype.PopulateTableData_ = function(data) {
     // Use "." to reference nested members
     "columns" : [
       {"data" : "date", "width" : "5%"},
-      {"data" : "vendor.name", "width" : "5%"},
+      {"data" : "vendor", "width" : "5%"},
       {"data" : "total", "width" : "5%"},
-      {"data" : "title", "width" : "15%"},
+      {"data" : "note", "width" : "15%"},
       {"data" : "tags", "width" : "5%"},
       {"data" : "folder_id", "width": "0%"},
       {"data" : "id", "width": "0%"},
@@ -179,36 +179,45 @@ DataTable.prototype.PopulateTableData_ = function(data) {
  * @brief retrieve receipts from the server and populate
  * the table
  */
-DataTable.prototype.GetReceipts_ = function() {
+DataTable.prototype.GetReceipts_ = function(receiptData) {
     var self = this;
+    if (receiptData == null) {
     var request = $.ajax({
       url: g_oControllers.AppendCred(g_oControllers.GetUrl("receipts") + ".json"),
       type: 'GET',
       dataType: 'json'
     }).done(function(data) {
-      // painfully convert each item to the desired date format before
-      self.oEarliestDate = new Date(data[0]["date"]);
-      self.oLatestDate = new Date(data[0]["date"]);
-      $.each(data, function(index, value) {
-        // create a date object for comparison
-        var oThisDate = new Date(value["date"]);
-
-        // Update the end-date so that it has the latest date value
-        if (oThisDate > self.oLatestDate) {
-          self.oLatestDate = oThisDate;
-        } else if (oThisDate < self.oEarliestDate) {
-          self.oEarliestDate = oThisDate;
-        }
-      });
-
-      self.PopulateTableData_(data);
-      // After getting all the dates, render the data table
+      self.GetReceiptsCallback_(data);
     }).fail(function (jqXHR, textStatus, errorThrown){
     // log the error to the console
       console.error(
         "The following error occurred: " + textStatus,
         errorThrown);
     });
+  } else {
+    self.GetReceiptsCallback_(receiptData);
+  }
+};
+
+DataTable.prototype.GetReceiptsCallback_ = function(data) {
+  var self = this;
+  // painfully convert each item to the desired date format before
+  self.oEarliestDate = new Date(data[0]["date"]);
+  self.oLatestDate = new Date(data[0]["date"]);
+  $.each(data, function(index, value) {
+    // create a date object for comparison
+    var oThisDate = new Date(value["date"]);
+
+    // Update the end-date so that it has the latest date value
+    if (oThisDate > self.oLatestDate) {
+      self.oLatestDate = oThisDate;
+    } else if (oThisDate < self.oEarliestDate) {
+      self.oEarliestDate = oThisDate;
+    }
+  });
+
+  self.PopulateTableData_(data);
+  // After getting all the dates, render the data table
 };
 
 /**
@@ -248,7 +257,7 @@ DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
 {
   var self = this;
   // Make table for receipt items
-  this.PopulateReceiptItemsTable_("#" + sDetailsId, mRowData.receipt_items, mRowData.total);
+  this.PopulateReceiptItemsTable_("#" + sDetailsId, mRowData.receipt_items, mRowData.subtotal, mRowData.total);
 
   // Other receipt Details
  // var $detailsTable = $("#" + sDetailsId).find(self.oReceiptDetailTemplateClasses.detailsTable);
@@ -263,8 +272,8 @@ DataTable.prototype.RenderDetails_ = function(mRowData, sDetailsId)
 };
 
 
-DataTable.prototype.PopulateReceiptItemsTable_ = function (sItemsTableId, aReceiptItems, fTotal) {
-  var fItemTotal = 0.0;
+DataTable.prototype.PopulateReceiptItemsTable_ = function (sItemsTableId, aReceiptItems, fSubtotal, fTotal) {
+  //var fItemTotal = 0.0;
   var $mainTable = $(sItemsTableId).find(this.oReceiptDetailTemplateClasses.itemsTable);;
   // put items in the table
   $.each(aReceiptItems, function(index, value) {
@@ -272,7 +281,7 @@ DataTable.prototype.PopulateReceiptItemsTable_ = function (sItemsTableId, aRecei
     $itemRow.append("<td>" + value.item_name + "</td>");
     $itemRow.append("<td>" + value.quantity + "</td>");
     $itemRow.append("<td>" + value.cost + "</td>");
-    fItemTotal += value.cost * value.quantity;
+    //fItemTotal += value.cost * value.quantity;
 
     var $tagsList = $("<td></td>");
     $.each(value["tags"], function(index, tagValue) {
@@ -288,7 +297,7 @@ DataTable.prototype.PopulateReceiptItemsTable_ = function (sItemsTableId, aRecei
     $mainTable.append($itemRow);
   });
   // Append the subtotal, for now pretend item total without taxes and modifiers is the sub total
-  $mainTable.append("<tr><td colspan=3><b>SubTotal</b></td><td>$" + fItemTotal + "</td></tr>"); 
+  $mainTable.append("<tr><td colspan=3><b>SubTotal</b></td><td>$" + fSubtotal + "</td></tr>"); 
   $mainTable.append("<tr><td colspan=3><b>Total</b></td><td>$" + fTotal + "</td></tr>"); 
   return $mainTable;
 };

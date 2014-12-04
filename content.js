@@ -541,7 +541,7 @@ function sortedSearchRequest(source, type, fieldName, text, itemIndex, rowElemen
   var results = getMatches(field, itemIndex, type);
   if (results.length > 0) {
     var tableType;
-    if (fieldName === "itemtype" || fieldName === "quantity" || fieldName === "cost") {
+    if (fieldName === "itemtype" || fieldName === "quantity" || fieldName === "item_cost") {
       tableType = "item";
     } else {
       tableType = "tax";
@@ -582,7 +582,7 @@ function searchRequest(source, type, fieldName, text, itemIndex) {
     var results = getMatches(field, itemIndex, type);
 
     var tableType;
-    if (fieldName === "itemtype" || fieldName === "quantity" || fieldName === "cost") {
+    if (fieldName === "itemtype" || fieldName === "quantity" || fieldName === "item_cost") {
       tableType = "item";
     } else {
       tableType = "tax";
@@ -659,14 +659,13 @@ function prepareReceipt(data, rows, parent) {
           }
         });
       } else if (key === "taxes") {
-        // TODO: track taxes deleted? IS THIS DONE? - check if taxes/itemKey exists in templates
-        /*$.each(generated.taxes, function(taxKey, taxValue) {
+        $.each(generated.taxes, function(taxKey, taxValue) {
           if (generated.templates.taxes[taxKey].deleted == null) {
             generatedElementPath = ElementPath.findParentElementPath(generatedElementPath, generated.elementPaths.taxes[taxKey]);
             console.log("set parent element path");
             console.log(generatedElementPath);
           }
-        });*/
+        });
       }
     });
 
