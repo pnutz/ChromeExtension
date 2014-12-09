@@ -6,7 +6,7 @@ var PopUp =
 {
   configurations:
   {
-    host : "http://lvh.me:3000"
+    host : "https://tranquil-sierra-2576.herokuapp.com"//"http://lvh.me:3000"
   },
 
   initButtons: function() {
@@ -28,7 +28,7 @@ var PopUp =
   init: function() {
     var self = this;
     // Temporarily hard code webapp host
-    localStorage["webAppHost"] = "http://localhost:3000";
+    localStorage["webAppHost"] = this.configurations.host;//"http://localhost:3000";
     this.controllers = new ControllerUrls(this.configurations.host);
     this.initButtons();
     this.bindButtonEvents();
