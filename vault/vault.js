@@ -444,6 +444,10 @@ var Vault =
    *@brief gets all snapshot/non-snapshot document information for user
    */
   getDocuments_: function(is_snapshot) {
+    // EDIT: with change to file server, access documents with URL
+    // http://tworeceipt.com/rails_ftp/documents/000/000/151/snapshot/original/snapshot.jpg
+    // http://tworeceipt.com/rails_ftp/documents/000/000/151/snapshot/thumb/snapshot.jpg
+
     var self = this;
     $.ajax({
       url: g_oControllers.AppendCred(g_oControllers.GetUrl("documents") + ".json") + "&is_snapshot=" + is_snapshot.toString(),

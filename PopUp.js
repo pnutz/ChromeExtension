@@ -6,7 +6,7 @@ var PopUp =
 {
   configurations:
   {
-    host : "https://tranquil-sierra-2576.herokuapp.com"//"http://lvh.me:3000"
+    host : "https://tworeceipt.herokuapp.com"//"http://lvh.me:3000"
   },
 
   initButtons: function() {
